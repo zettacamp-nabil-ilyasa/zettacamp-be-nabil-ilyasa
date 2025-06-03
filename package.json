@@ -1,0 +1,15 @@
+{
+  "name": "zettacamp-be-nabil-ilyasa",
+  "version": "1.0.0",
+  "description": "\"My First Signed Commit\"",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
