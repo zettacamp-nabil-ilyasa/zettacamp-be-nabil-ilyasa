@@ -1,31 +1,32 @@
 // *************** IMPORT LIBRARY *************** 
 const express = require('express')
+const { ApolloServer } = require('apollo-server-express')
+
 
 // *************** IMPORT MODULE *************** 
-const ConnectDB = require('./utils/mongoose')
+const ConnectDb = require('./utils/mongoose')
+const { TypeDefs, Resolvers } = require('./graphql/graphqlmerge')
 
-const app = express()
 
-async function startServer(){
-    try {
-        await ConnectDB()
-        console.log('✅ MongoDB connected successfully')
+
+// ***************
+async function StartServer() {
+    const app = express()
+    app.use(express.json());
+    const server = new ApolloServer({ typeDefs: TypeDefs, resolvers: Resolvers })
     
-        
-    app.get('/', (req, res) => {
-        res.send('Hello World!')
+    await server.start()
+    server.applyMiddleware({ app })
+
+    app.listen({port: 3000}, () => {
+        console.log(`Server ready at http://localhost:3000${server.graphqlPath}`)
     })
-    
-    app.listen(3000, () => {
-        console.log('Listening on port 3000!')
-    })
-    }
-    catch (err) {
-        console.log(err)
-    }
 }
 
-startServer()
-
-
-
+// ***************
+ConnectDb()
+.then(() => {
+    console.log('Mongodb connected succesfully!')
+    StartServer()
+})
+.catch(err => console.log('Error connecting to mongodb', err))
