@@ -21,15 +21,16 @@ const schoolTypeDefs = gql`
     }
 
     extend type Query {
-        Schools: [School]
-        School(id: ID!): School
+        GetAllSchools: [School]
+        GetOneSchool(id: ID!): School
     }
     
     extend type Mutation {
-        CreateSchool(name: String!, address: String): School
-        UpdateSchool(id: ID!, name: String!, address: String): School
+        CreateSchool(name: String!, address: String, students: [String]): School
+        UpdateSchool(id: ID!, name: String!, address: String, students: [String]): School
         DeleteSchool(id: ID!): School
-    }`
+    }
+    `
 
 // *************** EXPORT MODULE *************** 
 module.exports = schoolTypeDefs

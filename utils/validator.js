@@ -1,7 +1,11 @@
- /**
- * excludeId: id of the user to be excluded
- * excludeId is optional, used to check if the email is used by user other than the one to be excluded
+/**
+ * Function description
+ * @param {object} model - model used for db query
+ * @param {string} emailAcc - email to be checked
+ * @param {string} excludeId - id of the user to be excluded
+ * @returns {boolean} - true if email already exist 
  */
+
 
 async function EmailIsExist(model, emailAcc, excludeId = null) {
     const isExist = await model.findOne({email: emailAcc})
@@ -17,4 +21,5 @@ async function EmailIsExist(model, emailAcc, excludeId = null) {
     return true
 }
 
+// *************** EXPORT MODULE ***************
 module.exports = {EmailIsExist}
