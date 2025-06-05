@@ -7,9 +7,9 @@ const user = new mongoose.Schema({
     //user's last name
     last_name: {type : String, required : true},
     //user's email
-    email: {type : String, required : true, unique : true},
+    email: {type : String, required : true, unique : true, match: /.+\@.+\..+/},
     //user's password 
-    password: {type : String, required : true},
+    password: {type : String, required : true, minlength: 8},
     //user's role
     role: {type : String, required : true},
     //user's deletion date for soft delete

@@ -7,7 +7,7 @@ const student = new mongoose.Schema({
     //student's last name
     last_name: {type : String, required : true},
     //student's email
-    email: {type : String, required : true, unique : true},
+    email: {type : String, required : true, unique : true, match: /.+\@.+\..+/},
     //student's date of birth
     date_of_birth: {type : Date, default: null},
     //student's school
