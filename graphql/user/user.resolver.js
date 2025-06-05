@@ -4,10 +4,10 @@ const {EmailIsExist} = require('../../utils/validator.js')
 
 const userResolvers = {
     Query: {
-        Users: async () => {
+        GetAllUsers: async () => {
             return await User.find({ deleted_at : null })
         },
-        User: async (_, {id}) => {
+        GetOneUser: async (_, {id}) => {
             return await User.findOne({ _id : id, deleted_at : null })
         }
     },
@@ -16,7 +16,7 @@ const userResolvers = {
             const {first_name, last_name, email, password, role} = args
             const emailIsExist = await EmailIsExist(User, email)
             if (emailIsExist) {
-                console.log('Email already exist')
+                throw new Error('Email already exist')
                 return null
             }
             const newUser = new User({first_name, last_name, email, password, role})
@@ -31,7 +31,6 @@ const userResolvers = {
             if (existingEmail){
                 throw new Error('Email already exist')
             }
-            await User.findOneAndUpdate({_id : id}, {first_name, last_name, email, password, role}, {new: true})
            return await User.findOneAndUpdate({_id : id}, {first_name, last_name, email, password, role}, {new: true})
 
         },
