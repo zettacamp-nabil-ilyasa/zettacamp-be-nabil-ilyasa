@@ -46,35 +46,3 @@ module.exports = {
     Query: {GetAllUsers, GetOneUser},
     Mutation: {CreateUser, UpdateUser, DeleteUser}
 }
-
-        // GetAllUsers: async () => {
-        //     return await User.find({ deleted_at : null })
-        // },
-        // GetOneUser: async (_, {id}) => {
-        //     return await User.findOne({ _id : id, deleted_at : null })
-        // }
-        // CreateUser: async (_, args) => {
-        //     const {first_name, last_name, email, password, role} = args
-        //     const emailIsExist = await EmailIsExist(User, email)
-        //     if (emailIsExist) {
-        //         throw new Error('Email already exist')
-        //     }
-        //     const newUser = new User({first_name, last_name, email, password, status: 'active', role})
-        //     await newUser.save()
-        //     const createdUser = await User.findOne({email})
-        //     return createdUser
-        // },
-
-        // UpdateUser: async (_, args) => {
-        //     const {id, first_name, last_name, email, password, role} = args
-        //     existingEmail = await EmailIsExist(User, email, id)
-        //     if (existingEmail){
-        //         throw new Error('Email already exist')
-        //     }
-        //    return await User.findOneAndUpdate({_id : id}, {first_name, last_name, email, password, role}, {new: true})
-
-        // },
-        // DeleteUser: async (_, {id}) => {
-        //     deletedUser = await User.UpdateOne({_id : id}, {deleted_at : new Date(), status: 'deleted'})
-        //     return 'User deleted successfully'
-        // },
