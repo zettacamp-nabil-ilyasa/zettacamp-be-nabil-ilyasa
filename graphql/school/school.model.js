@@ -3,11 +3,15 @@ const mongoose = require('mongoose')
 
 const school = new mongoose.Schema({
     //school's name
-    name: {type : String, required: true},
+    brand_name: {type : String, required: true},
+    //school's long name
+    long_name: {type : String, required: true},
     //school's address
     address: {type : String, default: null},
     //school's students
-    students: [{type : mongoose.Schema.Types.ObjectId, ref: 'student'}],
+    students: ['student'],
+    //school's status
+    status: {type : String, default: 'active'},
     //school's deletion date for soft delete
     deleted_at: { type: Date, default: null }
 })

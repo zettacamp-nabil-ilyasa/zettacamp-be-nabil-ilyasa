@@ -7,7 +7,7 @@
  */
 
 async function NameIsExist(model, schoolName, excludeId = null) {
-    const isExist = await model.findOne({name: schoolName})
+    const isExist = await model.findOne({long_name: schoolName})
     //check if school name already exist
     if (!isExist){
         return false

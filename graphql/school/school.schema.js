@@ -8,7 +8,10 @@ const schoolTypeDefs = gql`
         id: ID!
 
         # school's name
-        name: String!
+        brand_name: String!
+
+        # school's long name
+        long_name: String!
 
         # school's address
         address: String
@@ -16,8 +19,24 @@ const schoolTypeDefs = gql`
         # school's students
         students: [Student]
 
+        # school's status
+        status: String
+
         # school's deletion date for soft delete
         deleted_at: Date
+    }
+    
+    input CreateSchoolInput {
+        brand_name: String!
+        long_name: String!
+        address: String
+    }
+
+    input UpdateSchoolInput {
+        id: ID!
+        brand_name: String
+        long_name: String
+        address: String
     }
 
     extend type Query {
@@ -26,9 +45,9 @@ const schoolTypeDefs = gql`
     }
     
     extend type Mutation {
-        CreateSchool(name: String!, address: String, students: [String]): School
-        UpdateSchool(id: ID!, name: String!, address: String, students: [String]): School
-        DeleteSchool(id: ID!): School
+        CreateSchool(input: CreateSchoolInput): School
+        UpdateSchool(input: UpdateSchoolInput): School
+        DeleteSchool(id: ID!): String
     }
     `
 

@@ -11,7 +11,9 @@ const student = new mongoose.Schema({
     //student's date of birth
     date_of_birth: {type : Date, default: null},
     //student's school
-    school_id: {type : String, required : true},
+    school_id: {type : mongoose.Schema.Types.ObjectId, required : true, ref: 'school'},
+    //student's status
+    status: {type : String, default: 'active'},
     //student's deletion date for soft delete
     deleted_at: { type: Date, default: null }
 })

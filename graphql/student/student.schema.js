@@ -20,11 +20,31 @@ const studentTypeDefs = gql`
         date_of_birth: Date
 
         # student's school
-        school_id: String!
+        school_id: ID!
+
+        # student's status
+        status: String!
         
         # student's deletion date for soft delete
         deleted_at: Date
         }
+
+    input CreateStudentInput {
+        first_name: String!
+        last_name: String!
+        email: String!
+        date_of_birth: Date
+        school_id: String!
+    }
+
+    input UpdateStudentInput {
+        id: ID!
+        first_name: String
+        last_name: String
+        email: String
+        date_of_birth: Date
+        school_id: String
+    }
     
     extend type Query {
         GetAllStudents: [Student]
@@ -32,8 +52,8 @@ const studentTypeDefs = gql`
     }
 
     extend type Mutation {
-        CreateStudent(first_name: String!, last_name: String!, email: String!, date_of_birth: Date, school_id: String!): Student
-        UpdateStudent(id: ID!, first_name: String!, last_name: String!, email: String!, date_of_birth: Date, school_id: String!): Student
+        CreateStudent(input: CreateStudentInput): Student
+        UpdateStudent(input: UpdateStudentInput): Student
         DeleteStudent(id: ID!): Student
     }
 `

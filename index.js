@@ -6,6 +6,7 @@ const { ApolloServer } = require('apollo-server-express')
 // *************** IMPORT MODULE *************** 
 const ConnectDb = require('./utils/mongoose')
 const { TypeDefs, Resolvers } = require('./graphql/graphqlmerge')
+const studentLoader = require('./utils/studentLoader')
 
 
 
@@ -13,7 +14,8 @@ const { TypeDefs, Resolvers } = require('./graphql/graphqlmerge')
 async function StartServer() {
     const app = express()
     app.use(express.json());
-    const server = new ApolloServer({ typeDefs: TypeDefs, resolvers: Resolvers })
+
+    const server = new ApolloServer({ typeDefs: TypeDefs, resolvers: Resolvers, context: () => ({loaders: {studentLoader: studentLoader()}}) })
     
     await server.start()
     server.applyMiddleware({ app })

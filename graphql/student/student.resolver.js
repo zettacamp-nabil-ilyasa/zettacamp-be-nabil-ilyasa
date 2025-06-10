@@ -1,6 +1,6 @@
 // *************** IMPORT MODULE ***************
 const Student = require('./student.model.js')
-const {EmailIsExist} = require('../../utils/validator.js')
+const {EmailIsExist, CleanUpdateInput} = require('../../utils/validator.js')
 
 const studentResolvers = {
     Query: {
@@ -12,27 +12,29 @@ const studentResolvers = {
         }
     },
     Mutation: {
-        CreateStudent: async (_, args) => {
-            const {first_name, last_name, email, date_of_birth, school_id} = args
+        CreateStudent: async (_, {input}) => {
+            const {first_name, last_name, email, date_of_birth, school_id} = input
             const emailIsExist = await EmailIsExist(Student, email)
             if (emailIsExist) {
                 throw new Error('Email already exist')
             }
-            const newStudent = new Student({first_name, last_name, email, date_of_birth, school_id})
+            const newStudent = new Student({first_name, last_name, email, date_of_birth, school_id, status: 'active'})
             await newStudent.save()
             const createdStudent = await Student.findOne({email})
             return createdStudent
         },
-        UpdateStudent: async (_, args) => {
-            const {id, first_name, last_name, email, date_of_birth, school_id} = args
+        UpdateStudent: async (_, {input}) => {
+            const {id, first_name, last_name, email, date_of_birth, school_id} = input
             const emailIsExist = await EmailIsExist(Student, email, id)
             if (emailIsExist) {
                 throw new Error('Email already exist')
             }
-            return await Student.findOneAndUpdate({_id : id}, {first_name, last_name, email, date_of_birth, school_id}, {new: true})
+            const updatedStudent = CleanUpdateInput(input)
+            return await Student.findOneAndUpdate({_id : id}, updatedStudent, {new: true})
         },
         DeleteStudent: async (_, {id}) => {
-            return await Student.findOneAndUpdate({_id : id}, {deleted_at : new Date()}, {new: true})
+            await Student.findOneAndUpdate({_id : id}, {deleted_at : new Date()})
+            return 'Student deleted successfully'
         }
     }
 }

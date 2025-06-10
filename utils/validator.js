@@ -21,5 +21,10 @@ async function EmailIsExist(model, emailAcc, excludeId = null) {
     return true
 }
 
+function CleanUpdateInput (updateInput){
+    const cleanUpdateInput = Object.fromEntries(Object.entries(updateInput).filter(([_, value]) => value !== null && value !== "" && value !== undefined))
+    return cleanUpdateInput
+}
+
 // *************** EXPORT MODULE ***************
-module.exports = {EmailIsExist}
+module.exports = {EmailIsExist, CleanUpdateInput}
