@@ -1,10 +1,16 @@
 // *************** IMPORT LIBRARY *************** 
 const mongoose = require('mongoose');
+require ('dotenv').config();
 
-// ***************
-ConnectDb().catch(err => console.log(err));
+
+ConnectDb().catch(err => console.error('MongoDB connection error:', err));
+
 async function ConnectDb() {
-  await mongoose.connect('mongodb://127.0.0.1:27017/module1db');
+  const mongoUri = process.env.MONGODB_URI;
+  if (!mongoUri) {
+    throw new Error("MONGODB_URI is not found in .env file");
+  }
+  await mongoose.connect(mongoUri);
 }
 
 // *************** EXPORT MODULE *************** 

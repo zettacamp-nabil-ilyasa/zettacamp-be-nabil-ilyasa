@@ -23,8 +23,28 @@ const userTypeDefs = gql`
         # user's role
         role: String!
 
+        # user's status
+        status: String
+
         # user's deletion date for soft delete
         deleted_at: Date
+    }
+
+    input CreateUserInput {
+        first_name: String!
+        last_name: String!
+        email: String!
+        password: String!
+        role: String!
+    }
+
+    input UpdateUserInput {
+        id: ID!
+        first_name: String
+        last_name: String
+        email: String
+        password: String
+        role: String
     }
     
     extend type Query {
@@ -33,9 +53,9 @@ const userTypeDefs = gql`
     }
 
     extend type Mutation {
-    CreateUser(first_name: String!, last_name: String!, email: String!, password: String!, role: String!): User
-    UpdateUser(id: ID!, first_name: String!, last_name: String!, email: String!, password: String!, role: String!): User
-    DeleteUser(id: ID!): User
+    CreateUser(input: CreateUserInput): User
+    UpdateUser(input: UpdateUserInput!): User
+    DeleteUser(id: ID!): String
     }`
 
 // *************** EXPORT MODULE *************** 

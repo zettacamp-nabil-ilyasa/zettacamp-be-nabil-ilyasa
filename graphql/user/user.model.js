@@ -12,6 +12,8 @@ const user = new mongoose.Schema({
     password: {type : String, required : true, minlength: 8},
     //user's role
     role: {type : String, required : true},
+    //user's status
+    status: {type : String, default: 'active'},
     //user's deletion date for soft delete
     deleted_at: { type: Date, default: null }
   });
