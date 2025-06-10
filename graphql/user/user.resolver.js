@@ -37,7 +37,7 @@ async function UpdateUser(_, {input}) {
 }
 
 async function DeleteUser(_, {id}) {
-    await User.findOneAndUpdate({_id : id}, {deleted_at : new Date()})
+    await User.findOneAndUpdate({_id : id}, {deleted_at : new Date(), status: 'deleted'})
     return 'User deleted successfully'
 }
 
