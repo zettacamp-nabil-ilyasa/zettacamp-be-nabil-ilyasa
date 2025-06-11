@@ -2,7 +2,7 @@
 const {gql} = require('apollo-server')
 
 // *************** 
-const userTypeDefs = gql`
+const userTypeDefs = gql`   
 
     type User {
         # user's document id
@@ -23,11 +23,17 @@ const userTypeDefs = gql`
         # user's role
         role: String!
 
+        # user's student account
+        student: Student
+
         # user's status
-        status: String
+        status: Status!
 
         # user's deletion date for soft delete
         deleted_at: Date
+
+        # user that deleted the user
+        deleted_by: ID
     }
 
     input CreateUserInput {
@@ -55,7 +61,7 @@ const userTypeDefs = gql`
     extend type Mutation {
     CreateUser(input: CreateUserInput): User
     UpdateUser(input: UpdateUserInput!): User
-    DeleteUser(id: ID!): String
+    DeleteUser(id: ID!, deletedBy: ID!): String
     }`
 
 // *************** EXPORT MODULE *************** 
