@@ -20,7 +20,7 @@ const schoolTypeDefs = gql`
         students: [Student]
 
         # school's status
-        status: String
+        status: Status!
 
         # school's deletion date for soft delete
         deleted_at: Date
@@ -47,7 +47,7 @@ const schoolTypeDefs = gql`
     extend type Mutation {
         CreateSchool(input: CreateSchoolInput): School
         UpdateSchool(input: UpdateSchoolInput): School
-        DeleteSchool(id: ID!): String
+        DeleteSchool(id: ID!, deletedBy: ID!): String
     }
     `
 

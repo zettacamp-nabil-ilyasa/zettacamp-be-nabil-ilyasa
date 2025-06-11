@@ -3,17 +3,22 @@ const mongoose = require('mongoose')
 
 const school = new mongoose.Schema({
     //school's name
-    brand_name: {type : String, required: true},
+    brand_name: {type : String, required: true, trim: true},
     //school's long name
-    long_name: {type : String, required: true},
+    long_name: {type : String, required: true, trim: true},
     //school's address
-    address: {type : String, default: null},
-    //school's students
-    students: ['student'],
+    address: {type : String, trim: true, default: null},
     //school's status
-    status: {type : String, default: 'active'},
+    status: {type : String, enum: ['active', 'deleted', 'suspended'], default: 'active'},
     //school's deletion date for soft delete
-    deleted_at: { type: Date, default: null }
+    deleted_at: { type: Date, default: null },
+    //user that deleted the school
+    deleted_by: {type : mongoose.Schema.Types.ObjectId, trim: true,ref: 'user'}
+}, {
+    timestamps: {
+      createdAt: 'created_at',
+      updatedAt: 'updated_at'
+    }
 })
 
 // *************** EXPORT MODULE *************** 
