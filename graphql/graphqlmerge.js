@@ -12,9 +12,13 @@ const schoolResolvers = require('./school/school.resolver.js')
 const studentTypeDefs = require('./student/student.schema.js')
 const studentResolvers = require('./student/student.resolver.js')
 
-// ***************
 const baseTypeDefs = gql`
     scalar Date
+    enum Status {
+        active
+        deleted
+        suspended
+    }
 
     type Query
     type Mutation

@@ -21,6 +21,15 @@ async function EmailIsExist(model, emailAcc, excludeId = null) {
     return true
 }
 
+async function CollectionIsExist(model, userId){
+    const isExist = await model.findOne({_id: userId})
+    //check if user already exist
+    if (!isExist){
+        return false
+    }
+    return true
+}
+
 function CleanUpdateInput (updateInput){
     const cleanUpdateInput = Object.fromEntries(Object.entries(updateInput).filter(([_, value]) => value !== null && value !== "" && value !== undefined))
     return cleanUpdateInput

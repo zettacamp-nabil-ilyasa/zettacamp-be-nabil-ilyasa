@@ -19,20 +19,35 @@ const studentTypeDefs = gql`
         # student's date of birth
         date_of_birth: Date
 
+        # student's user id
+        user_id: ID
+
         # student's school
         school_id: ID!
 
         # student's status
-        status: String!
+        status: Status!
         
         # student's deletion date for soft delete
         deleted_at: Date
+
+        # student's deleted by
+        deleted_by: ID
         }
 
     input CreateStudentInput {
         first_name: String!
         last_name: String!
         email: String!
+        date_of_birth: Date
+        school_id: String!
+    }
+
+    input CreateStudentWithUserInput {
+        first_name: String!
+        last_name: String!
+        email: String!
+        password: String!
         date_of_birth: Date
         school_id: String!
     }
@@ -53,8 +68,9 @@ const studentTypeDefs = gql`
 
     extend type Mutation {
         CreateStudent(input: CreateStudentInput): Student
+        CreateUserWithStudent(input: CreateStudentWithUserInput): Student
         UpdateStudent(input: UpdateStudentInput): Student
-        DeleteStudent(id: ID!): String!
+        DeleteStudent(id: ID!, deletedBy: ID!): String!
     }
 `
 
