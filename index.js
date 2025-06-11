@@ -1,21 +1,19 @@
 // *************** IMPORT LIBRARY *************** 
 const express = require('express')
 const { ApolloServer } = require('apollo-server-express')
+const cors = require('cors')
 
 
 // *************** IMPORT MODULE *************** 
 const ConnectDb = require('./utils/mongoose')
 const { TypeDefs, Resolvers } = require('./graphql/graphqlmerge')
-const studentLoader = require('./utils/studentLoader')
+const {studentBySchoolLoader, studentByUserLoader} = require('./utils/studentLoader')
 
-
-
-// ***************
 async function StartServer() {
     const app = express()
     app.use(express.json());
 
-    const server = new ApolloServer({ typeDefs: TypeDefs, resolvers: Resolvers, context: () => ({loaders: {studentLoader: studentLoader()}}) })
+    const server = new ApolloServer({ typeDefs: TypeDefs, resolvers: Resolvers, context: () => ({loaders: {studentBySchoolLoader: studentBySchoolLoader(), studentByUserLoader: studentByUserLoader()}}) })
     
     await server.start()
     server.applyMiddleware({ app })
@@ -25,7 +23,6 @@ async function StartServer() {
     })
 }
 
-// ***************
 ConnectDb()
 .then(() => {
     console.log('Mongodb connected succesfully!')
