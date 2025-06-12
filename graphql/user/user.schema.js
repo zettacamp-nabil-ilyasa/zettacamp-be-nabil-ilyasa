@@ -37,19 +37,39 @@ const userTypeDefs = gql`
     }
 
     input CreateUserInput {
+        # user's first name for create user input
         first_name: String!
+
+        # user's last name for create user input
         last_name: String!
+
+        # user's email for create user input
         email: String!
+
+        # user's password for create user input
         password: String!
+
+        # user's role for create user input
         role: String!
     }
 
     input UpdateUserInput {
+        # user's document id to specify the user
         id: ID!
+
+        # user's first name for update user input
         first_name: String
+
+        # user's last name for update user input
         last_name: String
+
+        # user's email for update user input
         email: String
+
+        # user's password for update user input
         password: String
+
+        # user's role for update user input
         role: String
     }
     
