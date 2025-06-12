@@ -17,14 +17,14 @@ const dateRegexPattern = /^\d{4}-\d{2}-\d{2}$/
 /**
  * Check if school name already exist
  * @param {object} model - The mongoose model used for db query
- * @param {string} schoolName - The school's name to be checked
+ * @param {string} longName - The school's long name to be checked
  * @param {string} excludeId - The id of the school to be excluded
  * @returns {Promise<boolean>} - True if school name already exists, false otherwise
  */
-async function SchoolNameIsExist(model, schoolName, excludeId = null) {
+async function SchoolLongNameIsExist(model, longName, excludeId = null) {
     try{
-        const isExist = await model.findOne({long_name: schoolName, status: 'active'})
-        //*************** check if school name already exist
+        const isExist = await model.findOne({long_name: longName})
+        //*************** check if the brand name already exist
         if (!isExist){
             return false
         }
@@ -38,6 +38,32 @@ async function SchoolNameIsExist(model, schoolName, excludeId = null) {
         throw new Error('invalid school id')
     }
 }
+
+/**
+ * Check if school name already exist
+ * @param {object} model - The mongoose model used for db query
+ * @param {string} longName - The school's brand name to be checked
+ * @param {string} excludeId - The id of the school to be excluded
+ * @returns {Promise<boolean>} - True if school name already exists, false otherwise
+ */
+async function SchoolBrandNameIsExist(model, brandName, excludeId = null) {
+    try{
+        const isExist = await model.findOne({brand_name: brandName})
+        //*************** check if the long name already exist
+        if (!isExist){
+            return false
+        }
+        //*************** check if existed school is the one to be excluded
+        if (excludeId && isExist.id.toString() == excludeId.toString()) {
+            return false
+        } 
+        //*************** return true, school name already registered
+        return true
+    }catch{
+        throw new Error('invalid school id')
+    }
+}
+
 
 /**
  * Checks if a user is an admin.
@@ -137,17 +163,19 @@ function ValidateUserUpdateInput (input){
     if (password && !passwordRegexPattern.test(password)) {
         throw new Error('password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, and one number')
     }
-    if (first_name && !nameRegexPattern.test(first_name)) {
-        throw new Error('first name contains invalid characters')
+    if (first_name) {
+        if ( !nameRegexPattern.test(first_name)){
+            throw new Error('first name contains invalid characters')
+        }
+        first_name = toTitleCase(first_name)
     }
-    if (last_name && !nameRegexPattern.test(last_name)) {
-        throw new Error('last name contains invalid characters')
+    if (last_name) {
+        if (!nameRegexPattern.test(last_name)){
+            throw new Error('last name contains invalid characters')
+        }
+        last_name = toTitleCase(last_name)
     }
-
-    first_name = toTitleCase(first_name)
-    last_name = toTitleCase(last_name)
-
-    const validatedInput = {first_name, last_name, email, password}
+    const validatedInput = {id, first_name, last_name, email, password}
     return validatedInput
 }
 
@@ -168,7 +196,6 @@ function ValidateSchoolCreateInput (input){
     if (!schoolNameRegexPattern.test(long_name)) {
         throw new Error('long name contains invalid characters')
     }
-    brand_name = toTitleCase(brand_name)
     long_name = toTitleCase(long_name)
 
     const validatedInput = {brand_name, long_name, address}
@@ -190,11 +217,12 @@ function ValidateSchoolUpdateInput (input){
     if (brand_name && !schoolNameRegexPattern.test(brand_name)) {
         throw new Error('brand name contains invalid characters')
     }
-    if (long_name && !schoolNameRegexPattern.test(long_name)) {
-        throw new Error('long name contains invalid characters')
+    if (long_name) {
+        if ( !schoolNameRegexPattern.test(long_name)){
+            throw new Error('long name contains invalid characters')
+        }
+        long_name = toTitleCase(long_name)
     }
-    brand_name = toTitleCase(brand_name)
-    long_name = toTitleCase(long_name)
 
     const validatedInput = {id, brand_name, long_name, address}
     return validatedInput
@@ -298,11 +326,17 @@ function ValidateStudentUpdateInput (input) {
     if (email && !emailRegexPattern.test(email)){
         throw new Error('email format is invalid')
     }
-    if (first_name && !nameRegexPattern.test(first_name)) {
-        throw new Error('first name contains invalid characters')
+    if (first_name) {
+        if (!nameRegexPattern.test(first_name)){
+            throw new Error('first name contains invalid characters')
+        }
+        first_name = toTitleCase(first_name)
     }
-    if (last_name && !nameRegexPattern.test(last_name)) {
-        throw new Error('last name contains invalid characters')
+    if (last_name) {
+        if (!nameRegexPattern.test(last_name)){
+            throw new Error('last name contains invalid characters')
+        }
+        last_name = toTitleCase(last_name)
     }
     if (!mongoose.Types.ObjectId.isValid(school_id)) {
         throw new Error('invalid school id')
@@ -320,13 +354,10 @@ function ValidateStudentUpdateInput (input) {
         if (birthDate > today) {
             throw new Error('invalid date of birth value')
         }}
-    first_name = toTitleCase(first_name)
-    last_name = toTitleCase(last_name)
-
     const validatedInput =  {id, first_name, last_name, email, date_of_birth, school_id}
     return validatedInput
 }
 
 
 // *************** EXPORT MODULE ***************
-module.exports = {SchoolNameIsExist, SchoolIsExist, UserIsAdmin,ValidateUserCreateInput, ValidateSchoolCreateInput, ValidateStudentCreateInput, ValidateStudentAndUserCreateInput,ValidateUserUpdateInput, ValidateSchoolUpdateInput, ValidateStudentUpdateInput}
+module.exports = {SchoolLongNameIsExist, SchoolBrandNameIsExist, SchoolIsExist, UserIsAdmin,ValidateUserCreateInput, ValidateSchoolCreateInput, ValidateStudentCreateInput, ValidateStudentAndUserCreateInput,ValidateUserUpdateInput, ValidateSchoolUpdateInput, ValidateStudentUpdateInput}
