@@ -63,6 +63,13 @@ async function CreateStudent(_, {input}) {
         if (emailIsExist) {
             throw new Error('Email already exist')
         }
+
+        //*************** check if school exist
+        const schoolIsExist = await SchoolIsExist(School, validatedStudentInput.school_id)
+        if (!schoolIsExist) {
+            throw new Error('School does not exist')
+        }
+
         validatedStudentInput.status = 'active'
         const createdStudent = await Student.create(validatedStudentInput)
         return createdStudent
@@ -94,8 +101,8 @@ async function CreateUserWithStudent (_, {input}){
             throw new Error('Email already exist')
         }
         //*************** check if school exist
-        const schoolExist = await SchoolIsExist(School, school_id)
-        if (!schoolExist) {
+        const schoolIsExist = await SchoolIsExist(School, school_id)
+        if (!schoolIsExist) {
             throw new Error('School does not exist')
         }
         //*************** create user
@@ -130,10 +137,10 @@ async function UpdateStudent(_, {input}) {
 
         //**************** validate input
         const validatedStudentInput = ValidateStudentUpdateInput(cleanedInput)
-        const {id, email} = validatedStudentInput
+        const {id, email, school_id} = validatedStudentInput
 
         //**************** check if student exist
-        const userIsExist = await CollectionIsExist(User, id)
+        const userIsExist = await CollectionIsExist(Student, id)
         if (!userIsExist) {
             throw new Error('Student does not exist')
         }
@@ -143,6 +150,13 @@ async function UpdateStudent(_, {input}) {
         if (emailIsExist) {
             throw new Error('Email already exist')
         }
+
+        //**************** check if school exist
+        const schoolIsExist = await SchoolIsExist(School, school_id)
+        if (!schoolIsExist) {
+            throw new Error('School does not exist')
+        }
+
         const updatedStudent = await Student.findOneAndUpdate({_id : id}, validatedStudentInput, {new: true})
         return updatedStudent
     }catch(error){
@@ -168,8 +182,8 @@ async function DeleteStudent(_, {id, deletedBy}) {
         }
 
         //**************** check if student exist
-        const userIsExist = await CollectionIsExist(User, id)
-        if (!userIsExist) {
+        const studentIsExist = await CollectionIsExist(Student, id)
+        if (!studentIsExist) {
             throw new Error('Student does not exist')
         }
 
