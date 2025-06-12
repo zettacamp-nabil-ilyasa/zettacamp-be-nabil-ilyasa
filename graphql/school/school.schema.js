@@ -7,7 +7,7 @@ const schoolTypeDefs = gql`
         # school's document id
         id: ID!
 
-        # school's name
+        # school's brand name
         brand_name: String!
 
         # school's long name
@@ -27,15 +27,27 @@ const schoolTypeDefs = gql`
     }
     
     input CreateSchoolInput {
+        # school's brand name for create school input
         brand_name: String!
+
+        # school's long name for create school input
         long_name: String!
+
+        # school's address for create school input
         address: String
     }
 
     input UpdateSchoolInput {
+        # school's document id to specify the school
         id: ID!
+
+        # school's brand name for update school input
         brand_name: String
+
+        # school's long name for update school input
         long_name: String
+
+        # school's address for update school input
         address: String
     }
 
