@@ -33,7 +33,7 @@ async function GetAllUsers() { try{
  */
 async function GetOneUser(_, {id}) {
     try{
-        const users = await User.find({ status : 'active' })
+        const users = await User.findOne({ _id : id, status : 'active' })
         return users
     }catch(error){
        console.log(error.message)
@@ -81,24 +81,23 @@ async function CreateUser(_, {input}) {
 async function UpdateUser(_, {input}) {
     try{
         //**************** clean input from null, undefined and empty string
-        User.cleanedInput = CleanUpdateInput(input)
+        cleanedInput = CleanUpdateInput(input)
 
         //**************** validate input
-        const validatedUserInput = ValidateUserUpdateInput(cleanedInput)
-        const {id, email} = validatedUpdateInput
+        const validatedInput = ValidateUserUpdateInput(cleanedInput)
+        const {id, email} = validatedInput
 
         //**************** check if user exist
         const userIsExist = await CollectionIsExist(User, id)
         if (!userIsExist) {
             throw new Error('User does not exist')
         }
-
         //**************** check if email already exist
         const emailIsExist = await EmailIsExist(User, email, id)
         if (emailIsExist) {
             throw new Error('Email already exist')
         }
-        const updatedUser = await User.findOneAndUpdate({_id : id}, validatedUserInput, {new: true})
+        const updatedUser = await User.findOneAndUpdate({_id : id}, validatedInput, {new: true})
         return updatedUser
     }catch (error){
         console.log(error.message)
@@ -148,7 +147,7 @@ async function DeleteUser(_, {id, deletedBy}) {
 async function StudentFieldResolver(parent, _, context){
     try{
         const userId = parent._id?.toString() || parent.id?.toString()
-        const studentLoader = context.loaders.studentByUserLoader.load(userId)
+        const studentLoader = context.loaders.StudentByUserLoader.load(userId)
         return studentLoader
     }catch(error){
         console.log(error.message)
