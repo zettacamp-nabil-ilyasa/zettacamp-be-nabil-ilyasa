@@ -3,10 +3,10 @@ const School = require('./school.model.js')
 const User = require('../user/user.model.js')
 
 // *************** IMPORT HELPER ***************
-const {ValidateSchoolUpdateInput, ValidateSchoolCreateInput, SchoolNameIsExist, UserIsAdmin} = require('../helper/helper.js')
+const {ValidateSchoolUpdateInput, ValidateSchoolCreateInput, SchoolLongNameIsExist, SchoolBrandNameIsExist, UserIsAdmin} = require('../helper/helper.js')
 
 // *************** IMPORT UTILS ***************
-const {CleanUpdateInput} = require('../../utils/validator.js')
+const {CleanUpdateInput, CollectionIsExist} = require('../../utils/validator.js')
 
 //****************QUERY**************** 
 
@@ -56,8 +56,8 @@ async function CreateSchool(_, {input}) {
     const {long_name, brand_name} = validatedSchoolInput
 
     //*************** check if school name already exist
-    const longNameIsExist = await SchoolNameIsExist(School, long_name)
-    const brandNameIsExist = await SchoolNameIsExist(School, brand_name)
+    const longNameIsExist = await SchoolLongNameIsExist(School, long_name)
+    const brandNameIsExist = await SchoolBrandNameIsExist(School, brand_name)
     if (longNameIsExist) {
         throw new Error('School\'s official name already exist')
     }
@@ -97,8 +97,8 @@ async function UpdateSchool(_, {input}) {
         }
 
         //*************** check if school name already exist
-        const longNameIsExist = await SchoolNameIsExist(School, long_name, id)
-        const brandNameIsExist = await SchoolNameIsExist(School, brand_name, id)
+        const longNameIsExist = await SchoolLongNameIsExist(School, long_name, id)
+        const brandNameIsExist = await SchoolBrandNameIsExist(School, brand_name, id)
         if (longNameIsExist) {
             throw new Error('School\'s official name already exist')
         }
@@ -130,8 +130,8 @@ async function DeleteSchool(_, {id, deletedBy}) {
         }
 
         //**************** check if school exist
-        const userIsExist = await CollectionIsExist(User, id)
-        if (!userIsExist) {
+        const schoolIsExist = await CollectionIsExist(School, id)
+        if (!schoolIsExist) {
             throw new Error('School does not exist')
         }
         await School.findOneAndUpdate({_id : id}, {deleted_at : new Date(), status: 'deleted', deleted_by: deletedBy})
@@ -156,7 +156,7 @@ async function DeleteSchool(_, {id, deletedBy}) {
 async function StudentsFieldResolver(parent, _, context) {
     try{
         const schoolId = parent._id?.toString()
-        studentLoader = context.loaders.studentBySchoolLoader.load(schoolId)
+        studentLoader = context.loaders.StudentBySchoolLoader.load(schoolId)
         return studentLoader
     }catch(error){
         console.log(error)
