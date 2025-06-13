@@ -1,15 +1,24 @@
 // *************** IMPORT MODULE ***************
-const School = require('../school/school.model.js')
-const Student = require('./student.model.js')
-const User = require('../user/user.model.js')
+const Student = require('./student.model.js');
+const User = require('../user/user.model.js');
 
 // *************** IMPORT UTILS ***************
-const {EmailIsExist, CleanUpdateInput, CollectionIsExist} = require('../../utils/validator.js')
+const { CleanInputForUpdate } = require('../../utils/common.js');
+const { CleanInputForCreate, IdIsValid } = require('../../utils/validator.js');
 
 // *************** IMPORT HELPER ***************
-const {ValidateStudentUpdateInput, ValidateStudentCreateInput, ValidateStudentAndUserCreateInput, SchoolIsExist, UserIsAdmin} = require('../helper/helper.js')
+const {
+  ValidateStudentUpdateInput,
+  ValidateStudentCreateInput,
+  ValidateStudentAndUserCreateInput,
+  StudentIsExist,
+  SchoolIsExist,
+  StudentEmailIsExist,
+  UserEmailIsExist,
+  UserIsAdmin,
+} = require('../helper/helper.js');
 
-//***************QUERY*************** 
+//***************QUERY***************
 
 /**
  * Get all active students from the database.
@@ -17,33 +26,36 @@ const {ValidateStudentUpdateInput, ValidateStudentCreateInput, ValidateStudentAn
  * @throws {Error} - Throws error if query fails.
  */
 async function GetAllStudents() {
-    try{
-        const students = await Student.find({status : 'active'})  
-        return students
-    }catch(error){
-        console.log(error)
-        throw new Error(error)
-    }
+  try {
+    const students = await Student.find({ status: 'active' }).lean();
+    return students;
+  } catch (error) {
+    throw new Error(error.message);
+  }
 }
 
 /**
  * Get one active student by ID.
  * @param {object} args - Resolver arguments.
- * @param {string} args.id - ID of the student to retrieve.
+ * @param {string} args._id - ID of the student to retrieve.
  * @returns {Promise<Object|null>} - The student document or null.
  * @throws {Error} - Throws error if query fails.
  */
-async function GetOneStudent(_, {id}) {
-    try{
-       const student = await Student.findOne({ _id : id, status : 'active' })
-       return student
-    }catch(error){
-        console.log(error)
-        throw new Error(error)
+async function GetOneStudent(_, { _id }) {
+  try {
+    const trimmedId = _id.trim();
+    const isValidId = IdIsValid(trimmedId);
+    if (!isValidId) {
+      throw new Error('Invalid ID');
     }
+    const student = await Student.findOne({ _id: trimmedId, status: 'active' }).lean();
+    return student;
+  } catch (error) {
+    throw new Error(error.message);
+  }
 }
 
-//***************MUTATION*************** 
+//***************MUTATION***************
 
 /**
  * Create a new student after validating input and checking email.
@@ -52,31 +64,33 @@ async function GetOneStudent(_, {id}) {
  * @returns {Promise<Object>} - Created student document.
  * @throws {Error} - Throws error if validation fails or email already exists.
  */
-async function CreateStudent(_, {input}) {
-    try{
-        //*************** validate input
-        const validatedStudentInput = ValidateStudentCreateInput(input)
-        const {email} = validatedStudentInput
+async function CreateStudent(_, { input }) {
+  try {
+    //*************** clean input from null, undefined and empty string
+    const cleanedInput = CleanInputForCreate(input);
 
-        //*************** check if email already exist 
-        const emailIsExist = await EmailIsExist(Student, email)
-        if (emailIsExist) {
-            throw new Error('Email already exist')
-        }
+    //*************** validate input
+    const validatedStudentInput = ValidateStudentCreateInput(cleanedInput);
+    const { email, school_id } = validatedStudentInput;
 
-        //*************** check if school exist
-        const schoolIsExist = await SchoolIsExist(School, validatedStudentInput.school_id)
-        if (!schoolIsExist) {
-            throw new Error('School does not exist')
-        }
-
-        validatedStudentInput.status = 'active'
-        const createdStudent = await Student.create(validatedStudentInput)
-        return createdStudent
-    }catch(error){
-        console.log(error)
-        throw new Error(error)
+    //*************** check if email already exist
+    const emailIsExist = await StudentEmailIsExist(email);
+    if (emailIsExist) {
+      throw new Error('Email already exist');
     }
+
+    //*************** check if school exist
+    const schoolIsExist = await SchoolIsExist(school_id);
+    if (!schoolIsExist) {
+      throw new Error('School does not exist');
+    }
+
+    validatedStudentInput.status = 'active';
+    const createdStudent = await Student.create(validatedStudentInput);
+    return createdStudent;
+  } catch (error) {
+    throw new Error(error.message);
+  }
 }
 
 /**
@@ -87,40 +101,49 @@ async function CreateStudent(_, {input}) {
  * @returns {Promise<Object>} - Created student document.
  * @throws {Error} - Throws error if validation fails or rollback is needed.
  */
-async function CreateUserWithStudent (_, {input}){
-    try {
-        //*************** validate input
-        const validatedUserInput = ValidateStudentAndUserCreateInput(input)
+async function CreateUserWithStudent(_, { input }) {
+  try {
+    //*************** clean input from null, undefined and empty string
+    const cleanedInput = CleanInputForCreate(input);
 
-        const {email, password, first_name, last_name, date_of_birth, school_id} = validatedUserInput
+    //*************** validate input
+    const validatedUserInput = ValidateStudentAndUserCreateInput(cleanedInput);
 
-        //*************** check if email already exist
-        const userEmailExist = await EmailIsExist(User, email)
-        const studentEmailExist = await EmailIsExist(Student, email)
-        if (userEmailExist || studentEmailExist) {
-            throw new Error('Email already exist')
-        }
-        //*************** check if school exist
-        const schoolIsExist = await SchoolIsExist(School, school_id)
-        if (!schoolIsExist) {
-            throw new Error('School does not exist')
-        }
-        //*************** create user
-        const  createdUser= await User.create({email, password, first_name, last_name, status: 'active', role: 'user'})
-        try{
-            //*************** create student
-            const createdStudent = await Student.create({email, first_name, last_name, date_of_birth, school_id, status: 'active', user_id: createdUser._id})
-            return createdStudent
-        }catch (error){
-            //*************** manual rollback
-            await User.findOneAndDelete({email})
-            throw new Error("Failed to create student")
-        }
-    } catch (error) {
-        console.log(error)
-        throw new Error(error)
+    const { email, password, first_name, last_name, date_of_birth, school_id } = validatedUserInput;
+
+    //*************** check if email already exist
+    const userEmailExist = await UserEmailIsExist(email);
+    const studentEmailExist = await StudentEmailIsExist(email);
+    if (userEmailExist || studentEmailExist) {
+      throw new Error('Email already exist');
     }
-
+    //*************** check if school exist
+    const schoolIsExist = await SchoolIsExist(school_id);
+    if (!schoolIsExist) {
+      throw new Error('School does not exist');
+    }
+    //*************** create user
+    const createdUser = await User.create({ email, password, first_name, last_name, status: 'active', role: 'user' });
+    try {
+      //*************** create student
+      const createdStudent = await Student.create({
+        email,
+        first_name,
+        last_name,
+        date_of_birth,
+        school_id,
+        status: 'active',
+        user_id: createdUser._id,
+      });
+      return createdStudent;
+    } catch (error) {
+      //*************** manual rollback
+      await User.findOneAndDelete({ email });
+      throw new Error(error.message);
+    }
+  } catch (error) {
+    throw new Error(error.message);
+  }
 }
 
 /**
@@ -130,73 +153,82 @@ async function CreateUserWithStudent (_, {input}){
  * @returns {Promise<Object>} - Updated student document.
  * @throws {Error} - Throws error if validation fails or student/email conflict.
  */
-async function UpdateStudent(_, {input}) {
-    try{
-        //**************** clean input from null, undefined and empty string
-        const cleanedInput = CleanUpdateInput(input)
+async function UpdateStudent(_, { input }) {
+  try {
+    //**************** clean input from null, undefined and empty string
+    const cleanedInput = CleanInputForUpdate(input);
 
-        //**************** validate input
-        const validatedStudentInput = ValidateStudentUpdateInput(cleanedInput)
-        const {id, email, school_id} = validatedStudentInput
+    //**************** validate input
+    const validatedStudentInput = ValidateStudentUpdateInput(cleanedInput);
+    const { _id, email, school_id } = validatedStudentInput;
 
-        //**************** check if student exist
-        const userIsExist = await CollectionIsExist(Student, id)
-        if (!userIsExist) {
-            throw new Error('Student does not exist')
-        }
-
-        //**************** check if email already exist
-        const emailIsExist = await EmailIsExist(Student, email, id)
-        if (emailIsExist) {
-            throw new Error('Email already exist')
-        }
-
-        //**************** check if school exist
-        const schoolIsExist = await SchoolIsExist(School, school_id)
-        if (!schoolIsExist) {
-            throw new Error('School does not exist')
-        }
-
-        const updatedStudent = await Student.findOneAndUpdate({_id : id}, validatedStudentInput, {new: true})
-        return updatedStudent
-    }catch(error){
-        console.log(error)
-        throw new Error(error)
+    //**************** check if student exist
+    const studentIsExist = await StudentIsExist(_id);
+    if (!studentIsExist) {
+      throw new Error('Student does not exist');
     }
+
+    //**************** check if email already exist
+    const emailIsExist = await StudentEmailIsExist(email, _id);
+    if (emailIsExist) {
+      throw new Error('Email already exist');
+    }
+
+    //**************** check if school exist
+    if (school_id) {
+      const schoolIsExist = await SchoolIsExist(school_id);
+      if (!schoolIsExist) {
+        throw new Error('School does not exist');
+      }
+    }
+
+    const updatedStudent = await Student.findOneAndUpdate({ _id: _id }, validatedStudentInput, { new: true });
+    return updatedStudent;
+  } catch (error) {
+    throw new Error(error.message);
+  }
 }
 
 /**
  * Soft delete a student by marking their status as 'deleted'.
  * @param {object} args - Resolver arguments.
- * @param {string} args.id - ID of the student to delete.
+ * @param {string} args._id - ID of the student to delete.
  * @param {string} args.deletedBy - ID of the admin performing the deletion.
  * @returns {Promise<string>} - Deletion success message.
  * @throws {Error} - Throws error if unauthorized or student not found.
  */
-async function DeleteStudent(_, {id, deletedBy}) {
-    try{
-        //**************** check if user's role is admin
-        const userIsAdmin = await UserIsAdmin(User, deletedBy)
-        if (!userIsAdmin) {
-            throw new Error('Unauthorized access')
-        }
-
-        //**************** check if student exist
-        const studentIsExist = await CollectionIsExist(Student, id)
-        if (!studentIsExist) {
-            throw new Error('Student does not exist')
-        }
-
-        await Student.findOneAndUpdate({_id : id}, {deleted_at : new Date(), status: 'deleted', deleted_by: deletedBy})
-        return 'Student deleted successfully'
-    }catch(error){
-        console.log(error)
-        throw new Error(error)
+async function DeleteStudent(_, { _id, deletedBy }) {
+  try {
+    //**************** trim id and deletedBy
+    const trimmedDeletedId = _id.trim();
+    const trimmedDeletedBy = deletedBy.trim();
+    //**************** check if id inputed is valid
+    const deletedIdIsValid = await IdIsValid(trimmedDeletedId);
+    const deletedByIsValid = await IdIsValid(trimmedDeletedBy);
+    if (!deletedIdIsValid || !deletedByIsValid) {
+      throw new Error('Invalid ID');
     }
+
+    //**************** check if user's exist and has admin role
+    const userIsAdmin = await UserIsAdmin(trimmedDeletedBy);
+    if (!userIsAdmin) {
+      throw new Error('Unauthorized access');
+    }
+
+    //**************** check if student exist
+    const studentIsExist = await StudentIsExist(trimmedDeletedId);
+    if (!studentIsExist) {
+      throw new Error('Student does not exist');
+    }
+    await Student.findOneAndUpdate({ _id: trimmedDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: trimmedDeletedBy });
+    return 'Student deleted successfully';
+  } catch (error) {
+    throw new Error(error.message);
+  }
 }
 
 // *************** EXPORT MODULE ***************
 module.exports = {
-    Query: {GetAllStudents, GetOneStudent},
-    Mutation: {CreateStudent, CreateUserWithStudent, UpdateStudent, DeleteStudent}
-}
+  Query: { GetAllStudents, GetOneStudent },
+  Mutation: { CreateStudent, CreateUserWithStudent, UpdateStudent, DeleteStudent },
+};
