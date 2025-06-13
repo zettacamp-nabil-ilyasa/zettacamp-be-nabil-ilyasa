@@ -1,9 +1,8 @@
-// *************** IMPORT LIBRARY *************** 
+// *************** IMPORT LIBRARY ***************
 const mongoose = require('mongoose');
-require ('dotenv').config();
+require('dotenv').config();
 
-
-ConnectDb().catch(err => console.error('MongoDB connection error:', err));
+ConnectDb().catch((err) => console.error('MongoDB connection error:', err));
 
 /**
  * Connects to MongoDB using the MONGODB_URI defined in the environment variables.
@@ -11,18 +10,17 @@ ConnectDb().catch(err => console.error('MongoDB connection error:', err));
  * @returns {Promise<void>}
  */
 async function ConnectDb() {
-  try{
+  try {
     const mongoUri = process.env.MONGODB_URI;
     if (!mongoUri) {
-      throw new Error("MONGODB_URI is not found in .env file");
+      throw new Error('MONGODB_URI is not found in .env file');
     }
     await mongoose.connect(mongoUri);
-  }catch(error){
-    console.log(error.message)
-    throw error
+  } catch (error) {
+    console.log(error.message);
+    throw error;
   }
-
 }
 
-// *************** EXPORT MODULE *************** 
+// *************** EXPORT MODULE ***************
 module.exports = ConnectDb;
