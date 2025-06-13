@@ -1,12 +1,12 @@
 // *************** IMPORT MODULE ***************
-const User = require('./user.model.js')
+const User = require('./user.model.js');
 
 // *************** IMPORT UTILS ***************
-const {EmailIsExist, CleanUpdateInput, CollectionIsExist} = require('../../utils/validator.js')
+const { CleanInputForUpdate } = require('../../utils/common.js');
+const { CleanInputForCreate, IdIsValid } = require('../../utils/validator.js');
 
 // *************** IMPORT HELPER ***************
-const {ValidateUserCreateInput, ValidateUserUpdateInput, UserIsAdmin} = require('../helper/helper.js')
-
+const { ValidateUserCreateInput, ValidateUserUpdateInput, UserEmailIsExist, UserIsAdmin, UserIsExist } = require('../helper/helper.js');
 
 //***************QUERY***************
 
@@ -15,31 +15,34 @@ const {ValidateUserCreateInput, ValidateUserUpdateInput, UserIsAdmin} = require(
  * @returns {Promise<Array<Object>>} - Array of user documents or null.
  * @throws {Error} - Throws error if query fails.
  */
-async function GetAllUsers() { try{
-    const users = await User.find({ status : 'active' })
-    return users
-}catch(error){
-    throw new Error(error.message)
-}
-
+async function GetAllUsers() {
+  try {
+    const users = await User.find({ status: 'active' }).lean();
+    return users;
+  } catch (error) {
+    throw new Error(error.message);
+  }
 }
 
 /**
  * Get one active user by ID.
  * @param {object} args - Resolver arguments.
- * @param {string} args.id - ID of the user to retrieve.
+ * @param {string} args._id - ID of the user to retrieve.
  * @returns {Promise<Object|null>} - The user document or null.
  * @throws {Error} - Throws error if query fails.
  */
-async function GetOneUser(_, {id}) {
-    try{
-        const users = await User.findOne({ _id : id, status : 'active' })
-        return users
-    }catch(error){
-       console.log(error.message)
-       throw error
+async function GetOneUser(_, { _id }) {
+  try {
+    const trimmedId = _id.trim();
+    const isValidId = IdIsValid(trimmedId);
+    if (!isValidId) {
+      throw new Error('Invalid ID');
     }
-
+    const user = await User.findOne({ _id: trimmedId, status: 'active' }).lean();
+    return user;
+  } catch (error) {
+    throw new Error(error.message);
+  }
 }
 
 //**************MUTATION***************
@@ -51,24 +54,26 @@ async function GetOneUser(_, {id}) {
  * @returns {Promise<Object>} - Created user document.
  * @throws {Error} - Throws error if validation fails or email already exists.
  */
-async function CreateUser(_, {input}) {
-    try{
-        //**************** validate input
-        const validatedUserInput = ValidateUserCreateInput(input)
-        const {email} = validatedUserInput
+async function CreateUser(_, { input }) {
+  try {
+    //**************** clean input from null, undefined and empty string
+    cleanedInput = CleanInputForCreate(input);
 
-        //**************** check if email already exist
-        const emailIsExist = await EmailIsExist(User, email)
-        if (emailIsExist) {
-            throw new Error('Email already exist')
-        }
-        validatedUserInput.status = 'active'
-        const createdUser = await User.create(validatedUserInput)
-        return createdUser
-    }catch (error){
-        console.log(error.message)
-        throw error
+    //**************** validate input
+    const validatedUserInput = ValidateUserCreateInput(cleanedInput);
+    const { email } = validatedUserInput;
+
+    //**************** check if email already exist
+    const emailIsExist = await UserEmailIsExist(email);
+    if (emailIsExist) {
+      throw new Error('Email already exist');
     }
+    validatedUserInput.status = 'active';
+    const createdUser = await User.create(validatedUserInput);
+    return createdUser;
+  } catch (error) {
+    throw new Error(error.message);
+  }
 }
 
 /**
@@ -78,62 +83,68 @@ async function CreateUser(_, {input}) {
  * @returns {Promise<Object>} - Updated user document.
  * @throws {Error} - Throws error if validation fails or user/email conflict.
  */
-async function UpdateUser(_, {input}) {
-    try{
-        //**************** clean input from null, undefined and empty string
-        cleanedInput = CleanUpdateInput(input)
+async function UpdateUser(_, { input }) {
+  try {
+    //**************** clean input from null, undefined and empty string
+    cleanedInput = CleanInputForUpdate(input);
 
-        //**************** validate input
-        const validatedInput = ValidateUserUpdateInput(cleanedInput)
-        const {id, email} = validatedInput
+    //**************** validate input
+    const validatedInput = ValidateUserUpdateInput(cleanedInput);
+    const { _id, email } = validatedInput;
 
-        //**************** check if user exist
-        const userIsExist = await CollectionIsExist(User, id)
-        if (!userIsExist) {
-            throw new Error('User does not exist')
-        }
-        //**************** check if email already exist
-        const emailIsExist = await EmailIsExist(User, email, id)
-        if (emailIsExist) {
-            throw new Error('Email already exist')
-        }
-        const updatedUser = await User.findOneAndUpdate({_id : id}, validatedInput, {new: true})
-        return updatedUser
-    }catch (error){
-        console.log(error.message)
-        throw error
-}
+    //**************** check if user exist
+    const userIsExist = await UserIsExist(_id);
+    if (!userIsExist) {
+      throw new Error('User does not exist');
+    }
+    //**************** check if email already exist
+    const emailIsExist = await UserEmailIsExist(email, _id);
+    if (emailIsExist) {
+      throw new Error('Email already exist');
+    }
+    const updatedUser = await User.findOneAndUpdate({ _id: _id }, validatedInput, { new: true });
+    return updatedUser;
+  } catch (error) {
+    throw new Error(error.message);
+  }
 }
 
 /**
  * Soft delete a user by marking their status as 'deleted'.
  * @param {object} args - Resolver arguments.
- * @param {string} args.id - ID of the user to delete.
+ * @param {string} args._id - ID of the user to delete.
  * @param {string} args.deletedBy - ID of the admin performing the deletion.
  * @returns {Promise<string>} - Deletion success message.
  * @throws {Error} - Throws error if unauthorized or user not found.
  */
-async function DeleteUser(_, {id, deletedBy}) {
-    try{
-        //**************** check if user's role is admin
-        const userIsAdmin = await UserIsAdmin(User, deletedBy)
-        if (!userIsAdmin) {
-            throw new Error('Unauthorized access')
-        }
-
-        //**************** check if user exist
-        const userIsExist = await CollectionIsExist(User, id)
-        if (!userIsExist) {
-            throw new Error('User does not exist')
-        }
-
-        await User.findOneAndUpdate({_id : id}, {deleted_at : new Date(), status: 'deleted', deleted_by: deletedBy})
-        return 'User deleted successfully'
-    }catch(error){
-        console.log(error.message)
-        throw error
+async function DeleteUser(_, { _id, deletedBy }) {
+  try {
+    //**************** trim id and deletedBy
+    const trimmedDeletedId = _id.trim();
+    const trimmedDeletedBy = deletedBy.trim();
+    //**************** check if id inputed is valid
+    const deletedIdIsValid = await IdIsValid(trimmedDeletedId);
+    const deletedByIsValid = await IdIsValid(trimmedDeletedBy);
+    if (!deletedIdIsValid || !deletedByIsValid) {
+      throw new Error('Invalid ID');
+    }
+    //**************** check if user's role is admin
+    const userIsAdmin = await UserIsAdmin(trimmedDeletedBy);
+    if (!userIsAdmin) {
+      throw new Error('Unauthorized access');
     }
 
+    //**************** check if user exist
+    const userIsExist = await UserIsExist(trimmedDeletedId);
+    if (!userIsExist) {
+      throw new Error('User does not exist');
+    }
+
+    await User.findOneAndUpdate({ _id: trimmedDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: trimmedDeletedBy });
+    return 'User deleted successfully';
+  } catch (error) {
+    throw new Error(error.message);
+  }
 }
 
 /**
@@ -144,22 +155,21 @@ async function DeleteUser(_, {id, deletedBy}) {
  * @returns {Promise<Object|null>} - The student document or null.
  * @throws {Error} - Throws error if loading fails.
  */
-async function StudentFieldResolver(parent, _, context){
-    try{
-        const userId = parent._id?.toString() || parent.id?.toString()
-        const studentLoader = context.loaders.StudentByUserLoader.load(userId)
-        return studentLoader
-    }catch(error){
-        console.log(error.message)
-        throw error
-    }
+async function StudentFieldResolver(parent, _, context) {
+  try {
+    const userId = parent._id?.toString();
+    const studentLoader = context.loaders.StudentByUserLoader.load(userId);
+    return studentLoader;
+  } catch (error) {
+    throw new Error(error.message);
+  }
 }
 
 // *************** EXPORT MODULE ***************
 module.exports = {
-    Query: {GetAllUsers, GetOneUser},
-    Mutation: {CreateUser, UpdateUser, DeleteUser},
-    User: {
-        student: StudentFieldResolver
-    }
-}
+  Query: { GetAllUsers, GetOneUser },
+  Mutation: { CreateUser, UpdateUser, DeleteUser },
+  User: {
+    student: StudentFieldResolver,
+  },
+};
