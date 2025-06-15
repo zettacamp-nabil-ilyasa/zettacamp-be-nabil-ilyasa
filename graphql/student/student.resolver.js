@@ -3,8 +3,8 @@ const Student = require('./student.model.js');
 const User = require('../user/user.model.js');
 
 // *************** IMPORT UTILS ***************
-const { CleanInputForUpdate } = require('../../utils/common.js');
-const { CleanInputForCreate, IdIsValid } = require('../../utils/validator.js');
+const { CleanNonRequiredInput } = require('../../utils/common.js');
+const { CleanRequiredInput, SanitizeAndValidateId, UserIsAdmin } = require('../../utils/validator.js');
 
 // *************** IMPORT HELPER ***************
 const {
@@ -15,7 +15,6 @@ const {
   SchoolIsExist,
   StudentEmailIsExist,
   UserEmailIsExist,
-  UserIsAdmin,
 } = require('../helper/helper.js');
 
 //***************QUERY***************
@@ -43,12 +42,8 @@ async function GetAllStudents() {
  */
 async function GetOneStudent(_, { _id }) {
   try {
-    const trimmedId = _id.trim();
-    const isValidId = IdIsValid(trimmedId);
-    if (!isValidId) {
-      throw new Error('Invalid ID');
-    }
-    const student = await Student.findOne({ _id: trimmedId, status: 'active' }).lean();
+    const validId = SanitizeAndValidateId(_id);
+    const student = await Student.findOne({ _id: validId, status: 'active' }).lean();
     return student;
   } catch (error) {
     throw new Error(error.message);
@@ -67,7 +62,7 @@ async function GetOneStudent(_, { _id }) {
 async function CreateStudent(_, { input }) {
   try {
     //*************** clean input from null, undefined and empty string
-    const cleanedInput = CleanInputForCreate(input);
+    const cleanedInput = CleanRequiredInput(input);
 
     //*************** validate input
     const validatedStudentInput = ValidateStudentCreateInput(cleanedInput);
@@ -101,10 +96,10 @@ async function CreateStudent(_, { input }) {
  * @returns {Promise<Object>} - Created student document.
  * @throws {Error} - Throws error if validation fails or rollback is needed.
  */
-async function CreateUserWithStudent(_, { input }) {
+async function CreateStudentWithUser(_, { input }) {
   try {
     //*************** clean input from null, undefined and empty string
-    const cleanedInput = CleanInputForCreate(input);
+    const cleanedInput = CleanRequiredInput(input);
 
     //*************** validate input
     const validatedUserInput = ValidateStudentAndUserCreateInput(cleanedInput);
@@ -123,7 +118,7 @@ async function CreateUserWithStudent(_, { input }) {
       throw new Error('School does not exist');
     }
     //*************** create user
-    const createdUser = await User.create({ email, password, first_name, last_name, status: 'active', role: 'user' });
+    const createdUser = await User.create({ email, password, first_name, last_name, status: 'active', roles: ['user'] });
     try {
       //*************** create student
       const createdStudent = await Student.create({
@@ -156,7 +151,7 @@ async function CreateUserWithStudent(_, { input }) {
 async function UpdateStudent(_, { input }) {
   try {
     //**************** clean input from null, undefined and empty string
-    const cleanedInput = CleanInputForUpdate(input);
+    const cleanedInput = CleanNonRequiredInput(input);
 
     //**************** validate input
     const validatedStudentInput = ValidateStudentUpdateInput(cleanedInput);
@@ -169,9 +164,11 @@ async function UpdateStudent(_, { input }) {
     }
 
     //**************** check if email already exist
-    const emailIsExist = await StudentEmailIsExist(email, _id);
-    if (emailIsExist) {
-      throw new Error('Email already exist');
+    if (email) {
+      const emailIsExist = await StudentEmailIsExist(email, _id);
+      if (emailIsExist) {
+        throw new Error('Email already exist');
+      }
     }
 
     //**************** check if school exist
@@ -199,28 +196,22 @@ async function UpdateStudent(_, { input }) {
  */
 async function DeleteStudent(_, { _id, deletedBy }) {
   try {
-    //**************** trim id and deletedBy
-    const trimmedDeletedId = _id.trim();
-    const trimmedDeletedBy = deletedBy.trim();
-    //**************** check if id inputed is valid
-    const deletedIdIsValid = await IdIsValid(trimmedDeletedId);
-    const deletedByIsValid = await IdIsValid(trimmedDeletedBy);
-    if (!deletedIdIsValid || !deletedByIsValid) {
-      throw new Error('Invalid ID');
-    }
+    //**************** sanitize and validate id and deletedBy
+    const validDeletedId = SanitizeAndValidateId(_id);
+    const validDeletedBy = SanitizeAndValidateId(deletedBy);
 
     //**************** check if user's exist and has admin role
-    const userIsAdmin = await UserIsAdmin(trimmedDeletedBy);
+    const userIsAdmin = await UserIsAdmin(validDeletedBy);
     if (!userIsAdmin) {
       throw new Error('Unauthorized access');
     }
 
     //**************** check if student exist
-    const studentIsExist = await StudentIsExist(trimmedDeletedId);
+    const studentIsExist = await StudentIsExist(validDeletedId);
     if (!studentIsExist) {
       throw new Error('Student does not exist');
     }
-    await Student.findOneAndUpdate({ _id: trimmedDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: trimmedDeletedBy });
+    await Student.findOneAndUpdate({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     return 'Student deleted successfully';
   } catch (error) {
     throw new Error(error.message);
@@ -230,5 +221,5 @@ async function DeleteStudent(_, { _id, deletedBy }) {
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllStudents, GetOneStudent },
-  Mutation: { CreateStudent, CreateUserWithStudent, UpdateStudent, DeleteStudent },
+  Mutation: { CreateStudent, CreateStudentWithUser, UpdateStudent, DeleteStudent },
 };

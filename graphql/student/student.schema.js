@@ -4,91 +4,91 @@ const { gql } = require('apollo-server');
 // ***************
 const studentTypeDefs = gql`
   type Student {
-    # student's document id
+    # Document id
     _id: ID!
 
-    # student's first name
+    # First name
     first_name: String!
 
-    # student's last name
+    # Last name
     last_name: String!
 
-    # student's email
+    # Email
     email: String!
 
-    # student's date of birth
+    # Date of birth
     date_of_birth: Date
 
-    # student's user id
+    # Reference to user
     user_id: ID
 
-    # student's school_id to set the student's relation with a school
+    # Reference to school
     school_id: ID!
 
-    # student's status
+    # Student status
     status: Status!
 
-    # student's deletion date for soft delete
+    # Soft-delete timestamp
     deleted_at: Date
 
-    # student's deleted by
+    # Reference to user who deleted this student
     deleted_by: ID
   }
 
   input CreateStudentInput {
-    # student's first name for create student input
+    # First name for create student input
     first_name: String!
 
-    # student's last name for create student input
+    # Last name for create student input
     last_name: String!
 
-    # student's email for create student input
+    # Email for create student input
     email: String!
 
-    # student's date of birth for create student input
+    # Date of birth for create student input
     date_of_birth: Date
 
-    # student's school id for create student input
+    # School id for create student input
     school_id: String!
   }
 
   input CreateStudentWithUserInput {
-    # student's first name for create student with user input
+    # First name for create student with user input
     first_name: String!
 
-    # student's last name for create student with user input
+    # Last name for create student with user input
     last_name: String!
 
-    # student's email for create student with user input
+    # Email for create student with user input
     email: String!
 
-    # student's password for create student with user input
+    # Password for the user account
     password: String!
 
-    # student's date of birth for create student with user input
+    # Date of birth for create student with user input
     date_of_birth: Date
 
-    # student's school id for create student with user input
+    # Reference to school
     school_id: String!
   }
 
   input UpdateStudentInput {
-    # student's document id to specify the student
+    # Student document id to specify the student
     _id: ID!
 
-    # student's first name for update student input
+    # First name for update student input
     first_name: String
 
-    # student's last name for update student input
+    # Last name for update student input
     last_name: String
 
-    # student's email for update student input
+    # Email for update student input
     email: String
 
-    # student's date of birth for update student input
+    # Date of birth for update student input
     date_of_birth: Date
 
-    # student's school id for update student input
+    # School id for update student input
     school_id: String
   }
 
@@ -99,9 +99,9 @@ const studentTypeDefs = gql`
 
   extend type Mutation {
     CreateStudent(input: CreateStudentInput): Student
-    CreateUserWithStudent(input: CreateStudentWithUserInput): Student
+    CreateStudentWithUser(input: CreateStudentWithUserInput): Student
     UpdateStudent(input: UpdateStudentInput): Student
-    DeleteStudent(_id: ID!, deletedBy: ID!): String!
+    DeleteStudent(_id: ID!, deletedBy: ID!): String
   }
 `;
 
