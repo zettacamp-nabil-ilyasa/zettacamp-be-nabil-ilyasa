@@ -4,50 +4,53 @@ const { gql } = require('apollo-server');
 // ***************
 const schoolTypeDefs = gql`
   type School {
-    # school's document id
+    # Document id
     _id: ID!
 
-    # school's brand name
+    # Brand name
     brand_name: String!
 
-    # school's long name
+    # Full legal name
     long_name: String!
 
-    # school's address
+    # Address
     address: String
 
-    # school's students
+    # Students associated with this school
     students: [Student]
 
-    # school's status
+    # School status
     status: Status!
 
-    # school's deletion date for soft delete
+    # Soft-delete timestamp
     deleted_at: Date
+
+    # User who deleted this school
+    deleted_by: ID!
   }
 
   input CreateSchoolInput {
-    # school's brand name for create school input
+    # Brand name for create school input
     brand_name: String!
 
-    # school's long name for create school input
+    # Full legal name for create school input
     long_name: String!
 
-    # school's address for create school input
+    # Address for create school input
     address: String
   }
 
   input UpdateSchoolInput {
-    # school's document id to specify the school
-    id: ID!
+    # School document id to specify the school
+    _id: ID!
 
-    # school's brand name for update school input
+    # Brand name for update school input
     brand_name: String
 
-    # school's long name for update school input
+    # Full legal name for update school input
     long_name: String
 
-    # school's address for update school input
+    # Address for update school input
     address: String
   }
 

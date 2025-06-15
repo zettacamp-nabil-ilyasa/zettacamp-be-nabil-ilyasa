@@ -3,26 +3,26 @@ const mongoose = require('mongoose');
 
 const school = new mongoose.Schema(
   {
-    //school's name
+    //Brand or trade name
     brand_name: { type: String, required: true, trim: true },
 
-    //school's long name
+    //Full legal name
     long_name: { type: String, required: true, trim: true },
 
-    //school's address
+    //Address
     address: { type: String, trim: true, default: null },
 
-    //school's status
+    //School status
     status: { type: String, enum: ['active', 'deleted', 'suspended'], default: 'active' },
 
-    //school's deletion date for soft delete
+    //Soft-delete timestamp
     deleted_at: { type: Date, default: null },
 
-    //user that deleted the school
-    deleted_by: { type: mongoose.Schema.Types.ObjectId, trim: true, ref: 'user' },
+    //User who deleted this school
+    deleted_by: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
   },
   {
-    // timestamp set-up for created_at and updated_at
+    // Timestamp set-up for created_at and updated_at
     timestamps: {
       createdAt: 'created_at',
       updatedAt: 'updated_at',

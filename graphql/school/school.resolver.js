@@ -8,12 +8,11 @@ const {
   SchoolIsExist,
   SchoolLongNameIsExist,
   SchoolBrandNameIsExist,
-  UserIsAdmin,
 } = require('../helper/helper.js');
 
 // *************** IMPORT UTILS ***************
-const { CleanInputForUpdate } = require('../../utils/common.js');
-const { CleanInputForCreate, IdIsValid } = require('../../utils/validator.js');
+const { CleanNonRequiredInput } = require('../../utils/common.js');
+const { CleanRequiredInput, SanitizeAndValidateId, UserIsAdmin } = require('../../utils/validator.js');
 
 //****************QUERY****************
 
@@ -40,12 +39,8 @@ async function GetAllSchools() {
  */
 async function GetOneSchool(_, { _id }) {
   try {
-    const trimmedId = _id.trim();
-    const isValidId = IdIsValid(trimmedId);
-    if (!isValidId) {
-      throw new Error('Invalid ID');
-    }
-    const school = await School.findOne({ _id: trimmedId, status: 'active' }).lean();
+    const validId = SanitizeAndValidateId(_id);
+    const school = await School.findOne({ _id: validId, status: 'active' }).lean();
     return school;
   } catch (error) {
     throw new Error(error.message);
@@ -64,7 +59,7 @@ async function GetOneSchool(_, { _id }) {
 async function CreateSchool(_, { input }) {
   try {
     //*************** clean input from null, undefined and empty string
-    const cleanedInput = CleanInputForCreate(input);
+    const cleanedInput = CleanRequiredInput(input);
 
     //*************** validate input
     const validatedSchoolInput = ValidateSchoolCreateInput(cleanedInput);
@@ -92,12 +87,12 @@ async function CreateSchool(_, { input }) {
  * @param {object} args - Resolver arguments.
  * @param {object} args.input - School update fields.
  * @returns {Promise<Object>} - Updated school document.
- * @throws {Error} - Throws error if validation fails or student/email conflict.
+ * @throws {Error} - Throws error if validation fails.
  */
 async function UpdateSchool(_, { input }) {
   try {
     //*************** clean input from null, undefined and empty string
-    const cleanedInput = CleanInputForUpdate(input);
+    const cleanedInput = CleanNonRequiredInput(input);
 
     //*************** validate input
     const validatedSchoolInput = ValidateSchoolUpdateInput(cleanedInput);
@@ -110,13 +105,17 @@ async function UpdateSchool(_, { input }) {
     }
 
     //*************** check if school name already exist
-    const longNameIsExist = await SchoolLongNameIsExist(long_name, _id);
-    const brandNameIsExist = await SchoolBrandNameIsExist(brand_name, _id);
-    if (longNameIsExist) {
-      throw new Error("School's official name already exist");
+    if (long_name) {
+      const longNameIsExist = await SchoolLongNameIsExist(long_name, _id);
+      if (longNameIsExist) {
+        throw new Error('School official name already exists');
+      }
     }
-    if (brandNameIsExist) {
-      throw new Error("School's brand name already exist");
+    if (brand_name) {
+      const brandNameIsExist = await SchoolBrandNameIsExist(brand_name, _id);
+      if (brandNameIsExist) {
+        throw new Error('School brand name already exists');
+      }
     }
     const updatedSchool = await School.findOneAndUpdate({ _id: _id }, validatedSchoolInput, { new: true });
     return updatedSchool;
@@ -131,31 +130,25 @@ async function UpdateSchool(_, { input }) {
  * @param {string} args._id - ID of the school to delete.
  * @param {string} args.deletedBy - ID of the admin performing the deletion.
  * @returns {Promise<string>} - Deletion success message.
- * @throws {Error} - Throws error if unauthorized or student not found.
+ * @throws {Error} - Throws error if unauthorized or school not found.
  */
 async function DeleteSchool(_, { _id, deletedBy }) {
   try {
-    //**************** trim id and deletedBy
-    const trimmedDeletedId = _id.trim();
-    const trimmedDeletedBy = deletedBy.trim();
-    //**************** check if id inputed is valid
-    const deletedIdIsValid = await IdIsValid(trimmedDeletedId);
-    const deletedByIsValid = await IdIsValid(trimmedDeletedBy);
-    if (!deletedIdIsValid || !deletedByIsValid) {
-      throw new Error('Invalid ID');
-    }
+    //**************** sanitize and validate id and deletedBy
+    const validDeletedId = SanitizeAndValidateId(_id);
+    const validDeletedBy = SanitizeAndValidateId(deletedBy);
     //**************** check if user's exist and has admin role
-    const userIsAdmin = await UserIsAdmin(trimmedDeletedBy);
+    const userIsAdmin = await UserIsAdmin(validDeletedBy);
     if (!userIsAdmin) {
       throw new Error('Unauthorized access');
     }
 
     //**************** check if school exist
-    const schoolIsExist = await SchoolIsExist(trimmedDeletedId);
+    const schoolIsExist = await SchoolIsExist(validDeletedId);
     if (!schoolIsExist) {
       throw new Error('School does not exist');
     }
-    await School.findOneAndUpdate({ _id: trimmedDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: trimmedDeletedBy });
+    await School.findOneAndUpdate({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     return 'School deleted successfully';
   } catch (error) {
     throw new Error(error.message);
@@ -169,12 +162,12 @@ async function DeleteSchool(_, { _id, deletedBy }) {
  * @param {object} parent - Parent, school object.
  * @param {object} context - Resolver context.
  * @param {object} context.loaders - DataLoader object.
- * @returns {Promise<Object|null>} - The student document or null.
+ * @returns {Promise<Array<Object>} - Array of student documents.
  * @throws {Error} - Throws error if loading fails.
  */
 async function StudentsFieldResolver(parent, _, context) {
   try {
-    const schoolId = parent._id?.toString();
+    const schoolId = parent._id.toString();
     const students = await context.loaders.StudentBySchoolLoader.load(schoolId);
     return students;
   } catch (error) {
