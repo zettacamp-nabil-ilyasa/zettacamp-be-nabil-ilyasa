@@ -1,5 +1,6 @@
 // *************** IMPORT LIBRARY ***************
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
 
 // *************** IMPORT MODULE ***************
 const User = require('../user/user.model');
@@ -10,14 +11,15 @@ const Student = require('../student/student.model');
 const emailRegexPattern = /^\S+@\S+\.\S+$/;
 //*************** regex pattern to ensure password is at least 8 characters and contain at least one uppercase letter, one lowercase letter, and one number
 const passwordRegexPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-//*************** regex pattern to ensure user name contains only letters
-const userNameRegexPattern = /^[a-zA-Z\s'-]+$/;
-//*************** regex pattern to ensure student name contains only letters
-const studentNameRegexPattern = /^[a-zA-Z\s'-]+$/;
+//*************** regex pattern to ensure first and last name contains only letters
+const firstAndLastNameRegexPattern = /^[a-zA-Z\s'-]+$/;
 //*************** regex pattern to ensure school name only have letters and numbers
 const schoolNameRegexPattern = /^[a-zA-Z\s'-\d]+$/;
 //*************** regex pattern to ensure date is in YYYY-MM-DD format
 const dateRegexPattern = /^\d{4}-\d{2}-\d{2}$/;
+
+//*************** list of protected roles
+const protectedRoles = ['user'];
 
 /**
  * Converts a string to title case.
@@ -140,7 +142,7 @@ async function SchoolLongNameIsExist(longName, excludeId = null) {
 
 /**
  * Check if school name already exist
- * @param {string} longName - The school's brand name to be checked
+ * @param {string} brandName - The school's brand name to be checked
  * @param {string} excludeId - The id of the school to be excluded
  * @returns {Promise<boolean>} - True if school name already exists, false otherwise
  */
@@ -160,18 +162,77 @@ async function SchoolBrandNameIsExist(brandName, excludeId = null) {
 }
 
 /**
- * Checks if a user has admin role.
- * @param {string} userId - The ID of the user to validate.
- * @returns {Promise<boolean>} - True if user is admin, false otherwise.
+ *
+ * @param {string} password - Plaintext to be hashed.
+ * @returns string - Hashed password
+ * @throws {Error} - If hashing fails
  */
-async function UserIsAdmin(userId) {
+async function HashPassword(password) {
   try {
-    const query = { _id: userId, role: 'admin' };
-    const count = await User.countDocuments(query);
-    return count > 0;
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    return hashedPassword;
   } catch (error) {
     throw new Error(error.message);
   }
+}
+
+/**
+ * Check if role is valid
+ * @param {string} role - The role to be checked
+ * @returns {boolean} - True if role is valid, false otherwise
+ */
+function IsValidRole(role) {
+  const validRoles = ['admin', 'user', 'student'];
+  const isValidRole = validRoles.includes(role);
+  return isValidRole;
+}
+
+/**
+ * Check if role can be removed
+ * @param {string} role - The role to be checked
+ * @returns {boolean} - True if role can be removed, false otherwise
+ */
+function IsRemovableRole(role) {
+  const isRemovableRole = !protectedRoles.includes(role);
+  return isRemovableRole;
+}
+
+/**
+ * Check is a user already have the given role
+ * @param {string} userId - The id of the user
+ * @param {string} role - The role to be checked
+ * @returns {promise<boolean>} - True if user already have the role, false otherwise
+ */
+async function UserHasRole(userId, role) {
+  try {
+    const query = await User.countDocuments({ _id: userId, roles: role });
+    const roleIsAlreadyExists = query > 0;
+    return roleIsAlreadyExists;
+  } catch (error) {
+    throw new Error(error.message);
+  }
+}
+
+/**
+ *
+ * @param {string} dateString - The date to be validated.
+ * @returns {Date} - Validated date.
+ * @throws {Error} - If validation fails.
+ */
+function ValidateDateOfBirth(dateString) {
+  //*************** check if date of birth is comply with date format
+  if (typeof dateString === 'string' && !dateRegexPattern.test(dateStr)) {
+    throw new Error('date of birth format must be in YYYY-MM-DD format');
+  }
+  const birthDate = new Date(dateStr);
+  const today = new Date();
+
+  //*************** check if birth date is a future date
+  if (isNaN(birthDate.getTime()) || birthDate > today) {
+    throw new Error('invalid date of birth value');
+  }
+  return birthDate;
 }
 
 //***************USER HELPER***************
@@ -193,10 +254,10 @@ function ValidateUserCreateInput(input) {
       'password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, and one number'
     );
   }
-  if (!userNameRegexPattern.test(first_name)) {
+  if (!firstAndLastNameRegexPattern.test(first_name)) {
     throw new Error('first name contains invalid characters');
   }
-  if (!userNameRegexPattern.test(last_name)) {
+  if (!firstAndLastNameRegexPattern.test(last_name)) {
     throw new Error('last name contains invalid characters');
   }
 
@@ -216,7 +277,7 @@ function ValidateUserCreateInput(input) {
 function ValidateUserUpdateInput(input) {
   let { _id, first_name, last_name, email, password } = input;
   if (!mongoose.Types.ObjectId.isValid(_id)) {
-    throw new Error('invalid school id');
+    throw new Error('invalid user id');
   }
   if (email && !emailRegexPattern.test(email)) {
     throw new Error('email format is invalid');
@@ -227,13 +288,13 @@ function ValidateUserUpdateInput(input) {
     );
   }
   if (first_name) {
-    if (!userNameRegexPattern.test(first_name)) {
+    if (!firstAndLastNameRegexPattern.test(first_name)) {
       throw new Error('first name contains invalid characters');
     }
     first_name = ToTitleCase(first_name);
   }
   if (last_name) {
-    if (!userNameRegexPattern.test(last_name)) {
+    if (!firstAndLastNameRegexPattern.test(last_name)) {
       throw new Error('last name contains invalid characters');
     }
     last_name = ToTitleCase(last_name);
@@ -305,31 +366,14 @@ function ValidateStudentCreateInput(input) {
   if (!emailRegexPattern.test(email)) {
     throw new Error('email format is invalid');
   }
-  if (!studentNameRegexPattern.test(first_name)) {
+  if (!firstAndLastNameRegexPattern.test(first_name)) {
     throw new Error('first name contains invalid characters');
   }
-  if (!studentNameRegexPattern.test(last_name)) {
+  if (!firstAndLastNameRegexPattern.test(last_name)) {
     throw new Error('last name contains invalid characters');
   }
 
-  if (date_of_birth) {
-    //*************** check if date of birth is valid
-    if (typeof date_of_birth === 'string' && !dateRegexPattern.test(date_of_birth)) {
-      throw new Error('date of birth format must be in YYYY-MM-DD format');
-    }
-    const birthDate = new Date(date_of_birth);
-    const today = new Date(today);
-
-    //*************** check if date of birth is valid
-    if (isNaN(birthDate.getTime())) {
-      throw new Error('invalid date of birth value');
-    }
-
-    //*************** check if date of birth is an uncoming date
-    if (birthDate > today) {
-      throw new Error('invalid date of birth value');
-    }
-  }
+  date_of_birth = ValidateDateOfBirth(date_of_birth);
   first_name = ToTitleCase(first_name);
   last_name = ToTitleCase(last_name);
 
@@ -354,31 +398,14 @@ function ValidateStudentAndUserCreateInput(input) {
       'password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, and one number'
     );
   }
-  if (!studentNameRegexPattern.test(first_name)) {
+  if (!firstAndLastNameRegexPattern.test(first_name)) {
     throw new Error('first name contains invalid characters');
   }
-  if (!studentNameRegexPattern.test(last_name)) {
+  if (!firstAndLastNameRegexPattern.test(last_name)) {
     throw new Error('last name contains invalid characters');
   }
 
-  if (date_of_birth) {
-    //*************** check if date of birth is valid
-    if (typeof date_of_birth === 'string' && !dateRegexPattern.test(date_of_birth)) {
-      throw new Error('date of birth format must be in YYYY-MM-DD format');
-    }
-    const birthDate = new Date(date_of_birth);
-    const today = new Date();
-
-    //*************** check if date of birth is valid
-    if (isNaN(birthDate.getTime())) {
-      throw new Error('invalid date of birth value');
-    }
-
-    //*************** check if date of birth is an uncoming date
-    if (birthDate > today) {
-      throw new Error('invalid date of birth value');
-    }
-  }
+  date_of_birth = ValidateDateOfBirth(date_of_birth);
   first_name = ToTitleCase(first_name);
   last_name = ToTitleCase(last_name);
 
@@ -396,19 +423,19 @@ function ValidateStudentUpdateInput(input) {
   let { _id, first_name, last_name, email, date_of_birth, school_id } = input;
 
   if (!mongoose.Types.ObjectId.isValid(_id)) {
-    throw new Error('invalid school id');
+    throw new Error('invalid student id');
   }
   if (email && !emailRegexPattern.test(email)) {
     throw new Error('email format is invalid');
   }
   if (first_name) {
-    if (!studentNameRegexPattern.test(first_name)) {
+    if (!firstAndLastNameRegexPattern.test(first_name)) {
       throw new Error('first name contains invalid characters');
     }
     first_name = ToTitleCase(first_name);
   }
   if (last_name) {
-    if (!studentNameRegexPattern.test(last_name)) {
+    if (!firstAndLastNameRegexPattern.test(last_name)) {
       throw new Error('last name contains invalid characters');
     }
     last_name = ToTitleCase(last_name);
@@ -417,26 +444,7 @@ function ValidateStudentUpdateInput(input) {
     throw new Error('invalid school id');
   }
 
-  if (date_of_birth) {
-    //*************** check if date of birth (string) applied the format
-    if (typeof date_of_birth === 'string' && !dateRegexPattern.test(date_of_birth)) {
-      throw new Error('date of birth format must be in YYYY-MM-DD format');
-    }
-
-    const birthDate = new Date(date_of_birth);
-    const today = new Date();
-
-    //*************** check if date of birth is valid
-    if (isNaN(birthDate.getTime())) {
-      throw new Error('invalid date of birth value');
-    }
-
-    //*************** check if date of birth is an uncoming date
-    if (birthDate > today) {
-      throw new Error('invalid date of birth value');
-    }
-  }
-
+  date_of_birth = ValidateDateOfBirth(date_of_birth);
   const validatedInput = { _id, first_name, last_name, email, date_of_birth, school_id };
   return validatedInput;
 }
@@ -450,7 +458,10 @@ module.exports = {
   SchoolIsExist,
   StudentIsExist,
   UserIsExist,
-  UserIsAdmin,
+  UserHasRole,
+  IsValidRole,
+  IsRemovableRole,
+  HashPassword,
   ValidateUserCreateInput,
   ValidateSchoolCreateInput,
   ValidateStudentCreateInput,

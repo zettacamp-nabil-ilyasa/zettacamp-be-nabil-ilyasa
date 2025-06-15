@@ -45,7 +45,7 @@ async function batchStudentByUserId(userIds) {
  * @returns {DataLoader<string, Array<Object>>} A DataLoader that returns an array of students for each school ID
  */
 function StudentBySchoolLoader() {
-  studentLoader = new DataLoader(batchStudentsBySchoolId);
+  const studentLoader = new DataLoader(batchStudentsBySchoolId);
   return studentLoader;
 }
 
@@ -54,7 +54,7 @@ function StudentBySchoolLoader() {
  * @returns {DataLoader<string, Object>} A DataLoader that returns a single student for each user ID
  */
 function StudentByUserLoader() {
-  studentLoader = new DataLoader(batchStudentByUserId);
+  const studentLoader = new DataLoader(batchStudentByUserId);
   return studentLoader;
 }
 

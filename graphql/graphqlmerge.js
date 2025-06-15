@@ -1,6 +1,5 @@
 // *************** IMPORT LIBRARY ***************
-const { mergeTypeDefs } = require('@graphql-tools/merge');
-const { mergeResolvers } = require('@graphql-tools/merge');
+const { mergeTypeDefs, mergeResolvers } = require('@graphql-tools/merge');
 const { gql } = require('apollo-server');
 const { GraphQLScalarType, Kind } = require('graphql');
 
@@ -15,9 +14,18 @@ const studentResolvers = require('./student/student.resolver.js');
 const baseTypeDefs = gql`
   scalar Date
   enum Status {
+    # Active and available
     active
+    # Soft-deleted, won't appear in queries
     deleted
+    # Suspended
     suspended
+  }
+
+  enum Role {
+    admin
+    user
+    student
   }
 
   type Query

@@ -2,12 +2,10 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-ConnectDb().catch((err) => console.error('MongoDB connection error:', err));
-
 /**
  * Connects to MongoDB using the MONGODB_URI defined in the environment variables.
- * @throws {Error} Throws an error if MONGODB_URI is missing or if connection fails
  * @returns {Promise<void>}
+ * @throws {Error} Throws an error if MONGODB_URI is missing or if connection fails
  */
 async function ConnectDb() {
   try {
@@ -17,8 +15,7 @@ async function ConnectDb() {
     }
     await mongoose.connect(mongoUri);
   } catch (error) {
-    console.log(error.message);
-    throw error;
+    console.error(error);
   }
 }
 
