@@ -2,11 +2,20 @@
 const User = require('./user.model.js');
 
 // *************** IMPORT UTILS ***************
-const { CleanInputForUpdate } = require('../../utils/common.js');
-const { CleanInputForCreate, IdIsValid } = require('../../utils/validator.js');
+const { CleanNonRequiredInput } = require('../../utils/common.js');
+const { CleanRequiredInput, SanitizeAndValidateId, UserIsAdmin } = require('../../utils/validator.js');
 
 // *************** IMPORT HELPER ***************
-const { ValidateUserCreateInput, ValidateUserUpdateInput, UserEmailIsExist, UserIsAdmin, UserIsExist } = require('../helper/helper.js');
+const {
+  ValidateUserCreateInput,
+  ValidateUserUpdateInput,
+  UserEmailIsExist,
+  UserIsExist,
+  UserHasRole,
+  IsValidRole,
+  IsRemovableRole,
+  HashPassword,
+} = require('../helper/helper.js');
 
 //***************QUERY***************
 
@@ -33,12 +42,9 @@ async function GetAllUsers() {
  */
 async function GetOneUser(_, { _id }) {
   try {
-    const trimmedId = _id.trim();
-    const isValidId = IdIsValid(trimmedId);
-    if (!isValidId) {
-      throw new Error('Invalid ID');
-    }
-    const user = await User.findOne({ _id: trimmedId, status: 'active' }).lean();
+    //**************** sanitize and validate id
+    const validId = SanitizeAndValidateId(_id);
+    const user = await User.findOne({ _id: validId, status: 'active' }).lean();
     return user;
   } catch (error) {
     throw new Error(error.message);
@@ -57,7 +63,7 @@ async function GetOneUser(_, { _id }) {
 async function CreateUser(_, { input }) {
   try {
     //**************** clean input from null, undefined and empty string
-    cleanedInput = CleanInputForCreate(input);
+    const cleanedInput = CleanRequiredInput(input);
 
     //**************** validate input
     const validatedUserInput = ValidateUserCreateInput(cleanedInput);
@@ -69,6 +75,8 @@ async function CreateUser(_, { input }) {
       throw new Error('Email already exist');
     }
     validatedUserInput.status = 'active';
+    validatedUserInput.roles = 'user';
+    validatedUserInput.password = await HashPassword(validatedUserInput.password);
     const createdUser = await User.create(validatedUserInput);
     return createdUser;
   } catch (error) {
@@ -86,7 +94,7 @@ async function CreateUser(_, { input }) {
 async function UpdateUser(_, { input }) {
   try {
     //**************** clean input from null, undefined and empty string
-    cleanedInput = CleanInputForUpdate(input);
+    const cleanedInput = CleanNonRequiredInput(input);
 
     //**************** validate input
     const validatedInput = ValidateUserUpdateInput(cleanedInput);
@@ -98,11 +106,95 @@ async function UpdateUser(_, { input }) {
       throw new Error('User does not exist');
     }
     //**************** check if email already exist
-    const emailIsExist = await UserEmailIsExist(email, _id);
-    if (emailIsExist) {
-      throw new Error('Email already exist');
+    if (email) {
+      const emailIsExist = await UserEmailIsExist(email, _id);
+      if (emailIsExist) {
+        throw new Error('Email already exist');
+      }
     }
     const updatedUser = await User.findOneAndUpdate({ _id: _id }, validatedInput, { new: true });
+    return updatedUser;
+  } catch (error) {
+    throw new Error(error.message);
+  }
+}
+
+async function AddRole(_, { input }) {
+  try {
+    //**************** clean input from null, undefined and empty string
+    const cleanedInput = CleanRequiredInput(input);
+
+    const { updaterId, _id, role } = cleanedInput;
+
+    //**************** check if user's role is admin
+    const isAdmin = await UserIsAdmin(updaterId);
+    if (!isAdmin) {
+      throw new Error('Unauthorized access');
+    }
+
+    //**************** check if user whose role is to be added exist
+    const userIsExist = await UserIsExist(_id);
+    if (!userIsExist) {
+      throw new Error('User does not exist');
+    }
+
+    //**************** check if role is valid
+    const isValidRole = IsValidRole(role);
+    if (!isValidRole) {
+      throw new Error('Invalid role');
+    }
+
+    //**************** check if user already has the role
+    const userHasRole = await UserHasRole(_id, role);
+    if (userHasRole) {
+      throw new Error('User already has the role');
+    }
+
+    const updatedUser = await User.findOneAndUpdate({ _id }, { $addToSet: { roles: role } }, { new: true });
+    return updatedUser;
+  } catch (error) {
+    throw new Error(error.message);
+  }
+}
+
+async function DeleteRole(_, { input }) {
+  try {
+    //**************** clean input from null, undefined and empty string
+    const cleanedInput = CleanNonRequiredInput(input);
+
+    const { _id, updaterId, role } = cleanedInput;
+
+    //**************** check if user's role is admin
+    const isAdmin = await UserIsAdmin(updaterId);
+    if (!isAdmin) {
+      throw new Error('Unauthorized access');
+    }
+
+    //**************** check if user whose role is to be added exist
+    const userIsExist = await UserIsExist(_id);
+    if (!userIsExist) {
+      throw new Error('User does not exist');
+    }
+
+    //**************** check if role is valid
+    const isValidRole = IsValidRole(role);
+    if (!isValidRole) {
+      throw new Error('Invalid role');
+    }
+
+    //**************** check if user has the role
+    const userHasRole = await UserHasRole(_id, role);
+    if (!userHasRole) {
+      throw new Error('User does not have the role');
+    }
+
+    //**************** check if role can be removed
+    const isRemovableRole = IsRemovableRole(role);
+    if (!isRemovableRole) {
+      throw new Error('Role cannot be removed');
+    }
+
+    const updatedUser = await User.findOneAndUpdate({ _id }, { $pull: { roles: role } }, { new: true });
     return updatedUser;
   } catch (error) {
     throw new Error(error.message);
@@ -119,28 +211,23 @@ async function UpdateUser(_, { input }) {
  */
 async function DeleteUser(_, { _id, deletedBy }) {
   try {
-    //**************** trim id and deletedBy
-    const trimmedDeletedId = _id.trim();
-    const trimmedDeletedBy = deletedBy.trim();
-    //**************** check if id inputed is valid
-    const deletedIdIsValid = await IdIsValid(trimmedDeletedId);
-    const deletedByIsValid = await IdIsValid(trimmedDeletedBy);
-    if (!deletedIdIsValid || !deletedByIsValid) {
-      throw new Error('Invalid ID');
-    }
+    //**************** sanitize and validate id and deletedBy
+    const validDeletedId = SanitizeAndValidateId(_id);
+    const validDeletedBy = SanitizeAndValidateId(deletedBy);
+
     //**************** check if user's role is admin
-    const userIsAdmin = await UserIsAdmin(trimmedDeletedBy);
+    const userIsAdmin = await UserIsAdmin(validDeletedBy);
     if (!userIsAdmin) {
       throw new Error('Unauthorized access');
     }
 
     //**************** check if user exist
-    const userIsExist = await UserIsExist(trimmedDeletedId);
+    const userIsExist = await UserIsExist(validDeletedId);
     if (!userIsExist) {
       throw new Error('User does not exist');
     }
 
-    await User.findOneAndUpdate({ _id: trimmedDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: trimmedDeletedBy });
+    await User.findOneAndUpdate({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     return 'User deleted successfully';
   } catch (error) {
     throw new Error(error.message);
@@ -152,13 +239,13 @@ async function DeleteUser(_, { _id, deletedBy }) {
  * @param {object} parent - Parent, user object.
  * @param {object} context - Resolver context.
  * @param {object} context.loaders - DataLoader object.
- * @returns {Promise<Object|null>} - The student document or null.
+ * @returns {Promise<Array<Object>} - Array of student documents.
  * @throws {Error} - Throws error if loading fails.
  */
 async function StudentFieldResolver(parent, _, context) {
   try {
-    const userId = parent._id?.toString();
-    const studentLoader = context.loaders.StudentByUserLoader.load(userId);
+    const userId = parent._id.toString();
+    const studentLoader = await context.loaders.StudentByUserLoader.load(userId);
     return studentLoader;
   } catch (error) {
     throw new Error(error.message);
@@ -168,7 +255,7 @@ async function StudentFieldResolver(parent, _, context) {
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllUsers, GetOneUser },
-  Mutation: { CreateUser, UpdateUser, DeleteUser },
+  Mutation: { CreateUser, UpdateUser, AddRole, DeleteRole, DeleteUser },
   User: {
     student: StudentFieldResolver,
   },

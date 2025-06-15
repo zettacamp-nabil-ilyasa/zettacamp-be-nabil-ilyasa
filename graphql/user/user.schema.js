@@ -4,72 +4,74 @@ const { gql } = require('apollo-server');
 // ***************
 const userTypeDefs = gql`
   type User {
-    # user's document id
+    # Document id
     _id: ID!
 
-    # user's first name
+    # First name
     first_name: String!
 
-    # user's last name
+    # Last name
     last_name: String!
 
-    # user's email
+    # Email
     email: String!
 
-    # user's password
-    password: String!
+    # Role
+    roles: [Role!]
 
-    # user's role
-    role: String!
-
-    # user's student account
+    # reference to student who is associated with this user
     student: Student
 
-    # user's status
+    # Status
     status: Status!
 
-    # user's deletion date for soft delete
+    # Soft-delete timestamp
     deleted_at: Date
 
-    # user that deleted the user
+    # reference to user who deleted this user
     deleted_by: ID
   }
 
   input CreateUserInput {
-    # user's first name for create user input
+    # First name for create user input
     first_name: String!
 
-    # user's last name for create user input
+    # Last name for create user input
     last_name: String!
 
-    # user's email for create user input
+    # Email for create user input
     email: String!
 
-    # user's password for create user input
+    # Password for create user input
     password: String!
-
-    # user's role for create user input
-    role: String!
   }
 
   input UpdateUserInput {
-    # user's document id to specify the user
+    # User document id to specify the user
     _id: ID!
 
-    # user's first name for update user input
+    # First name for update user input
     first_name: String
 
-    # user's last name for update user input
+    # Last name for update user input
     last_name: String
 
-    # user's email for update user input
+    # Email for update user input
     email: String
 
-    # user's password for update user input
+    # Password for update user input
     password: String
+  }
 
-    # user's role for update user input
-    role: String
+  input EditRole {
+    # Document id of user whose role is to be changed
+    _id: ID!
+
+    # Document id of user that wants to change role
+    updaterId: ID!
+
+    # Role to be added or removed
+    role: String!
   }
 
   extend type Query {
@@ -81,6 +83,8 @@ const userTypeDefs = gql`
     CreateUser(input: CreateUserInput): User
     UpdateUser(input: UpdateUserInput!): User
     DeleteUser(_id: ID!, deletedBy: ID!): String
+    AddRole(input: EditRole): User
+    DeleteRole(input: EditRole): User
   }
 `;
 

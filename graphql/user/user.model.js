@@ -3,32 +3,32 @@ const mongoose = require('mongoose');
 
 const user = new mongoose.Schema(
   {
-    //user's first name
+    //First name
     first_name: { type: String, required: true, trim: true },
 
-    //user's last name
+    //Last name
     last_name: { type: String, required: true, trim: true },
 
-    //user's email
+    //Email
     email: { type: String, required: true, trim: true },
 
-    //user's password
+    //Password
     password: { type: String, required: true, minlength: 8 },
 
-    //user's role
-    role: { type: String, required: true },
+    //User role
+    roles: { type: [String], enum: ['admin', 'user', 'student'], default: ['user'], required: true },
 
-    //user's status
-    status: { type: String, enum: ['active', 'deleted', 'suspended'] },
+    //Account status
+    status: { type: String, enum: ['active', 'deleted', 'suspended'], default: 'active' },
 
-    //user's deletion date for soft delete
+    //Soft-delete timestamp
     deleted_at: { type: Date, default: null },
 
-    //user that deleted the user
-    deleted_by: { type: mongoose.Schema.Types.ObjectId, trim: true, ref: 'user' },
+    //Reference to user who deleted this user
+    deleted_by: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
   },
   {
-    // timestamp set-up for created_at and updated_at
+    // Timestamp set-up for created_at and updated_at
     timestamps: {
       createdAt: 'created_at',
       updatedAt: 'updated_at',
