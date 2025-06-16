@@ -192,6 +192,8 @@ function ValidateStudentUpdateInput(input) {
   return validatedInput;
 }
 
+// *************** EXPORT MODULE ***************
+
 module.exports = {
   StudentIsExist,
   StudentEmailIsExist,
