@@ -3,7 +3,7 @@ const Student = require('./student.model.js');
 const User = require('../user/user.model.js');
 
 // *************** IMPORT UTILS ***************
-const { CleanNonRequiredInput } = require('../../utils/common.js');
+const { CleanNonRequiredInput, UserEmailIsExist, SchoolIsExist } = require('../../utils/common.js');
 const { CleanRequiredInput, SanitizeAndValidateId, UserIsAdmin } = require('../../utils/validator.js');
 
 // *************** IMPORT HELPER ***************
@@ -12,10 +12,8 @@ const {
   ValidateStudentCreateInput,
   ValidateStudentAndUserCreateInput,
   StudentIsExist,
-  SchoolIsExist,
   StudentEmailIsExist,
-  UserEmailIsExist,
-} = require('../helper/helper.js');
+} = require('./student.helper.js');
 
 //***************QUERY***************
 
