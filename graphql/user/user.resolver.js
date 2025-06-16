@@ -14,9 +14,10 @@ const {
   NormalizeRole,
   IsRemovableRole,
   HashPassword,
+  UserIsReferencedByStudent,
 } = require('./user.helper.js');
 
-//***************QUERY***************
+//*************** QUERY ***************
 
 /**
  * Get all active users from the database.
@@ -50,7 +51,7 @@ async function GetOneUser(_, { _id }) {
   }
 }
 
-//**************MUTATION***************
+//************** MUTATION ***************
 
 /**
  * Create a new user after validating input and checking email existence.
@@ -220,12 +221,20 @@ async function DeleteUser(_, { _id, deletedBy }) {
       throw new Error('User does not exist');
     }
 
+    //**************** check if user is referenced by any student
+    const userIsReferenced = await UserIsReferencedByStudent(validDeletedId);
+    if (userIsReferenced) {
+      throw new Error('User that is referenced by a student cannot be deleted');
+    }
+
     await User.findOneAndUpdate({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     return 'User deleted successfully';
   } catch (error) {
     throw new Error(error.message);
   }
 }
+
+// *************** LOADER ***************
 
 /**
  * Resolve the student field for a User by using DataLoader.

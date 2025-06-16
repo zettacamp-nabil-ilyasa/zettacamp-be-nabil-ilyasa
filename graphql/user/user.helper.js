@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 
 //*************** IMPORT MODULE ***************
 const User = require('./user.model');
+const Student = require('../student/student.model');
 
 //*************** IMPORT UTILS ***************
 const { ToTitleCase } = require('../../utils/common');
@@ -28,12 +29,15 @@ const protectedRoles = ['user'];
 async function UserIsExist(userId) {
   try {
     //*************** sanity check
-    if (typeof userId !== 'string' || userId.trim() === '' || !mongoose.Types.ObjectId.isValid(userId.trim())) {
+    if (typeof userId !== 'string') {
+      throw new Error('Invalid user id input');
+    }
+    const trimmedUserId = userId.trim();
+    if (trimmedUserId === '' || !mongoose.Types.ObjectId.isValid(trimmedUserId)) {
       throw new Error('Invalid user id input');
     }
 
-    const trimmedID = userId.trim();
-    const query = { _id: trimmedID, status: 'active' };
+    const query = { _id: trimmedUserId, status: 'active' };
     const count = await User.countDocuments(query);
     return count > 0;
   } catch (error) {
@@ -49,12 +53,14 @@ async function UserIsExist(userId) {
  */
 function NormalizeRole(role) {
   //*************** sanity check
-  if (typeof role !== 'string' || role.trim() === '') {
+  if (typeof role !== 'string') {
     throw new Error('Invalid role input');
   }
-
-  const validRoles = ['admin', 'user', 'student'];
   const roleLowerCase = role.trim().toLowerCase();
+  if (roleLowerCase === '') {
+    throw new Error('Invalid role input');
+  }
+  const validRoles = ['admin', 'user', 'student'];
   const isValidRole = validRoles.includes(roleLowerCase);
   if (!isValidRole) {
     throw new Error('Invalid role');
@@ -70,11 +76,14 @@ function NormalizeRole(role) {
  */
 function IsRemovableRole(role) {
   //*************** sanity check
-  if (typeof role !== 'string' || role.trim() === '') {
+  if (typeof role !== 'string') {
+    throw new Error('Invalid role input');
+  }
+  const roleLowerCase = role.trim().toLowerCase();
+  if (roleLowerCase === '') {
     throw new Error('Invalid role input');
   }
 
-  const roleLowerCase = role.trim().toLowerCase();
   const isRemovableRole = !protectedRoles.includes(roleLowerCase);
   return isRemovableRole;
 }
@@ -88,19 +97,51 @@ function IsRemovableRole(role) {
  */
 async function UserHasRole(userId, role) {
   try {
-    //*************** sanity check
-    if (typeof userId !== 'string' || userId.trim() === '' || !mongoose.Types.ObjectId.isValid(suerId.trim())) {
+    //*************** userId sanity check
+    if (typeof userId !== 'string') {
       throw new Error('Invalid user id input');
     }
-    if (typeof role !== 'string' || role.trim() === '') {
+    const trimmedUserId = userId.trim();
+    if (trimmedUserId === '' || !mongoose.Types.ObjectId.isValid(trimmedUserId)) {
+      throw new Error('Invalid user id input');
+    }
+
+    //*************** role sanity check
+    if (typeof role !== 'string') {
+      throw new Error('Invalid role input');
+    }
+    const roleLowerCase = role.trim().toLowerCase();
+    if (roleLowerCase === '') {
       throw new Error('Invalid role input');
     }
 
-    const trimmedID = userId.trim();
-    const roleLowerCase = role.trim().toLowerCase();
-    const query = await User.countDocuments({ _id: trimmedID, roles: roleLowerCase });
+    const query = await User.countDocuments({ _id: trimmedUserId, roles: roleLowerCase });
     const roleIsAlreadyExists = query > 0;
     return roleIsAlreadyExists;
+  } catch (error) {
+    throw new Error(error.message);
+  }
+}
+
+/**
+ *
+ * @param {string} userId - The id of the user to be checked.
+ * @returns {promise<boolean>} - True if user is referenced by a student, false otherwise.
+ * @throws {Error} - If failed in sanity check or db operation.
+ */
+async function UserIsReferencedByStudent(userId) {
+  try {
+    //*************** userId sanity check
+    if (typeof userId !== 'string') {
+      throw new Error('Invalid user id input');
+    }
+    const trimmedUserId = userId.trim();
+    if (trimmedUserId === '' || !mongoose.Types.ObjectId.isValid(trimmedUserId)) {
+      throw new Error('Invalid user id input');
+    }
+
+    const isReferenced = Boolean(await Student.exists({ user_id: trimmedUserId }));
+    return isReferenced;
   } catch (error) {
     throw new Error(error.message);
   }
@@ -115,11 +156,14 @@ async function UserHasRole(userId, role) {
 async function HashPassword(password) {
   try {
     //*************** sanity check
-    if (typeof password !== 'string' || password.trim() === '') {
+    if (typeof password !== 'string') {
+      throw new Error('Invalid password input');
+    }
+    const trimmedPassword = password.trim();
+    if (trimmedPassword === '') {
       throw new Error('Invalid password input');
     }
 
-    const trimmedPassword = password.trim();
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(trimmedPassword, saltRounds);
     return hashedPassword;
@@ -204,4 +248,5 @@ module.exports = {
   HashPassword,
   ValidateUserCreateInput,
   ValidateUserUpdateInput,
+  UserIsReferencedByStudent,
 };
