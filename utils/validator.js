@@ -12,6 +12,7 @@ const User = require('../graphql/user/user.model.js');
  * @throws {Error} if any field is null, undefined, or empty string.
  */
 function CleanRequiredInput(input) {
+  //*************** sanity check
   if (typeof input !== 'object' || input === null || Array.isArray(input)) {
     throw new TypeError('Input should be an object');
   }
@@ -22,9 +23,11 @@ function CleanRequiredInput(input) {
     }
     if (typeof value === 'string') {
       const trimmed = value.trim();
+      //*************** if it's an empty string, throw error
       if (trimmed === '') {
         throw new Error(`${key} is required`);
       }
+      //*************** if it's not an empty string, assign the trimmed value
       cleanedInput[key] = trimmed;
     } else {
       cleanedInput[key] = value;
@@ -41,10 +44,13 @@ function CleanRequiredInput(input) {
  */
 function SanitizeAndValidateId(id) {
   //*************** sanity check
-  if (typeof id !== 'string' || id.trim() === '' || !mongoose.Types.ObjectId.isValid(id.trim())) {
+  if (typeof id !== 'string') {
     throw new Error('Invalid id input');
   }
   const trimmedId = id.trim();
+  if (trimmedId === '' || !mongoose.Types.ObjectId.isValid(trimmedId)) {
+    throw new Error('Invalid id input');
+  }
   return trimmedId;
 }
 
@@ -57,11 +63,14 @@ function SanitizeAndValidateId(id) {
 async function UserIsAdmin(userId) {
   try {
     //*************** sanity check
-    if (typeof userId !== 'string' || userId.trim() === '' || !mongoose.Types.ObjectId.isValid(userId.trim())) {
+    if (typeof userId !== 'string') {
       throw new Error('Invalid user id input');
     }
-    const trimmedId = userId.trim();
-    const query = await User.countDocuments({ _id: trimmedId, roles: 'admin' });
+    const trimmedUserId = userId.trim();
+    if (trimmedUserId === '' || !mongoose.Types.ObjectId.isValid(trimmedUserId)) {
+      throw new Error('Invalid user id input');
+    }
+    const query = await User.countDocuments({ _id: trimmedUserId, roles: 'admin' });
     const count = query > 0;
     return count;
   } catch (error) {

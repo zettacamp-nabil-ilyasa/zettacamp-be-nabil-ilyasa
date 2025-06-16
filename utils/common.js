@@ -5,8 +5,8 @@ const mongoose = require('mongoose');
 const School = require('../graphql/school/school.model.js');
 const User = require('../graphql/user/user.model.js');
 
-//*************** regex pattern to ensure date is in YYYY-MM-DD format
-const dateRegexPattern = /^\d{4}-\d{2}-\d{2}$/;
+//*************** list of non-mandatory fields
+const nonMandatoryFields = ['address', 'date_of_birth'];
 
 /**
  * Cleans input from null, undefined, and empty string values (shallow only).
@@ -14,17 +14,24 @@ const dateRegexPattern = /^\d{4}-\d{2}-\d{2}$/;
  * @returns {Object} cleanedInput - Cleaned input object.
  */
 function CleanNonRequiredInput(input) {
+  //*************** sanity check
   if (typeof input !== 'object' || input === null || Array.isArray(input)) {
     throw new TypeError('Input should be an object');
   }
   const cleanedInput = {};
   for (const [key, value] of Object.entries(input)) {
+    //*************** skip null, undefined
     if (value === null || value === undefined) {
       continue;
     }
     if (typeof value === 'string') {
       const trimmed = value.trim();
-      if (trimmed !== '') {
+      //*************** allow empty string for non-mandatory fields
+      if (nonMandatoryFields.includes(key)) {
+        cleanedInput[key] = trimmed;
+
+        //*************** if it's not an empty string, assign the trimmed value
+      } else if (trimmed !== '') {
         cleanedInput[key] = trimmed;
       }
     } else {
@@ -42,13 +49,16 @@ function CleanNonRequiredInput(input) {
  */
 function ToTitleCase(string) {
   //*************** sanity check
-  if (typeof string !== 'string' || string.trim() === '') {
+  if (typeof string !== 'string') {
     throw new Error('Invalid string input');
   }
-
-  const lowercase = string.toLowerCase();
+  const lowercase = string.trim().toLowerCase();
+  if (lowercase === '') {
+    throw new Error('Invalid string input');
+  }
   const splittedString = lowercase.split(' ');
-  return splittedString.map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  const titledCase = splittedString.map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  return titledCase;
 }
 
 /**

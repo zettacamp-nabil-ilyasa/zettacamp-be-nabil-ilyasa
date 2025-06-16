@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 
 //*************** IMPORT MODULE ***************
 const School = require('./school.model');
+const Student = require('../student/student.model');
 
 //*************** IMPORT UTILS ***************
 const { ToTitleCase } = require('../../utils/common.js');
@@ -22,20 +23,27 @@ const addressRegexPattern = /^[a-zA-Z0-9\s,'./\-#()]{10,50}$/;
  */
 async function SchoolLongNameIsExist(longName, excludeId = null) {
   try {
-    //*************** sanity check
-    if (typeof longName !== 'string' || longName.trim() === '') {
+    //*************** longName sanity check
+    if (typeof longName !== 'string') {
       throw new Error('Invalid long name input');
     }
-    let trimmedID = '';
+    const trimmedLongName = longName.trim();
+    if (trimmedLongName === '') {
+      throw new Error('Invalid long name input');
+    }
+    //*************** excludeId sanity check
+    let trimmedExcludeId = '';
     if (excludeId) {
-      if (typeof excludeId !== 'string' || excludeId.trim() === '' || !mongoose.Types.ObjectId.isValid(excludeId.trim())) {
+      if (typeof excludeId !== 'string') {
         throw new Error('Invalid school id input');
       }
       trimmedExcludeId = excludeId.trim();
+      if (trimmedExcludeId === '' || !mongoose.Types.ObjectId.isValid(trimmedExcludeId)) {
+        throw new Error('Invalid school id input');
+      }
     }
 
     //*************** set query for db operation
-    const trimmedLongName = longName.trim();
     const query = { long_name: trimmedLongName };
     if (excludeId) {
       query._id = { $ne: trimmedExcludeId };
@@ -57,21 +65,28 @@ async function SchoolLongNameIsExist(longName, excludeId = null) {
  */
 async function SchoolBrandNameIsExist(brandName, excludeId = null) {
   try {
-    //*************** sanity check
-    if (typeof brandName !== 'string' || brandName.trim() === '') {
+    //*************** brandName sanity check
+    if (typeof brandName !== 'string') {
       throw new Error('Invalid brand name input');
     }
+    const trimmedBrandName = brandName.trim();
+    if (trimmedBrandName === '') {
+      throw new Error('Invalid brand name input');
+    }
+
+    //*************** excludeId sanity check
+    let trimmedExcludeId = '';
     if (excludeId) {
-      let trimmedId = '';
-      if (typeof excludeId !== 'string' || trimmedID === '' || !mongoose.Types.ObjectId.isValid(excludeId.trim())) {
+      if (typeof excludeId !== 'string') {
         throw new Error('Invalid school id input');
       }
       trimmedExcludeId = excludeId.trim();
+      if (trimmedExcludeId === '' || !mongoose.Types.ObjectId.isValid(trimmedExcludeId)) {
+        throw new Error('Invalid school id input');
+      }
     }
 
     //*************** set query for db operation
-    const trimmedID = excludeId.trim();
-    const trimmedBrandName = brandName.trim();
     const query = { brand_name: trimmedBrandName };
     if (excludeId) {
       query._id = { $ne: trimmedExcludeId };
@@ -79,6 +94,30 @@ async function SchoolBrandNameIsExist(brandName, excludeId = null) {
 
     const count = await School.countDocuments(query);
     return count > 0;
+  } catch (error) {
+    throw new Error(error.message);
+  }
+}
+
+/**
+ *
+ * @param {string} schoolId - The id of the school to be checked
+ * @returns {Promise<boolean>} - True if school name already exists, false otherwise
+ * @throws {Error} - If failed in sanity check or db operation.
+ */
+async function SchoolIsReferencedByStudent(schoolId) {
+  try {
+    if (typeof schoolId !== 'string') {
+      throw new Error('Invalid school id input');
+    }
+    const trimmedSchoolId = schoolId.trim();
+    if (trimmedSchoolId === '' || !mongoose.Types.ObjectId.isValid(trimmedSchoolId)) {
+      throw new Error('Invalid school id input');
+    }
+
+    const query = { school_id: new mongoose.Types.ObjectId(trimmedSchoolId), status: 'active' };
+    const referenceIsExist = Boolean(await Student.exists(query));
+    return referenceIsExist;
   } catch (error) {
     throw new Error(error.message);
   }
@@ -141,6 +180,7 @@ function ValidateSchoolUpdateInput(input) {
 module.exports = {
   SchoolLongNameIsExist,
   SchoolBrandNameIsExist,
+  SchoolIsReferencedByStudent,
   ValidateSchoolCreateInput,
   ValidateSchoolUpdateInput,
 };

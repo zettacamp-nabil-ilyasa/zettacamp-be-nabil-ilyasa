@@ -7,13 +7,14 @@ const {
   ValidateSchoolCreateInput,
   SchoolLongNameIsExist,
   SchoolBrandNameIsExist,
+  SchoolIsReferencedByStudent,
 } = require('./school.helper.js');
 
 // *************** IMPORT UTILS ***************
 const { CleanNonRequiredInput, SchoolIsExist } = require('../../utils/common.js');
 const { CleanRequiredInput, SanitizeAndValidateId, UserIsAdmin } = require('../../utils/validator.js');
 
-//****************QUERY****************
+//**************** QUERY ****************
 
 /**
  * Get all active schools from the database.
@@ -46,7 +47,7 @@ async function GetOneSchool(_, { _id }) {
   }
 }
 
-//****************MUTATION****************
+//**************** MUTATION ****************
 
 /**
  * Create a new school after validating input and checking email.
@@ -147,6 +148,14 @@ async function DeleteSchool(_, { _id, deletedBy }) {
     if (!schoolIsExist) {
       throw new Error('School does not exist');
     }
+
+    //**************** check if school is referenced by any student
+    const schoolIsReferenced = await SchoolIsReferencedByStudent(validDeletedId);
+    if (schoolIsReferenced) {
+      throw new Error('School that is referenced by a student cannot be deleted');
+    }
+
+    //**************** soft-delete school
     await School.findOneAndUpdate({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     return 'School deleted successfully';
   } catch (error) {
@@ -154,7 +163,7 @@ async function DeleteSchool(_, { _id, deletedBy }) {
   }
 }
 
-//***************FIELD RESOLVER***************
+//*************** LOADER ***************
 
 /**
  * Resolve the student field for a School by using DataLoader.
