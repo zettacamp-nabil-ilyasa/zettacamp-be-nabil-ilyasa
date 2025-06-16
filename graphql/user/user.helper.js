@@ -194,6 +194,8 @@ function ValidateUserUpdateInput(input) {
   return validatedInput;
 }
 
+// *************** EXPORT MODULE ***************
+
 module.exports = {
   UserIsExist,
   NormalizeRole,
