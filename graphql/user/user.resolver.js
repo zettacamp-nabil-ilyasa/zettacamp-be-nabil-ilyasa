@@ -2,20 +2,19 @@
 const User = require('./user.model.js');
 
 // *************** IMPORT UTILS ***************
-const { CleanNonRequiredInput } = require('../../utils/common.js');
+const { CleanNonRequiredInput, UserEmailIsExist } = require('../../utils/common.js');
 const { CleanRequiredInput, SanitizeAndValidateId, UserIsAdmin } = require('../../utils/validator.js');
 
 // *************** IMPORT HELPER ***************
 const {
   ValidateUserCreateInput,
   ValidateUserUpdateInput,
-  UserEmailIsExist,
   UserIsExist,
   UserHasRole,
-  IsValidRole,
+  NormalizeRole,
   IsRemovableRole,
   HashPassword,
-} = require('../helper/helper.js');
+} = require('./user.helper.js');
 
 //***************QUERY***************
 
@@ -139,18 +138,15 @@ async function AddRole(_, { input }) {
     }
 
     //**************** check if role is valid
-    const isValidRole = IsValidRole(role);
-    if (!isValidRole) {
-      throw new Error('Invalid role');
-    }
+    const normalizedRole = NormalizeRole(role);
 
     //**************** check if user already has the role
-    const userHasRole = await UserHasRole(_id, role);
+    const userHasRole = await UserHasRole(_id, normalizedRole);
     if (userHasRole) {
       throw new Error('User already has the role');
     }
 
-    const updatedUser = await User.findOneAndUpdate({ _id }, { $addToSet: { roles: role } }, { new: true });
+    const updatedUser = await User.findOneAndUpdate({ _id }, { $addToSet: { roles: normalizedRole } }, { new: true });
     return updatedUser;
   } catch (error) {
     throw new Error(error.message);
@@ -176,25 +172,22 @@ async function DeleteRole(_, { input }) {
       throw new Error('User does not exist');
     }
 
-    //**************** check if role is valid
-    const isValidRole = IsValidRole(role);
-    if (!isValidRole) {
-      throw new Error('Invalid role');
-    }
+    //**************** check if role is valid and normalized it
+    const normalizedRole = NormalizeRole(role);
 
     //**************** check if user has the role
-    const userHasRole = await UserHasRole(_id, role);
+    const userHasRole = await UserHasRole(_id, normalizedRole);
     if (!userHasRole) {
       throw new Error('User does not have the role');
     }
 
     //**************** check if role can be removed
-    const isRemovableRole = IsRemovableRole(role);
+    const isRemovableRole = IsRemovableRole(normalizedRole);
     if (!isRemovableRole) {
       throw new Error('Role cannot be removed');
     }
 
-    const updatedUser = await User.findOneAndUpdate({ _id }, { $pull: { roles: role } }, { new: true });
+    const updatedUser = await User.findOneAndUpdate({ _id }, { $pull: { roles: normalizedRole } }, { new: true });
     return updatedUser;
   } catch (error) {
     throw new Error(error.message);
