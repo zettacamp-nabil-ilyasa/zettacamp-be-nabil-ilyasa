@@ -5,13 +5,12 @@ const School = require('./school.model.js');
 const {
   ValidateSchoolUpdateInput,
   ValidateSchoolCreateInput,
-  SchoolIsExist,
   SchoolLongNameIsExist,
   SchoolBrandNameIsExist,
-} = require('../helper/helper.js');
+} = require('./school.helper.js');
 
 // *************** IMPORT UTILS ***************
-const { CleanNonRequiredInput } = require('../../utils/common.js');
+const { CleanNonRequiredInput, SchoolIsExist } = require('../../utils/common.js');
 const { CleanRequiredInput, SanitizeAndValidateId, UserIsAdmin } = require('../../utils/validator.js');
 
 //****************QUERY****************
