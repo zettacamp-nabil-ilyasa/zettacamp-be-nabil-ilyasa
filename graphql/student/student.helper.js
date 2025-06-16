@@ -26,18 +26,29 @@ const dateRegexPattern = /^\d{4}-\d{2}-\d{2}$/;
  * @throws {Error} - If validation fails.
  */
 function ValidateDateOfBirth(dateString) {
-  //*************** check if date of birth is comply with date format
-  if (typeof dateString === 'string' && !dateRegexPattern.test(dateStr)) {
-    throw new Error('date of birth format must be in YYYY-MM-DD format');
-  }
-  const birthDate = new Date(dateString);
-  const today = new Date();
+  function ValidateDateOfBirth(dateInput) {
+    let birthDate;
+    //*************** dateInput sanity check
+    if (typeof dateInput === 'string') {
+      const trimmed = dateInput.trim();
+      if (!dateRegexPattern.test(trimmed)) {
+        throw new Error('invalid date of birth format');
+      }
+      birthDate = new Date(trimmed);
+    } else if (dateInput instanceof Date) {
+      birthDate = dateInput;
+    } else {
+      throw new Error('invalid date of birth type');
+    }
 
-  //*************** check if birth date is a future date
-  if (isNaN(birthDate.getTime()) || birthDate > today) {
-    throw new Error('invalid date of birth value');
+    //*************** check if birthDate is a future date
+    const today = new Date();
+    if (isNaN(birthDate.getTime()) || birthDate > today) {
+      throw new Error('invalid date of birth value');
+    }
+
+    return birthDate;
   }
-  return birthDate;
 }
 
 /**
@@ -49,12 +60,15 @@ function ValidateDateOfBirth(dateString) {
 async function StudentIsExist(studentId) {
   try {
     //*************** sanity check
-    if (typeof studentId !== 'string' || studentId.trim() === '' || !mongoose.Types.ObjectId.isValid(studentId)) {
+    if (typeof studentId !== 'string') {
+      throw new Error('Invalid student id input');
+    }
+    const trimmedStudentId = studentId.trim();
+    if (trimmedStudentId === '' || !mongoose.Types.ObjectId.isValid(trimmedStudentId)) {
       throw new Error('Invalid student id input');
     }
 
-    const trimmedId = studentId.trim();
-    const query = { _id: trimmedId, status: 'active' };
+    const query = { _id: trimmedStudentId, status: 'active' };
     const count = await Student.countDocuments(query);
     return count > 0;
   } catch (error) {
@@ -71,20 +85,28 @@ async function StudentIsExist(studentId) {
  */
 async function StudentEmailIsExist(emailAcc, excludeId = null) {
   try {
-    //*************** sanity check
-    if (typeof emailAcc !== 'string' || emailAcc.trim() === '') {
+    //*************** emailAcc sanity check
+    if (typeof emailAcc !== 'string') {
       throw new Error('Invalid email input');
     }
+    const trimmedEmail = emailAcc.trim();
+    if (trimmedEmail === '') {
+      throw new Error('Invalid email input');
+    }
+
+    //*************** excludeId sanity check
     let trimmedExcludeId = '';
     if (excludeId) {
-      if (typeof excludeId !== 'string' || excludeId.trim() === '' || !mongoose.Types.ObjectId.isValid(excludeId.trim())) {
+      if (typeof excludeId !== 'string') {
         throw new Error('Invalid exclude id input');
       }
       trimmedExcludeId = excludeId.trim();
+      if (trimmedExcludeId === '' || !mongoose.Types.ObjectId.isValid(trimmedExcludeId)) {
+        throw new Error('Invalid exclude id input');
+      }
     }
 
     //*************** set query for db operation
-    const trimmedEmail = emailAcc.trim();
     const query = { email: trimmedEmail };
     if (excludeId) {
       query._id = { $ne: trimmedExcludeId };
@@ -92,6 +114,29 @@ async function StudentEmailIsExist(emailAcc, excludeId = null) {
 
     const count = await Student.countDocuments(query);
     return count > 0;
+  } catch (error) {
+    throw new Error(error.message);
+  }
+}
+
+/**
+ *
+ * @param {string} studentId - The id of the user to be checked.
+ * @returns {promise<string>} - The referenced user id.
+ * @throws {Error} - If failed in sanity check or db operation.
+ */
+async function GetReferencedUserId(studentId) {
+  try {
+    if (typeof studentId !== 'string') {
+      throw new Error('Invalid student id input');
+    }
+    const trimmedStudentId = studentId.trim();
+    if (trimmedStudentId === '' || !mongoose.Types.ObjectId.isValid(trimmedStudentId)) {
+      throw new Error('Invalid student id input');
+    }
+    const student = await Student.findById(trimmedStudentId);
+    const referencedUser = student ? student.user_id : null;
+    return referencedUser;
   } catch (error) {
     throw new Error(error.message);
   }
@@ -147,6 +192,9 @@ function ValidateStudentAndUserCreateInput(input) {
   if (!firstAndLastNameRegexPattern.test(last_name)) {
     throw new Error('last name contains invalid characters');
   }
+  if (school_id && !mongoose.Types.ObjectId.isValid(school_id)) {
+    throw new Error('invalid school id');
+  }
 
   date_of_birth = ValidateDateOfBirth(date_of_birth);
   first_name = ToTitleCase(first_name);
@@ -197,6 +245,7 @@ function ValidateStudentUpdateInput(input) {
 module.exports = {
   StudentIsExist,
   StudentEmailIsExist,
+  GetReferencedUserId,
   ValidateStudentCreateInput,
   ValidateStudentAndUserCreateInput,
   ValidateStudentUpdateInput,

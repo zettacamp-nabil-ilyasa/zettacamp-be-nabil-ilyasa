@@ -13,9 +13,10 @@ const {
   ValidateStudentAndUserCreateInput,
   StudentIsExist,
   StudentEmailIsExist,
+  GetReferencedUserId,
 } = require('./student.helper.js');
 
-//***************QUERY***************
+//*************** QUERY ***************
 
 /**
  * Get all active students from the database.
@@ -48,7 +49,7 @@ async function GetOneStudent(_, { _id }) {
   }
 }
 
-//***************MUTATION***************
+//*************** MUTATION ***************
 
 /**
  * Create a new student after validating input and checking email.
@@ -116,7 +117,7 @@ async function CreateStudentWithUser(_, { input }) {
       throw new Error('School does not exist');
     }
     //*************** create user
-    const createdUser = await User.create({ email, password, first_name, last_name, status: 'active', roles: ['user'] });
+    const createdUser = await User.create({ email, password, first_name, last_name, status: 'active', roles: ['student'] });
     try {
       //*************** create student
       const createdStudent = await Student.create({
@@ -209,6 +210,15 @@ async function DeleteStudent(_, { _id, deletedBy }) {
     if (!studentIsExist) {
       throw new Error('Student does not exist');
     }
+
+    //**************** check if student is referenced by any user
+    const referencedUserId = await GetReferencedUserId(validDeletedId);
+    if (referencedUserId) {
+      await Student.findOneAndUpdate({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
+      await User.findOneAndUpdate({ _id: referencedUserId }, { status: 'deleted', deleted_at: new Date(), deleted_by: validDeletedBy });
+      return 'Student and referenced User deleted successfully';
+    }
+
     await Student.findOneAndUpdate({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     return 'Student deleted successfully';
   } catch (error) {
