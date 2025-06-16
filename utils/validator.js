@@ -69,4 +69,5 @@ async function UserIsAdmin(userId) {
   }
 }
 
+//*************** EXPORT MODULE ***************
 module.exports = { CleanRequiredInput, SanitizeAndValidateId, UserIsAdmin };

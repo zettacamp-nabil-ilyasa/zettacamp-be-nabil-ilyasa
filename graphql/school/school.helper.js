@@ -137,6 +137,7 @@ function ValidateSchoolUpdateInput(input) {
   return validatedInput;
 }
 
+// *************** EXPORT MODULE ***************
 module.exports = {
   SchoolLongNameIsExist,
   SchoolBrandNameIsExist,
