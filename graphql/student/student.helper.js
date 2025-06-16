@@ -25,30 +25,28 @@ const dateRegexPattern = /^\d{4}-\d{2}-\d{2}$/;
  * @returns {Date} - Validated date.
  * @throws {Error} - If validation fails.
  */
-function ValidateDateOfBirth(dateString) {
-  function ValidateDateOfBirth(dateInput) {
-    let birthDate;
-    //*************** dateInput sanity check
-    if (typeof dateInput === 'string') {
-      const trimmed = dateInput.trim();
-      if (!dateRegexPattern.test(trimmed)) {
-        throw new Error('invalid date of birth format');
-      }
-      birthDate = new Date(trimmed);
-    } else if (dateInput instanceof Date) {
-      birthDate = dateInput;
-    } else {
-      throw new Error('invalid date of birth type');
+function ValidateDateOfBirth(dateInput) {
+  let birthDate;
+  //*************** dateInput sanity check
+  if (typeof dateInput === 'string') {
+    const trimmed = dateInput.trim();
+    if (!dateRegexPattern.test(trimmed)) {
+      throw new Error('invalid date of birth format');
     }
-
-    //*************** check if birthDate is a future date
-    const today = new Date();
-    if (isNaN(birthDate.getTime()) || birthDate > today) {
-      throw new Error('invalid date of birth value');
-    }
-
-    return birthDate;
+    birthDate = new Date(trimmed);
+  } else if (dateInput instanceof Date) {
+    birthDate = dateInput;
+  } else {
+    throw new Error('invalid date of birth type');
   }
+
+  //*************** check if birthDate is a future date
+  const today = new Date();
+  if (isNaN(birthDate.getTime()) || birthDate > today) {
+    throw new Error('invalid date of birth value');
+  }
+
+  return birthDate;
 }
 
 /**
