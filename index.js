@@ -7,7 +7,9 @@ const ConnectDb = require('./utils/mongoose');
 const { TypeDefs, Resolvers } = require('./graphql/graphqlmerge');
 
 // *************** IMPORT DATALOADER ***************
-const { StudentBySchoolLoader, StudentByUserLoader } = require('./utils/studentLoader');
+const { UserLoader } = require('./graphql/user/user.loader');
+const { SchoolLoader } = require('./graphql/school/school.loader');
+const { StudentLoader } = require('./graphql/student/student.loader');
 
 /**
  * Initializes and starts the Express and Apollo Server.
@@ -25,7 +27,7 @@ async function StartServer() {
     const server = new ApolloServer({
       typeDefs: TypeDefs,
       resolvers: Resolvers,
-      context: () => ({ loaders: { StudentBySchoolLoader: StudentBySchoolLoader(), StudentByUserLoader: StudentByUserLoader() } }),
+      context: () => ({ loaders: { user: UserLoader(), school: SchoolLoader(), student: StudentLoader() } }),
     });
 
     //*************** start server
@@ -45,6 +47,7 @@ async function StartServer() {
 ConnectDb()
   .then(() => {
     console.log('Mongodb connected succesfully!');
+
     //*************** start server
     StartServer();
   })
