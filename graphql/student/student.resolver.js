@@ -274,7 +274,7 @@ async function StudentLoaderForSchool(parent, _, context) {
   if (!parent?.school_id) {
     return null;
   }
-  const schoolLoader = await context.loaders.school.load(parent?.school_id.toString());
+  const schoolLoader = await context.loaders.school.load(parent.school_id);
   return schoolLoader;
 }
 
