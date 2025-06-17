@@ -246,26 +246,44 @@ async function DeleteStudent(_, { _id, deletedBy }) {
 
 // *************** LOADERS ***************
 
-const StudentLoaders = {
-  user: async (parent, _, context) => {
-    if (!parent?.user_id) {
-      return null;
-    }
-    const userLoader = await context.loaders.user.load(parent?.user_id.toString());
-    return userLoader;
-  },
-  school: async (parent, _, context) => {
-    const schoolLoader = await context.loaders.school.load(parent?.school_id.toString());
-    return schoolLoader;
-  },
-};
+/**
+ * Resolve the user field in a Student by using DataLoader.
+ * @param {object} parent - Parent, student object.
+ * @param {object} context - Resolver context.
+ * @param {object} context.loaders - DataLoader object.
+ * @returns {Promise<Object|null>} - The user document or null.
+ * @throws {Error} - Throws error if loading fails.
+ */
+async function StudentLoaderForUser(parent, _, context) {
+  if (!parent?.user_id) {
+    return null;
+  }
+  const userLoader = await context.loaders.user.load(parent?.user_id.toString());
+  return userLoader;
+}
+
+/**
+ * Resolve the school field in a Student by using DataLoader.
+ * @param {object} parent - Parent, student object.
+ * @param {object} context - Resolver context.
+ * @param {object} context.loaders - DataLoader object.
+ * @returns {Promise<Object|null>} - The school document or null.
+ * @throws {Error} - Throws error if loading fails.
+ */
+async function StudentLoaderForSchool(parent, _, context) {
+  if (!parent?.school_id) {
+    return null;
+  }
+  const schoolLoader = await context.loaders.school.load(parent?.school_id.toString());
+  return schoolLoader;
+}
 
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllStudents, GetOneStudent },
   Mutation: { CreateStudent, CreateStudentWithUser, UpdateStudent, DeleteStudent },
   Student: {
-    user: StudentLoaders.user,
-    school: StudentLoaders.school,
+    user: StudentLoaderForUser,
+    school: StudentLoaderForSchool,
   },
 };
