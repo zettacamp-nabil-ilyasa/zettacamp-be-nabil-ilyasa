@@ -11,11 +11,15 @@ const School = require('./school.model.js');
  */
 async function BatchSchools(schoolIds) {
   try {
+    //**************** get all active schools with id within schoolIds and status is not deleted
     const schools = await School.find({ _id: { $in: schoolIds }, status: { $ne: 'deleted' } }).lean();
+
+    //**************** set schools data to dataMap
     const dataMap = new Map();
     schools.forEach((school) => {
       dataMap.set(school._id.toString(), school);
     });
+    //**************** return array of school objects with order of schoolIds
     return schoolIds.map((schoolId) => dataMap.get(schoolId.toString()));
   } catch (error) {
     throw new Error(error.message);

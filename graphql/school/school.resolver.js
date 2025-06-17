@@ -40,7 +40,9 @@ async function GetAllSchools() {
  */
 async function GetOneSchool(_, { _id }) {
   try {
+    //**************** sanitize and validate id
     const validId = SanitizeAndValidateId(_id);
+
     const school = await School.findOne({ _id: validId, status: 'active' }).lean();
     return school;
   } catch (error) {
@@ -62,7 +64,7 @@ async function CreateSchool(_, { input }) {
     //*************** clean input from null, undefined and empty string
     const cleanedInput = CleanRequiredInput(input);
 
-    //*************** validate input
+    //*************** validation to ensure input is formatted correctly
     const validatedSchoolInput = ValidateSchoolCreateInput(cleanedInput);
     const { long_name, brand_name } = validatedSchoolInput;
 
@@ -75,7 +77,11 @@ async function CreateSchool(_, { input }) {
     if (brandNameIsExist) {
       throw new Error("School's brand name already exist");
     }
+
+    //*************** assign status
     validatedSchoolInput.status = 'active';
+
+    //*************** create school with validated input
     const createdSchool = await School.create(validatedSchoolInput);
     return createdSchool;
   } catch (error) {
@@ -95,11 +101,11 @@ async function UpdateSchool(_, { input }) {
     //*************** clean input from null, undefined and empty string
     const cleanedInput = CleanNonRequiredInput(input);
 
-    //*************** validate input
+    //*************** validation to ensure input is formatted correctly
     const validatedSchoolInput = ValidateSchoolUpdateInput(cleanedInput);
     const { _id, long_name, brand_name } = validatedSchoolInput;
 
-    //*************** check if school exist
+    //*************** check if school exists
     const schoolIsExist = await SchoolIsExist(_id);
     if (!schoolIsExist) {
       throw new Error('School does not exist');
@@ -118,6 +124,8 @@ async function UpdateSchool(_, { input }) {
         throw new Error('School brand name already exists');
       }
     }
+
+    //*************** update school with validated input
     const updatedSchool = await School.findOneAndUpdate({ _id: _id }, validatedSchoolInput, { new: true }).lean();
     return updatedSchool;
   } catch (error) {
@@ -138,13 +146,14 @@ async function DeleteSchool(_, { _id, deletedBy }) {
     //**************** sanitize and validate id and deletedBy
     const validDeletedId = SanitizeAndValidateId(_id);
     const validDeletedBy = SanitizeAndValidateId(deletedBy);
-    //**************** check if user's exist and has admin role
+
+    //**************** check if user to delete is exist and has admin role
     const userIsAdmin = await UserIsAdmin(validDeletedBy);
     if (!userIsAdmin) {
       throw new Error('Unauthorized access');
     }
 
-    //**************** check if school exist
+    //**************** check if school to be deleted is exist
     const schoolIsExist = await SchoolIsExist(validDeletedId);
     if (!schoolIsExist) {
       throw new Error('School does not exist');
@@ -156,7 +165,7 @@ async function DeleteSchool(_, { _id, deletedBy }) {
       throw new Error('School that is referenced by a student cannot be deleted');
     }
 
-    //**************** soft-delete school
+    //**************** soft-delete school by marking their status as 'deleted' and set deleted_date
     await School.updateOne({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     return 'School deleted successfully';
   } catch (error) {
@@ -175,10 +184,12 @@ async function DeleteSchool(_, { _id, deletedBy }) {
  * @throws {Error} - Throws error if loading fails.
  */
 async function SchoolLoaderForStudents(parent, _, context) {
+  //*************** check if school has any student
   if (!parent?.students) {
     return [];
   }
 
+  //*************** load students
   const students = await context.loaders.student.loadMany(parent.students);
   return students;
 }

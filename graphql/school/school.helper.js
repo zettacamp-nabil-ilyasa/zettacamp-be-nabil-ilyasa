@@ -23,7 +23,7 @@ const addressRegexPattern = /^[a-zA-Z0-9\s,'./\-#()]{10,50}$/;
  */
 async function SchoolLongNameIsExist(longName, excludeId = null) {
   try {
-    //*************** longName sanity check
+    //*************** longName input check
     if (typeof longName !== 'string') {
       throw new Error('Invalid long name input');
     }
@@ -31,7 +31,7 @@ async function SchoolLongNameIsExist(longName, excludeId = null) {
     if (trimmedLongName === '') {
       throw new Error('Invalid long name input');
     }
-    //*************** excludeId sanity check
+    //*************** excludeId input check
     let trimmedExcludeId = '';
     if (excludeId) {
       if (typeof excludeId !== 'string') {
@@ -65,7 +65,7 @@ async function SchoolLongNameIsExist(longName, excludeId = null) {
  */
 async function SchoolBrandNameIsExist(brandName, excludeId = null) {
   try {
-    //*************** brandName sanity check
+    //*************** brandName input check
     if (typeof brandName !== 'string') {
       throw new Error('Invalid brand name input');
     }
@@ -74,7 +74,7 @@ async function SchoolBrandNameIsExist(brandName, excludeId = null) {
       throw new Error('Invalid brand name input');
     }
 
-    //*************** excludeId sanity check
+    //*************** excludeId input check
     let trimmedExcludeId = '';
     if (excludeId) {
       if (typeof excludeId !== 'string') {
@@ -107,6 +107,7 @@ async function SchoolBrandNameIsExist(brandName, excludeId = null) {
  */
 async function SchoolIsReferencedByStudent(schoolId) {
   try {
+    //*************** schoolId input check
     if (typeof schoolId !== 'string') {
       throw new Error('Invalid school id input');
     }
@@ -115,7 +116,10 @@ async function SchoolIsReferencedByStudent(schoolId) {
       throw new Error('Invalid school id input');
     }
 
+    //*************** set query for db operation
     const query = { school_id: new mongoose.Types.ObjectId(trimmedSchoolId), status: 'active' };
+
+    //*************** store db operation result as boolean
     const referenceIsExist = Boolean(await Student.exists(query));
     return referenceIsExist;
   } catch (error) {
@@ -131,7 +135,6 @@ async function SchoolIsReferencedByStudent(schoolId) {
  */
 function ValidateSchoolCreateInput(input) {
   let { brand_name, long_name, address } = input;
-
   if (!schoolNameRegexPattern.test(brand_name)) {
     throw new Error('brand name contains invalid characters');
   }
@@ -141,6 +144,7 @@ function ValidateSchoolCreateInput(input) {
   if (!addressRegexPattern.test(address)) {
     throw new Error('address contains invalid characters');
   }
+  //*************** format long name using Title case
   long_name = ToTitleCase(long_name);
 
   const validatedInput = { brand_name, long_name, address };
@@ -166,6 +170,7 @@ function ValidateSchoolUpdateInput(input) {
     if (!schoolNameRegexPattern.test(long_name)) {
       throw new Error('long name contains invalid characters');
     }
+    //*************** format long name using Title case
     long_name = ToTitleCase(long_name);
   }
   if (address && !addressRegexPattern.test(address)) {
