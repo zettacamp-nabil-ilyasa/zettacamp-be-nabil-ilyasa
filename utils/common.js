@@ -61,6 +61,16 @@ function ToTitleCase(string) {
   return titledCase;
 }
 
+function FormatDateToIsoString(date) {
+  if (!date) {
+    return null;
+  }
+  const parsedDate = new Date(date);
+  if (isNaN(parsedDate.getTime())) return null;
+
+  return parsedDate.toISOString();
+}
+
 /**
  * Check if a School with the given ID already exists.
  * @param {string} schoolId - The id of the user to be checked.
@@ -117,4 +127,4 @@ async function UserEmailIsExist(emailAcc, excludeId = null) {
 }
 
 // *************** EXPORT MODULE ***************
-module.exports = { CleanNonRequiredInput, ToTitleCase, SchoolIsExist, UserEmailIsExist };
+module.exports = { CleanNonRequiredInput, ToTitleCase, SchoolIsExist, UserEmailIsExist, FormatDateToIsoString };

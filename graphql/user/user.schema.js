@@ -26,7 +26,7 @@ const userTypeDefs = gql`
     status: Status!
 
     # Soft-delete timestamp
-    deleted_at: Date
+    deleted_at: String
 
     # reference to user who deleted this user
     deleted_by: ID

@@ -4,6 +4,8 @@ const mongoose = require('mongoose');
 //*************** IMPORT MODULE ***************
 const User = require('../graphql/user/user.model.js');
 
+//*************** list of non-mandatory fields
+const nonMandatoryFields = ['address', 'date_of_birth'];
 /**
  * Clean input from null, undefined, and empty string (shallow only).
  * Throws error if any field is null, undefined, or empty string.
@@ -23,12 +25,17 @@ function CleanRequiredInput(input) {
     }
     if (typeof value === 'string') {
       const trimmed = value.trim();
-      //*************** if it's an empty string, throw error
+      //*************** if it's an empty string and it's not a non-mandatory field, assign the trimmed value, otherwise throw error
       if (trimmed === '') {
-        throw new Error(`${key} is required`);
+        if (!nonMandatoryFields.includes(key)) {
+          cleanedInput[key] = trimmed;
+        } else {
+          throw new Error(`${key} is required`);
+        }
+      } else {
+        cleanedInput[key] = trimmed;
       }
       //*************** if it's not an empty string, assign the trimmed value
-      cleanedInput[key] = trimmed;
     } else {
       cleanedInput[key] = value;
     }

@@ -12,7 +12,7 @@ const studentTypeDefs = require('./student/student.schema.js');
 const studentResolvers = require('./student/student.resolver.js');
 
 const baseTypeDefs = gql`
-  scalar Date
+  # scalar Date
   enum Status {
     # Active and available
     active
@@ -32,27 +32,8 @@ const baseTypeDefs = gql`
   type Mutation
 `;
 
-const baseResolvers = {
-  Date: new GraphQLScalarType({
-    name: 'Date',
-    description: 'Date custom scalar type',
-    parseValue(value) {
-      return new Date(value);
-    },
-    serialize(value) {
-      return value.toISOString();
-    },
-    parseLiteral(ast) {
-      if (ast.kind === Kind.STRING) {
-        return new Date(ast.value);
-      }
-      return null;
-    },
-  }),
-};
-
 const TypeDefs = mergeTypeDefs([baseTypeDefs, userTypeDefs, schoolTypeDefs, studentTypeDefs]);
-const Resolvers = mergeResolvers([baseResolvers, userResolvers, schoolResolvers, studentResolvers]);
+const Resolvers = mergeResolvers([userResolvers, schoolResolvers, studentResolvers]);
 
 // *************** EXPORT MODULE ***************
 module.exports = { TypeDefs, Resolvers };
