@@ -14,28 +14,32 @@ const nonMandatoryFields = ['address', 'date_of_birth'];
  * @throws {Error} if any field is null, undefined, or empty string.
  */
 function CleanRequiredInput(input) {
-  //*************** sanity check
+  //*************** input check
   if (typeof input !== 'object' || input === null || Array.isArray(input)) {
     throw new TypeError('Input should be an object');
   }
+  //*************** create new object
   const cleanedInput = {};
+
   for (const [key, value] of Object.entries(input)) {
+    //*************** check for null and undefined
     if (value === null || value === undefined) {
       throw new Error(`${key} is required`);
     }
     if (typeof value === 'string') {
       const trimmed = value.trim();
-      //*************** if it's an empty string and it's not a non-mandatory field, assign the trimmed value, otherwise throw error
+      //*************** if it's an empty string and it's not a non-mandatory field, assign the trimmed value
       if (trimmed === '') {
         if (!nonMandatoryFields.includes(key)) {
           cleanedInput[key] = trimmed;
         } else {
           throw new Error(`${key} is required`);
         }
+        //*************** if it's not an empty string, assign the trimmed value
       } else {
         cleanedInput[key] = trimmed;
       }
-      //*************** if it's not an empty string, assign the trimmed value
+      //*************** if it's not a string, assign the value
     } else {
       cleanedInput[key] = value;
     }
@@ -50,11 +54,12 @@ function CleanRequiredInput(input) {
  * @throws {Error} - If failed in sanity check.
  */
 function SanitizeAndValidateId(id) {
-  //*************** sanity check
+  //*************** check if id is not a string
   if (typeof id !== 'string') {
     throw new Error('Invalid id input');
   }
   const trimmedId = id.trim();
+  //*************** check if id is empty and not an object id
   if (trimmedId === '' || !mongoose.Types.ObjectId.isValid(trimmedId)) {
     throw new Error('Invalid id input');
   }
@@ -69,7 +74,7 @@ function SanitizeAndValidateId(id) {
  */
 async function UserIsAdmin(userId) {
   try {
-    //*************** sanity check
+    //*************** userId input check
     if (typeof userId !== 'string') {
       throw new Error('Invalid user id input');
     }
@@ -77,9 +82,11 @@ async function UserIsAdmin(userId) {
     if (trimmedUserId === '' || !mongoose.Types.ObjectId.isValid(trimmedUserId)) {
       throw new Error('Invalid user id input');
     }
-    const query = await User.countDocuments({ _id: trimmedUserId, roles: 'admin' });
-    const count = query > 0;
-    return count;
+    //*************** set query for db operation
+    const query = { _id: trimmedUserId, roles: 'admin' };
+    const count = await User.countDocuments(query);
+    const userIsAdmin = count > 0;
+    return userIsAdmin;
   } catch (error) {
     throw new Error(error.message);
   }

@@ -61,14 +61,26 @@ function ToTitleCase(string) {
   return titledCase;
 }
 
+/**
+ * Converts a date to ISO date string.
+ * @param {Date} date - The date to convert.
+ * @returns {string | null} - The converted date in ISO string format or null if date is invalid.
+ */
 function FormatDateToIsoString(date) {
+  //*************** date input check
   if (!date) {
     return null;
   }
-  const parsedDate = new Date(date);
-  if (isNaN(parsedDate.getTime())) return null;
 
-  return parsedDate.toISOString();
+  //*************** set Date object using date
+  const parsedDate = new Date(date);
+
+  //*************** check if date is an invalid date
+  if (isNaN(parsedDate.getTime())) {
+    return null;
+  }
+
+  return parsedDate.toISOString().split('T')[0];
 }
 
 /**

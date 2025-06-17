@@ -28,7 +28,7 @@ const protectedRoles = ['user'];
  */
 async function UserIsExist(userId) {
   try {
-    //*************** sanity check
+    //*************** userId input check
     if (typeof userId !== 'string') {
       throw new Error('Invalid user id input');
     }
@@ -37,9 +37,14 @@ async function UserIsExist(userId) {
       throw new Error('Invalid user id input');
     }
 
+    //*************** set query for db operation
     const query = { _id: trimmedUserId, status: 'active' };
+
+    //*************** db operation
     const count = await User.countDocuments(query);
-    return count > 0;
+
+    const userIsExist = count > 0;
+    return userIsExist;
   } catch (error) {
     throw new Error(error.message);
   }
@@ -52,7 +57,7 @@ async function UserIsExist(userId) {
  * @throws {Error} - If failed sanity check.
  */
 function NormalizeRole(role) {
-  //*************** sanity check
+  //*************** role input check, set to lowercase
   if (typeof role !== 'string') {
     throw new Error('Invalid role input');
   }
@@ -60,7 +65,10 @@ function NormalizeRole(role) {
   if (roleLowerCase === '') {
     throw new Error('Invalid role input');
   }
+
   const validRoles = ['admin', 'user', 'student'];
+
+  //*************** check if role is a valid role
   const isValidRole = validRoles.includes(roleLowerCase);
   if (!isValidRole) {
     throw new Error('Invalid role');
@@ -75,7 +83,7 @@ function NormalizeRole(role) {
  * @throws {Error} - If failed sanity check.
  */
 function IsRemovableRole(role) {
-  //*************** sanity check
+  //*************** role input check, set to lowercase
   if (typeof role !== 'string') {
     throw new Error('Invalid role input');
   }
@@ -84,6 +92,7 @@ function IsRemovableRole(role) {
     throw new Error('Invalid role input');
   }
 
+  //*************** check if role is not a protected role
   const isRemovableRole = !protectedRoles.includes(roleLowerCase);
   return isRemovableRole;
 }
@@ -97,7 +106,7 @@ function IsRemovableRole(role) {
  */
 async function UserHasRole(userId, role) {
   try {
-    //*************** userId sanity check
+    //*************** userId input check
     if (typeof userId !== 'string') {
       throw new Error('Invalid user id input');
     }
@@ -106,7 +115,7 @@ async function UserHasRole(userId, role) {
       throw new Error('Invalid user id input');
     }
 
-    //*************** role sanity check
+    //*************** role input check, set to lowercase
     if (typeof role !== 'string') {
       throw new Error('Invalid role input');
     }
@@ -115,8 +124,12 @@ async function UserHasRole(userId, role) {
       throw new Error('Invalid role input');
     }
 
-    const query = await User.countDocuments({ _id: trimmedUserId, roles: roleLowerCase });
-    const roleIsAlreadyExists = query > 0;
+    //*************** set query for db operation
+    const query = { _id: trimmedUserId, roles: roleLowerCase };
+
+    //*************** db operation
+    const count = await User.countDocuments({ query });
+    const roleIsAlreadyExists = count > 0;
     return roleIsAlreadyExists;
   } catch (error) {
     throw new Error(error.message);
@@ -131,7 +144,7 @@ async function UserHasRole(userId, role) {
  */
 async function UserIsReferencedByStudent(userId) {
   try {
-    //*************** userId sanity check
+    //*************** userId input check
     if (typeof userId !== 'string') {
       throw new Error('Invalid user id input');
     }
@@ -140,7 +153,11 @@ async function UserIsReferencedByStudent(userId) {
       throw new Error('Invalid user id input');
     }
 
-    const isReferenced = Boolean(await Student.exists({ user_id: trimmedUserId }));
+    //*************** set query for db operation
+    const query = { user_id: trimmedUserId, status: 'active' };
+
+    //*************** db operation
+    const isReferenced = Boolean(await Student.exists(query));
     return isReferenced;
   } catch (error) {
     throw new Error(error.message);
@@ -155,7 +172,7 @@ async function UserIsReferencedByStudent(userId) {
  */
 async function HashPassword(password) {
   try {
-    //*************** sanity check
+    //*************** password input check
     if (typeof password !== 'string') {
       throw new Error('Invalid password input');
     }
@@ -165,6 +182,8 @@ async function HashPassword(password) {
     }
 
     const saltRounds = 10;
+
+    //*************** hash password using bcrypt
     const hashedPassword = await bcrypt.hash(trimmedPassword, saltRounds);
     return hashedPassword;
   } catch (error) {
@@ -196,6 +215,7 @@ function ValidateUserCreateInput(input) {
     throw new Error('last name contains invalid characters');
   }
 
+  //*************** convert first_name and last_name to Title case
   first_name = ToTitleCase(first_name);
   last_name = ToTitleCase(last_name);
 
@@ -226,12 +246,14 @@ function ValidateUserUpdateInput(input) {
     if (!firstAndLastNameRegexPattern.test(first_name)) {
       throw new Error('first name contains invalid characters');
     }
+    //*************** convert first_name to Title case
     first_name = ToTitleCase(first_name);
   }
   if (last_name) {
     if (!firstAndLastNameRegexPattern.test(last_name)) {
       throw new Error('last name contains invalid characters');
     }
+    //*************** convert last_name to Title case
     last_name = ToTitleCase(last_name);
   }
   const validatedInput = { _id, first_name, last_name, email, password };

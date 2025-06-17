@@ -11,11 +11,16 @@ const User = require('./user.model.js');
  */
 async function BatchUsers(userIds) {
   try {
+    //**************** get all active users with id within userIds and status is not deleted
     const users = await User.find({ _id: { $in: userIds }, status: { $ne: 'deleted' } }).lean();
+
+    //**************** set users data to dataMap
     const dataMap = new Map();
     users.forEach((user) => {
       dataMap.set(user._id.toString(), user);
     });
+
+    //**************** return array of user objects with order of userIds
     return userIds.map((userId) => dataMap.get(userId.toString()));
   } catch (error) {
     throw new Error(error.message);

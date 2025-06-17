@@ -65,7 +65,7 @@ async function CreateUser(_, { input }) {
     //**************** clean input from null, undefined and empty string
     const cleanedInput = CleanRequiredInput(input);
 
-    //**************** validate input
+    //**************** validation to ensure input is formatted correctly
     const validatedUserInput = ValidateUserCreateInput(cleanedInput);
     const { email } = validatedUserInput;
 
@@ -74,8 +74,14 @@ async function CreateUser(_, { input }) {
     if (emailIsExist) {
       throw new Error('Email already exist');
     }
+
+    //**************** set user status to active
     validatedUserInput.status = 'active';
+
+    //**************** set user role to user
     validatedUserInput.roles = 'user';
+
+    //**************** set password to hashed
     validatedUserInput.password = await HashPassword(validatedUserInput.password);
     const createdUser = await User.create(validatedUserInput);
     return createdUser;
@@ -96,7 +102,7 @@ async function UpdateUser(_, { input }) {
     //**************** clean input from null, undefined and empty string
     const cleanedInput = CleanNonRequiredInput(input);
 
-    //**************** validate input
+    //**************** validation to ensure input is formatted correctly
     const validatedInput = ValidateUserUpdateInput(cleanedInput);
     const { _id, email } = validatedInput;
 
@@ -119,6 +125,13 @@ async function UpdateUser(_, { input }) {
   }
 }
 
+/**
+ * Add a new role to a user.
+ * @param {object} args - Resolver arguments.
+ * @param {object} args.input - User update fields.
+ * @returns {Promise<Object>} - Updated user document.
+ * @throws {Error} - Throws error if validation fails.
+ */
 async function AddRole(_, { input }) {
   try {
     //**************** clean input from null, undefined and empty string
@@ -154,6 +167,13 @@ async function AddRole(_, { input }) {
   }
 }
 
+/**
+ * Delete a role from a user.
+ * @param {object} args - Resolver arguments
+ * @param {object} args.input - User update fields.
+ * @returns {Promise<Object>} - Updated user document.
+ * @throws {Error} - Throws error if validation fails.
+ */
 async function DeleteRole(_, { input }) {
   try {
     //**************** clean input from null, undefined and empty string
@@ -209,13 +229,13 @@ async function DeleteUser(_, { _id, deletedBy }) {
     const validDeletedId = SanitizeAndValidateId(_id);
     const validDeletedBy = SanitizeAndValidateId(deletedBy);
 
-    //**************** check if user's role is admin
+    //**************** check if user to delete is exist and has admin role
     const userIsAdmin = await UserIsAdmin(validDeletedBy);
     if (!userIsAdmin) {
       throw new Error('Unauthorized access');
     }
 
-    //**************** check if user exist
+    //**************** check if user to be deleted is exist
     const userIsExist = await UserIsExist(validDeletedId);
     if (!userIsExist) {
       throw new Error('User does not exist');
@@ -227,6 +247,7 @@ async function DeleteUser(_, { _id, deletedBy }) {
       throw new Error('User that is referenced by a student cannot be deleted');
     }
 
+    //**************** soft-delete user by marking their status as 'deleted' and set deleted_at
     await User.updateOne({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     return 'User deleted successfully';
   } catch (error) {
@@ -245,9 +266,11 @@ async function DeleteUser(_, { _id, deletedBy }) {
  * @throws {Error} - Throws error if loading fails.
  */
 async function UserLoaderForStudent(parent, _, context) {
+  //*************** check if user has any student
   if (!parent?.student_id) {
     return null;
   }
+  //*************** load student
   const studentLoader = await context.loaders.student.load(parent.student_id);
   return studentLoader;
 }
