@@ -13,6 +13,7 @@ const {
 // *************** IMPORT UTILS ***************
 const { CleanNonRequiredInput, SchoolIsExist } = require('../../utils/common.js');
 const { CleanRequiredInput, SanitizeAndValidateId, UserIsAdmin } = require('../../utils/validator.js');
+const { Student } = require('../student/student.resolver.js');
 
 //**************** QUERY ****************
 
@@ -117,7 +118,7 @@ async function UpdateSchool(_, { input }) {
         throw new Error('School brand name already exists');
       }
     }
-    const updatedSchool = await School.findOneAndUpdate({ _id: _id }, validatedSchoolInput, { new: true });
+    const updatedSchool = await School.findOneAndUpdate({ _id: _id }, validatedSchoolInput, { new: true }).lean();
     return updatedSchool;
   } catch (error) {
     throw new Error(error.message);
@@ -156,7 +157,7 @@ async function DeleteSchool(_, { _id, deletedBy }) {
     }
 
     //**************** soft-delete school
-    await School.findOneAndUpdate({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
+    await School.updateOne({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     return 'School deleted successfully';
   } catch (error) {
     throw new Error(error.message);
@@ -165,29 +166,21 @@ async function DeleteSchool(_, { _id, deletedBy }) {
 
 //*************** LOADER ***************
 
-/**
- * Resolve the student field for a School by using DataLoader.
- * @param {object} parent - Parent, school object.
- * @param {object} context - Resolver context.
- * @param {object} context.loaders - DataLoader object.
- * @returns {Promise<Array<Object>} - Array of student documents.
- * @throws {Error} - Throws error if loading fails.
- */
-async function StudentsFieldResolver(parent, _, context) {
-  try {
-    const schoolId = parent._id.toString();
-    const students = await context.loaders.StudentBySchoolLoader.load(schoolId);
+const SchoolLoader = {
+  students: async (parent, _, context) => {
+    if (!parent?.students || parent?.students.length === 0) {
+      return [];
+    }
+    const ids = parent?.students.map((id) => id.toString());
+    const students = await context.loaders.student.loadMany(ids);
     return students;
-  } catch (error) {
-    throw new Error(error.message);
-  }
-}
-
+  },
+};
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllSchools, GetOneSchool },
   Mutation: { CreateSchool, UpdateSchool, DeleteSchool },
   School: {
-    students: StudentsFieldResolver,
+    students: SchoolLoader.students,
   },
 };

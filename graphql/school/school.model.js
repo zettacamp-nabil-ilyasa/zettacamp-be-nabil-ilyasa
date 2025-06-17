@@ -12,6 +12,9 @@ const school = new mongoose.Schema(
     //Address
     address: { type: String, trim: true, default: null },
 
+    //Students associated with this school
+    students: [{ type: mongoose.Schema.Types.ObjectId, ref: 'student' }],
+
     //School status
     status: { type: String, enum: ['active', 'deleted', 'suspended'], default: 'active' },
 
