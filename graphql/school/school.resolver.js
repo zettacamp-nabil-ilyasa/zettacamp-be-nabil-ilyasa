@@ -166,21 +166,28 @@ async function DeleteSchool(_, { _id, deletedBy }) {
 
 //*************** LOADER ***************
 
-const SchoolLoader = {
-  students: async (parent, _, context) => {
-    if (!parent?.students || parent?.students.length === 0) {
-      return [];
-    }
-    const ids = parent?.students.map((id) => id.toString());
-    const students = await context.loaders.student.loadMany(ids);
-    return students;
-  },
-};
+/**
+ * Resolve the students field for by using DataLoader.
+ * @param {object} parent - Parent, school object.
+ * @param {object} context - Resolver context.
+ * @param {object} context.loaders - DataLoader object.
+ * @returns {Promise<Object|null>} - The students document or null.
+ * @throws {Error} - Throws error if loading fails.
+ */
+async function SchoolLoaderForStudents(parent, _, context) {
+  if (!parent?.students) {
+    return [];
+  }
+  const ids = parent?.students.map((id) => id.toString());
+  const students = await context.loaders.student.loadMany(ids);
+  return students;
+}
+
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllSchools, GetOneSchool },
   Mutation: { CreateSchool, UpdateSchool, DeleteSchool },
   School: {
-    students: SchoolLoader.students,
+    students: SchoolLoaderForStudents,
   },
 };
