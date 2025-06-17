@@ -42,7 +42,9 @@ async function GetAllStudents() {
  */
 async function GetOneStudent(_, { _id }) {
   try {
+    //**************** sanitize and validate id
     const validId = SanitizeAndValidateId(_id);
+
     const student = await Student.findOne({ _id: validId, status: 'active' }).lean();
     return student;
   } catch (error) {
@@ -64,24 +66,26 @@ async function CreateStudent(_, { input }) {
     //*************** clean input from null, undefined and empty string
     const cleanedInput = CleanRequiredInput(input);
 
-    //*************** validate input
+    //*************** validation to ensure input is formatted correctly
     const validatedStudentInput = ValidateStudentCreateInput(cleanedInput);
     const { email, school_id } = validatedStudentInput;
 
-    //*************** check if email already exist
+    //*************** check if email already exists
     const emailIsExist = await StudentEmailIsExist(email);
     if (emailIsExist) {
       throw new Error('Email already exist');
     }
 
-    //*************** check if school exist
+    //*************** check if school to delete is exist
     const schoolIsExist = await SchoolIsExist(school_id);
     if (!schoolIsExist) {
       throw new Error('School does not exist');
     }
 
-    //*************** create student using validated input
+    //*************** set student status to active
     validatedStudentInput.status = 'active';
+
+    //*************** create student
     const createdStudent = await Student.create(validatedStudentInput);
 
     //*************** push created student id to student array in school document
@@ -106,26 +110,26 @@ async function CreateStudentWithUser(_, { input }) {
     //*************** clean input from null, undefined and empty string
     const cleanedInput = CleanRequiredInput(input);
 
-    //*************** validate input
+    //*************** validation to ensure input is formatted correctly
     const validatedUserInput = ValidateStudentAndUserCreateInput(cleanedInput);
-
     const { email, password, first_name, last_name, date_of_birth, school_id } = validatedUserInput;
 
-    //*************** check if email already exist
+    //*************** check if email already exists
     const userEmailExist = await UserEmailIsExist(email);
     const studentEmailExist = await StudentEmailIsExist(email);
     if (userEmailExist || studentEmailExist) {
       throw new Error('Email already exist');
     }
-    //*************** check if school exist
+
+    //*************** check if school is exist
     const schoolIsExist = await SchoolIsExist(school_id);
     if (!schoolIsExist) {
       throw new Error('School does not exist');
     }
-    //*************** create user
+    //*************** create user with validated input, set status to active and roles to student
     const createdUser = await User.create({ email, password, first_name, last_name, status: 'active', roles: ['student'] });
     try {
-      //*************** create student
+      //*************** create student with validated input, set status to active
       const createdStudent = await Student.create({
         email,
         first_name,
@@ -139,12 +143,12 @@ async function CreateStudentWithUser(_, { input }) {
       //*************** push created student id to student array in school document
       await School.updateOne({ _id: school_id }, { $push: { students: createdStudent._id } });
 
-      //*************** set student id to user
+      //*************** set student id to student_id field in User
       await User.updateOne({ _id: createdUser._id }, { student_id: createdStudent._id });
 
       return createdStudent;
     } catch (error) {
-      //*************** manual rollback
+      //*************** manual rollback if student creation fails
       await User.findOneAndDelete({ email });
       throw new Error(error.message);
     }
@@ -165,17 +169,17 @@ async function UpdateStudent(_, { input }) {
     //**************** clean input from null, undefined and empty string
     const cleanedInput = CleanNonRequiredInput(input);
 
-    //**************** validate input
+    //**************** validation to ensure input is formatted correctly
     const validatedStudentInput = ValidateStudentUpdateInput(cleanedInput);
     const { _id, email, school_id } = validatedStudentInput;
 
-    //**************** check if student exist
+    //**************** check if student is exist
     const studentIsExist = await StudentIsExist(_id);
     if (!studentIsExist) {
       throw new Error('Student does not exist');
     }
 
-    //**************** check if email already exist
+    //**************** check if email already exists
     if (email) {
       const emailIsExist = await StudentEmailIsExist(email, _id);
       if (emailIsExist) {
@@ -183,7 +187,7 @@ async function UpdateStudent(_, { input }) {
       }
     }
 
-    //**************** check if school exist
+    //**************** check if school is exist
     if (school_id) {
       const schoolIsExist = await SchoolIsExist(school_id);
       if (!schoolIsExist) {
@@ -191,6 +195,7 @@ async function UpdateStudent(_, { input }) {
       }
     }
 
+    //**************** update student with validated input
     const updatedStudent = await Student.findOneAndUpdate({ _id: _id }, validatedStudentInput, { new: true }).lean();
     return updatedStudent;
   } catch (error) {
@@ -212,13 +217,13 @@ async function DeleteStudent(_, { _id, deletedBy }) {
     const validDeletedId = SanitizeAndValidateId(_id);
     const validDeletedBy = SanitizeAndValidateId(deletedBy);
 
-    //**************** check if user's exist and has admin role
+    //**************** check if user to delete is exist and has admin role
     const userIsAdmin = await UserIsAdmin(validDeletedBy);
     if (!userIsAdmin) {
       throw new Error('Unauthorized access');
     }
 
-    //**************** check if student exist
+    //**************** check if student to be deleted is exist
     const studentIsExist = await StudentIsExist(validDeletedId);
     if (!studentIsExist) {
       throw new Error('Student does not exist');
@@ -230,10 +235,10 @@ async function DeleteStudent(_, { _id, deletedBy }) {
       await User.updateOne({ _id: referencedUserId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     }
 
-    //**************** pull student id from student array in school document
+    //**************** pull student_id from student array in school document
     await School.updateOne({ students: validDeletedId }, { $pull: { students: validDeletedId } });
 
-    //**************** set student id to user
+    //**************** set student id to student_id field in User as null
     await User.updateOne({ student_id: validDeletedId }, { student_id: null });
 
     //**************** soft delete student by marking their status as 'deleted' and set the deleted_date
@@ -271,9 +276,12 @@ async function StudentLoaderForUser(parent, _, context) {
  * @throws {Error} - Throws error if loading fails.
  */
 async function StudentLoaderForSchool(parent, _, context) {
+  //*************** check if student has any school
   if (!parent?.school_id) {
     return null;
   }
+
+  //*************** load school
   const schoolLoader = await context.loaders.school.load(parent.school_id);
   return schoolLoader;
 }
@@ -285,6 +293,7 @@ module.exports = {
   Student: {
     user: StudentLoaderForUser,
     school: StudentLoaderForSchool,
-    date_of_birth: (parent) => FormatDateToIsoString(parent.date_of_birth).split('T')[0],
+    //*************** for displayed date format
+    date_of_birth: (parent) => FormatDateToIsoString(parent.date_of_birth),
   },
 };

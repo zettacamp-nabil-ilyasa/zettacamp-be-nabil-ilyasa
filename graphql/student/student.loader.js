@@ -12,11 +12,16 @@ const Student = require('./student.model.js');
  */
 async function BatchStudents(studentIds) {
   try {
+    //**************** get all active students with id within studentIds and status is not deleted
     const students = await Student.find({ _id: { $in: studentIds }, status: { $ne: 'deleted' } }).lean();
+
+    //**************** set students data to dataMap
     const dataMap = new Map();
     students.forEach((student) => {
       dataMap.set(student._id.toString(), student);
     });
+
+    //**************** return array of student objects with order of studentIds
     return studentIds.map((studentId) => dataMap.get(studentId.toString()));
   } catch (error) {
     throw new Error(error.message);

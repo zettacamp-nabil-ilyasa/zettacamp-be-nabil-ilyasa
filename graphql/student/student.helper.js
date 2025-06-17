@@ -27,17 +27,20 @@ const dateRegexPattern = /^\d{4}-\d{2}-\d{2}$/;
  */
 function ValidateDateOfBirth(dateInput) {
   let birthDate;
-  //*************** dateInput sanity check
+  //*************** dateInput check
   if (typeof dateInput !== 'string') {
     throw new Error('Invalid date input');
   }
   if (dateInput.trim() === '') {
     return null;
   }
+
   //*************** check with regex pattern to ensure date is in YYYY-MM-DD format
   if (!dateRegexPattern.test(dateInput)) {
     throw new Error('Invalid date format');
   }
+
+  //*************** convert dateInput to Date object
   birthDate = new Date(dateInput);
   const today = new Date();
 
@@ -61,7 +64,7 @@ function ValidateDateOfBirth(dateInput) {
  */
 async function StudentIsExist(studentId) {
   try {
-    //*************** sanity check
+    //*************** studentId input check
     if (typeof studentId !== 'string') {
       throw new Error('Invalid student id input');
     }
@@ -70,9 +73,12 @@ async function StudentIsExist(studentId) {
       throw new Error('Invalid student id input');
     }
 
+    //*************** set query for db operation
     const query = { _id: trimmedStudentId, status: 'active' };
+
     const count = await Student.countDocuments(query);
-    return count > 0;
+    const studentIsExist = count > 0;
+    return studentIsExist;
   } catch (error) {
     throw new Error(error.message);
   }
@@ -87,7 +93,7 @@ async function StudentIsExist(studentId) {
  */
 async function StudentEmailIsExist(emailAcc, excludeId = null) {
   try {
-    //*************** emailAcc sanity check
+    //*************** emailAcc input check
     if (typeof emailAcc !== 'string') {
       throw new Error('Invalid email input');
     }
@@ -96,7 +102,7 @@ async function StudentEmailIsExist(emailAcc, excludeId = null) {
       throw new Error('Invalid email input');
     }
 
-    //*************** excludeId sanity check
+    //*************** excludeId input check
     let trimmedExcludeId = '';
     if (excludeId) {
       if (typeof excludeId !== 'string') {
@@ -115,7 +121,8 @@ async function StudentEmailIsExist(emailAcc, excludeId = null) {
     }
 
     const count = await Student.countDocuments(query);
-    return count > 0;
+    const studentEmailIsExist = count > 0;
+    return studentEmailIsExist;
   } catch (error) {
     throw new Error(error.message);
   }
@@ -129,6 +136,7 @@ async function StudentEmailIsExist(emailAcc, excludeId = null) {
  */
 async function GetReferencedUserId(studentId) {
   try {
+    //*************** studentId input check
     if (typeof studentId !== 'string') {
       throw new Error('Invalid student id input');
     }
@@ -136,8 +144,15 @@ async function GetReferencedUserId(studentId) {
     if (trimmedStudentId === '' || !mongoose.Types.ObjectId.isValid(trimmedStudentId)) {
       throw new Error('Invalid student id input');
     }
+
+    //*************** set query for db operation
     const student = await Student.findById(trimmedStudentId);
-    const referencedUser = student ? student.user_id : null;
+
+    //*************** check and extract referenced user_id if it exists
+    if (!student) {
+      return null;
+    }
+    const referencedUser = student.user_id;
     return referencedUser;
   } catch (error) {
     throw new Error(error.message);
@@ -163,9 +178,11 @@ function ValidateStudentCreateInput(input) {
     throw new Error('last name contains invalid characters');
   }
   if (date_of_birth) {
-    date_of_birth = ValidateDateInput(date_of_birth);
+    //*************** validation to ensure date is in YYYY-MM-DD format
+    date_of_birth = ValidateDateOfBirth(date_of_birth);
   }
 
+  //*************** convert first_name and last_name to Title case
   first_name = ToTitleCase(first_name);
   last_name = ToTitleCase(last_name);
 
@@ -199,8 +216,12 @@ function ValidateStudentAndUserCreateInput(input) {
   if (school_id && !mongoose.Types.ObjectId.isValid(school_id)) {
     throw new Error('invalid school id');
   }
+  if (date_of_birth) {
+    //*************** validation to ensure date is in YYYY-MM-DD format
+    date_of_birth = ValidateDateOfBirth(date_of_birth);
+  }
 
-  date_of_birth = ValidateDateOfBirth(date_of_birth);
+  //*************** convert first_name and last_name to Title case
   first_name = ToTitleCase(first_name);
   last_name = ToTitleCase(last_name);
 
@@ -238,8 +259,11 @@ function ValidateStudentUpdateInput(input) {
   if (school_id && !mongoose.Types.ObjectId.isValid(school_id)) {
     throw new Error('invalid school id');
   }
+  if (date_of_birth) {
+    //*************** validation to ensure date is in YYYY-MM-DD format
+    date_of_birth = ValidateDateOfBirth(date_of_birth);
+  }
 
-  date_of_birth = ValidateDateOfBirth(date_of_birth);
   const validatedInput = { _id, first_name, last_name, email, date_of_birth, school_id };
   return validatedInput;
 }
