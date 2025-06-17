@@ -21,31 +21,35 @@ const dateRegexPattern = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  *
- * @param {string} dateString - The date to be validated.
- * @returns {Date} - Validated date.
+ * @param {string} dateInput - The date to be validated.
+ * @returns {Date | null} - Validated date.
  * @throws {Error} - If validation fails.
  */
 function ValidateDateOfBirth(dateInput) {
   let birthDate;
   //*************** dateInput sanity check
-  if (typeof dateInput === 'string') {
-    const trimmed = dateInput.trim();
-    if (!dateRegexPattern.test(trimmed)) {
-      throw new Error('invalid date of birth format');
-    }
-    birthDate = new Date(trimmed);
-  } else if (dateInput instanceof Date) {
-    birthDate = dateInput;
-  } else {
-    throw new Error('invalid date of birth type');
+  if (typeof dateInput !== 'string') {
+    throw new Error('Invalid date input');
   }
-
-  //*************** check if birthDate is a future date
+  if (dateInput.trim() === '') {
+    return null;
+  }
+  //*************** check with regex pattern to ensure date is in YYYY-MM-DD format
+  if (!dateRegexPattern.test(dateInput)) {
+    throw new Error('Invalid date format');
+  }
+  birthDate = new Date(dateInput);
   const today = new Date();
-  if (isNaN(birthDate.getTime()) || birthDate > today) {
-    throw new Error('invalid date of birth value');
+
+  //*************** check if date is an invalid date
+  if (isNaN(birthDate.getTime())) {
+    throw new Error('Invalid date format');
   }
 
+  //*************** check if date is in the future
+  if (birthDate > today) {
+    throw new Error('Date of birth cannot be in the future');
+  }
   return birthDate;
 }
 
@@ -158,8 +162,10 @@ function ValidateStudentCreateInput(input) {
   if (!firstAndLastNameRegexPattern.test(last_name)) {
     throw new Error('last name contains invalid characters');
   }
+  if (date_of_birth) {
+    date_of_birth = ValidateDateInput(date_of_birth);
+  }
 
-  date_of_birth = ValidateDateOfBirth(date_of_birth);
   first_name = ToTitleCase(first_name);
   last_name = ToTitleCase(last_name);
 

@@ -4,7 +4,7 @@ const User = require('../user/user.model.js');
 const School = require('../school/school.model.js');
 
 // *************** IMPORT UTILS ***************
-const { CleanNonRequiredInput, UserEmailIsExist, SchoolIsExist } = require('../../utils/common.js');
+const { CleanNonRequiredInput, UserEmailIsExist, SchoolIsExist, FormatDateToIsoString } = require('../../utils/common.js');
 const { CleanRequiredInput, SanitizeAndValidateId, UserIsAdmin } = require('../../utils/validator.js');
 
 // *************** IMPORT HELPER ***************
@@ -285,5 +285,6 @@ module.exports = {
   Student: {
     user: StudentLoaderForUser,
     school: StudentLoaderForSchool,
+    date_of_birth: (parent) => FormatDateToIsoString(parent.date_of_birth).split('T')[0],
   },
 };
