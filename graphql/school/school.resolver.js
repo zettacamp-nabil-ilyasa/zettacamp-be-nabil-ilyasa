@@ -178,8 +178,8 @@ async function SchoolLoaderForStudents(parent, _, context) {
   if (!parent?.students) {
     return [];
   }
-  const ids = parent?.students.map((id) => id.toString());
-  const students = await context.loaders.student.loadMany(ids);
+
+  const students = await context.loaders.student.loadMany(parent.students);
   return students;
 }
 
