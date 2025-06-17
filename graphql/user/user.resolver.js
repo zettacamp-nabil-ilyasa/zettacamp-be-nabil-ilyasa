@@ -188,7 +188,7 @@ async function DeleteRole(_, { input }) {
       throw new Error('Role cannot be removed');
     }
 
-    const updatedUser = await User.findOneAndUpdate({ _id }, { $pull: { roles: normalizedRole } }, { new: true });
+    const updatedUser = await User.findOneAndUpdate({ _id }, { $pull: { roles: normalizedRole } }, { new: true }).lean();
     return updatedUser;
   } catch (error) {
     throw new Error(error.message);
@@ -227,7 +227,7 @@ async function DeleteUser(_, { _id, deletedBy }) {
       throw new Error('User that is referenced by a student cannot be deleted');
     }
 
-    await User.findOneAndUpdate({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
+    await User.updateOne({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     return 'User deleted successfully';
   } catch (error) {
     throw new Error(error.message);
@@ -236,29 +236,21 @@ async function DeleteUser(_, { _id, deletedBy }) {
 
 // *************** LOADER ***************
 
-/**
- * Resolve the student field for a User by using DataLoader.
- * @param {object} parent - Parent, user object.
- * @param {object} context - Resolver context.
- * @param {object} context.loaders - DataLoader object.
- * @returns {Promise<Array<Object>} - Array of student documents.
- * @throws {Error} - Throws error if loading fails.
- */
-async function StudentFieldResolver(parent, _, context) {
-  try {
-    const userId = parent._id.toString();
-    const studentLoader = await context.loaders.StudentByUserLoader.load(userId);
+const UserLoader = {
+  student: async (parent, _, context) => {
+    if (!parent?.student_id) {
+      return null;
+    }
+    const studentLoader = await context.loaders.student.load(parent?.student_id.toString());
     return studentLoader;
-  } catch (error) {
-    throw new Error(error.message);
-  }
-}
+  },
+};
 
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllUsers, GetOneUser },
   Mutation: { CreateUser, UpdateUser, AddRole, DeleteRole, DeleteUser },
   User: {
-    student: StudentFieldResolver,
+    student: UserLoader.student,
   },
 };

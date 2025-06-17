@@ -18,6 +18,9 @@ const user = new mongoose.Schema(
     //User role
     roles: { type: [String], enum: ['admin', 'user', 'student'], default: ['user'], required: true },
 
+    //Reference to student who is associated with this user
+    student_id: { type: mongoose.Schema.Types.ObjectId, ref: 'student' },
+
     //Account status
     status: { type: String, enum: ['active', 'deleted', 'suspended'], default: 'active' },
 
