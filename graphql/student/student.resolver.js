@@ -1,6 +1,7 @@
 // *************** IMPORT MODULE ***************
 const Student = require('./student.model.js');
 const User = require('../user/user.model.js');
+const School = require('../school/school.model.js');
 
 // *************** IMPORT UTILS ***************
 const { CleanNonRequiredInput, UserEmailIsExist, SchoolIsExist } = require('../../utils/common.js');
@@ -79,8 +80,13 @@ async function CreateStudent(_, { input }) {
       throw new Error('School does not exist');
     }
 
+    //*************** create student using validated input
     validatedStudentInput.status = 'active';
     const createdStudent = await Student.create(validatedStudentInput);
+
+    //*************** push created student id to student array in school document
+    await School.updateOne({ _id: school_id }, { $push: { students: createdStudent._id } });
+
     return createdStudent;
   } catch (error) {
     throw new Error(error.message);
@@ -129,6 +135,13 @@ async function CreateStudentWithUser(_, { input }) {
         status: 'active',
         user_id: createdUser._id,
       });
+
+      //*************** push created student id to student array in school document
+      await School.updateOne({ _id: school_id }, { $push: { students: createdStudent._id } });
+
+      //*************** set student id to user
+      await User.updateOne({ _id: createdUser._id }, { student_id: createdStudent._id });
+
       return createdStudent;
     } catch (error) {
       //*************** manual rollback
@@ -178,7 +191,7 @@ async function UpdateStudent(_, { input }) {
       }
     }
 
-    const updatedStudent = await Student.findOneAndUpdate({ _id: _id }, validatedStudentInput, { new: true });
+    const updatedStudent = await Student.findOneAndUpdate({ _id: _id }, validatedStudentInput, { new: true }).lean();
     return updatedStudent;
   } catch (error) {
     throw new Error(error.message);
@@ -214,20 +227,45 @@ async function DeleteStudent(_, { _id, deletedBy }) {
     //**************** check if student is referenced by any user
     const referencedUserId = await GetReferencedUserId(validDeletedId);
     if (referencedUserId) {
-      await Student.findOneAndUpdate({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
-      await User.findOneAndUpdate({ _id: referencedUserId }, { status: 'deleted', deleted_at: new Date(), deleted_by: validDeletedBy });
-      return 'Student and referenced User deleted successfully';
+      await User.updateOne({ _id: referencedUserId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     }
 
-    await Student.findOneAndUpdate({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
+    //**************** pull student id from student array in school document
+    await School.updateOne({ students: validDeletedId }, { $pull: { students: validDeletedId } });
+
+    //**************** set student id to user
+    await User.updateOne({ student_id: validDeletedId }, { student_id: null });
+
+    //**************** soft delete student by marking their status as 'deleted' and set the deleted_date
+    await Student.updateOne({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     return 'Student deleted successfully';
   } catch (error) {
     throw new Error(error.message);
   }
 }
 
+// *************** LOADERS ***************
+
+const StudentLoaders = {
+  user: async (parent, _, context) => {
+    if (!parent?.user_id) {
+      return null;
+    }
+    const userLoader = await context.loaders.user.load(parent?.user_id.toString());
+    return userLoader;
+  },
+  school: async (parent, _, context) => {
+    const schoolLoader = await context.loaders.school.load(parent?.school_id.toString());
+    return schoolLoader;
+  },
+};
+
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllStudents, GetOneStudent },
   Mutation: { CreateStudent, CreateStudentWithUser, UpdateStudent, DeleteStudent },
+  Student: {
+    user: StudentLoaders.user,
+    school: StudentLoaders.school,
+  },
 };

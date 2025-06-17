@@ -19,11 +19,17 @@ const studentTypeDefs = gql`
     # Date of birth
     date_of_birth: Date
 
-    # Reference to user
-    user_id: ID
-
     # Reference to school
-    school_id: ID!
+    school: School!
+
+    # id of school associated with this student
+    school_id: ID
+
+    # Reference to associated user
+    user: User
+
+    # id of user associated with this student
+    user_id: ID
 
     # Student status
     status: Status!
