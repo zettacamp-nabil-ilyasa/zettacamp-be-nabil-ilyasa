@@ -248,7 +248,7 @@ async function UserLoaderForStudent(parent, _, context) {
   if (!parent?.student_id) {
     return null;
   }
-  const studentLoader = await context.loaders.student.load(parent?.student_id.toString());
+  const studentLoader = await context.loaders.student.load(parent.student_id);
   return studentLoader;
 }
 
