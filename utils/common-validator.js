@@ -75,15 +75,9 @@ function SanitizeAndValidateId(id) {
 async function UserIsAdmin(userId) {
   try {
     //*************** userId input check
-    if (typeof userId !== 'string') {
-      throw new Error('Invalid user id input');
-    }
-    const trimmedUserId = userId.trim();
-    if (trimmedUserId === '' || !mongoose.Types.ObjectId.isValid(trimmedUserId)) {
-      throw new Error('Invalid user id input');
-    }
+    const validatedUserId = SanitizeAndValidateId(userId);
     //*************** set query for db operation
-    const query = { _id: trimmedUserId, roles: 'admin' };
+    const query = { _id: validatedUserId, roles: 'admin' };
     const count = await UserModel.countDocuments(query);
     const userIsAdmin = count > 0;
     return userIsAdmin;

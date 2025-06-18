@@ -7,6 +7,7 @@ const StudentModel = require('../student/student.model.js');
 
 //*************** IMPORT UTILS ***************
 const { ToTitleCase } = require('../../utils/common.js');
+const { SanitizeAndValidateId } = require('../../utils/common-validator.js');
 
 //*************** regex pattern to ensure school name only have letters and numbers
 const schoolNameRegexPattern = /^[a-zA-Z\s'-\d]+$/;
@@ -32,21 +33,15 @@ async function SchoolLongNameIsExist(longName, excludeId = null) {
       throw new Error('Invalid long name input');
     }
     //*************** excludeId input check
-    let trimmedExcludeId = '';
+    let validatedExcludeId = '';
     if (excludeId) {
-      if (typeof excludeId !== 'string') {
-        throw new Error('Invalid school id input');
-      }
-      trimmedExcludeId = excludeId.trim();
-      if (trimmedExcludeId === '' || !mongoose.Types.ObjectId.isValid(trimmedExcludeId)) {
-        throw new Error('Invalid school id input');
-      }
+      validatedExcludeId = SanitizeAndValidateId(excludeId);
     }
 
     //*************** set query for db operation
     const query = { long_name: trimmedLongName };
     if (excludeId) {
-      query._id = { $ne: trimmedExcludeId };
+      query._id = { $ne: validatedExcludeId };
     }
 
     const count = await SchoolModel.countDocuments(query);
@@ -75,21 +70,15 @@ async function SchoolBrandNameIsExist(brandName, excludeId = null) {
     }
 
     //*************** excludeId input check
-    let trimmedExcludeId = '';
+    let validatedExcludeId = '';
     if (excludeId) {
-      if (typeof excludeId !== 'string') {
-        throw new Error('Invalid school id input');
-      }
-      trimmedExcludeId = excludeId.trim();
-      if (trimmedExcludeId === '' || !mongoose.Types.ObjectId.isValid(trimmedExcludeId)) {
-        throw new Error('Invalid school id input');
-      }
+      validatedExcludeId = SanitizeAndValidateId(excludeId);
     }
 
     //*************** set query for db operation
     const query = { brand_name: trimmedBrandName };
     if (excludeId) {
-      query._id = { $ne: trimmedExcludeId };
+      query._id = { $ne: validatedExcludeId };
     }
 
     const count = await SchoolModel.countDocuments(query);
@@ -108,16 +97,10 @@ async function SchoolBrandNameIsExist(brandName, excludeId = null) {
 async function SchoolIsReferencedByStudent(schoolId) {
   try {
     //*************** schoolId input check
-    if (typeof schoolId !== 'string') {
-      throw new Error('Invalid school id input');
-    }
-    const trimmedSchoolId = schoolId.trim();
-    if (trimmedSchoolId === '' || !mongoose.Types.ObjectId.isValid(trimmedSchoolId)) {
-      throw new Error('Invalid school id input');
-    }
+    const validatedSchoolId = SanitizeAndValidateId(schoolId);
 
     //*************** set query for db operation
-    const query = { school_id: new mongoose.Types.ObjectId(trimmedSchoolId), status: 'active' };
+    const query = { school_id: new mongoose.Types.ObjectId(validatedSchoolId), status: 'active' };
 
     //*************** store db operation result as boolean
     const referenceIsExist = Boolean(await StudentModel.exists(query));
@@ -159,10 +142,9 @@ function ValidateSchoolCreateInput(input) {
  */
 function ValidateSchoolUpdateInput(input) {
   let { _id, brand_name, long_name, address } = input;
+  //*************** _id input check
+  _id = SanitizeAndValidateId(_id);
 
-  if (!mongoose.Types.ObjectId.isValid(_id)) {
-    throw new Error('invalid school id');
-  }
   if (brand_name && !schoolNameRegexPattern.test(brand_name)) {
     throw new Error('brand name contains invalid characters');
   }
