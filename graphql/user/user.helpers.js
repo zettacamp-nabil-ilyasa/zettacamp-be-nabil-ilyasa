@@ -8,6 +8,7 @@ const StudentModel = require('../student/student.model');
 
 //*************** IMPORT UTILS ***************
 const { ToTitleCase } = require('../../utils/common');
+const { SanitizeAndValidateId } = require('../../utils/common-validator');
 
 //*************** regex pattern to ensure email is includes @ and .
 const emailRegexPattern = /^\S+@\S+\.\S+$/;
@@ -29,16 +30,10 @@ const protectedRoles = ['user'];
 async function UserIsExist(userId) {
   try {
     //*************** userId input check
-    if (typeof userId !== 'string') {
-      throw new Error('Invalid user id input');
-    }
-    const trimmedUserId = userId.trim();
-    if (trimmedUserId === '' || !mongoose.Types.ObjectId.isValid(trimmedUserId)) {
-      throw new Error('Invalid user id input');
-    }
+    const validatedUserId = SanitizeAndValidateId(userId);
 
     //*************** set query for db operation
-    const query = { _id: trimmedUserId, status: 'active' };
+    const query = { _id: validatedUserId, status: 'active' };
 
     //*************** db operation
     const count = await UserModel.countDocuments(query);
@@ -107,13 +102,7 @@ function IsRemovableRole(role) {
 async function UserHasRole(userId, role) {
   try {
     //*************** userId input check
-    if (typeof userId !== 'string') {
-      throw new Error('Invalid user id input');
-    }
-    const trimmedUserId = userId.trim();
-    if (trimmedUserId === '' || !mongoose.Types.ObjectId.isValid(trimmedUserId)) {
-      throw new Error('Invalid user id input');
-    }
+    const validatedUserId = SanitizeAndValidateId(userId);
 
     //*************** role input check, set to lowercase
     if (typeof role !== 'string') {
@@ -125,7 +114,7 @@ async function UserHasRole(userId, role) {
     }
 
     //*************** set query for db operation
-    const query = { _id: trimmedUserId, roles: roleLowerCase };
+    const query = { _id: validatedUserId, roles: roleLowerCase };
 
     //*************** db operation
     const count = await UserModel.countDocuments(query);
@@ -145,16 +134,10 @@ async function UserHasRole(userId, role) {
 async function UserIsReferencedByStudent(userId) {
   try {
     //*************** userId input check
-    if (typeof userId !== 'string') {
-      throw new Error('Invalid user id input');
-    }
-    const trimmedUserId = userId.trim();
-    if (trimmedUserId === '' || !mongoose.Types.ObjectId.isValid(trimmedUserId)) {
-      throw new Error('Invalid user id input');
-    }
+    const validatedUserId = SanitizeAndValidateId(userId);
 
     //*************** set query for db operation
-    const query = { user_id: trimmedUserId, status: 'active' };
+    const query = { user_id: validatedUserId, status: 'active' };
 
     //*************** db operation
     const isReferenced = Boolean(await StudentModel.exists(query));
@@ -231,9 +214,9 @@ function ValidateUserCreateInput(input) {
  */
 function ValidateUserUpdateInput(input) {
   let { _id, first_name, last_name, email, password } = input;
-  if (!mongoose.Types.ObjectId.isValid(_id)) {
-    throw new Error('invalid user id');
-  }
+  //*************** _id input check
+  _id = SanitizeAndValidateId(_id);
+
   if (email && !emailRegexPattern.test(email)) {
     throw new Error('email format is invalid');
   }
