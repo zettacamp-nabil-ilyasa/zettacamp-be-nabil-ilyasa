@@ -8,11 +8,11 @@ const {
   SchoolLongNameIsExist,
   SchoolBrandNameIsExist,
   SchoolIsReferencedByStudent,
-} = require('./school.helper.js');
+} = require('./school.helpers.js');
 
 // *************** IMPORT UTILS ***************
 const { CleanNonRequiredInput, SchoolIsExist } = require('../../utils/common.js');
-const { CleanRequiredInput, SanitizeAndValidateId, UserIsAdmin } = require('../../utils/validator.js');
+const { CleanRequiredInput, SanitizeAndValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
 
 //**************** QUERY ****************
 
