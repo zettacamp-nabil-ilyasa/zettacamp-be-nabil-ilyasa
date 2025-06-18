@@ -2,7 +2,7 @@
 const DataLoader = require('dataloader');
 
 //*************** IMPORT MODULE ***************
-const User = require('./user.model.js');
+const UserModel = require('./user.model.js');
 
 /**
  * Batch function to load users by array of user IDs
@@ -12,7 +12,7 @@ const User = require('./user.model.js');
 async function BatchUsers(userIds) {
   try {
     //**************** get all active users with id within userIds and status is not deleted
-    const users = await User.find({ _id: { $in: userIds }, status: { $ne: 'deleted' } }).lean();
+    const users = await UserModel.find({ _id: { $in: userIds }, status: { $ne: 'deleted' } }).lean();
 
     //**************** set users data to dataMap
     const dataMap = new Map();

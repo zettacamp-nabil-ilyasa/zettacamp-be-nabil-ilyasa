@@ -1,9 +1,9 @@
 // *************** IMPORT MODULE ***************
-const User = require('./user.model.js');
+const UserModel = require('./user.model.js');
 
 // *************** IMPORT UTILS ***************
 const { CleanNonRequiredInput, UserEmailIsExist } = require('../../utils/common.js');
-const { CleanRequiredInput, SanitizeAndValidateId, UserIsAdmin } = require('../../utils/validator.js');
+const { CleanRequiredInput, SanitizeAndValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
 
 // *************** IMPORT HELPER ***************
 const {
@@ -15,7 +15,7 @@ const {
   IsRemovableRole,
   HashPassword,
   UserIsReferencedByStudent,
-} = require('./user.helper.js');
+} = require('./user.helpers.js');
 
 //*************** QUERY ***************
 
@@ -26,7 +26,7 @@ const {
  */
 async function GetAllUsers() {
   try {
-    const users = await User.find({ status: 'active' }).lean();
+    const users = await UserModel.find({ status: 'active' }).lean();
     return users;
   } catch (error) {
     throw new Error(error.message);
@@ -44,7 +44,7 @@ async function GetOneUser(_, { _id }) {
   try {
     //**************** sanitize and validate id
     const validId = SanitizeAndValidateId(_id);
-    const user = await User.findOne({ _id: validId, status: 'active' }).lean();
+    const user = await UserModel.findOne({ _id: validId, status: 'active' }).lean();
     return user;
   } catch (error) {
     throw new Error(error.message);
@@ -83,7 +83,7 @@ async function CreateUser(_, { input }) {
 
     //**************** set password to hashed
     validatedUserInput.password = await HashPassword(validatedUserInput.password);
-    const createdUser = await User.create(validatedUserInput);
+    const createdUser = await UserModel.create(validatedUserInput);
     return createdUser;
   } catch (error) {
     throw new Error(error.message);
@@ -118,7 +118,7 @@ async function UpdateUser(_, { input }) {
         throw new Error('Email already exist');
       }
     }
-    const updatedUser = await User.findOneAndUpdate({ _id: _id }, validatedInput, { new: true });
+    const updatedUser = await UserModel.findOneAndUpdate({ _id: _id }, validatedInput, { new: true });
     return updatedUser;
   } catch (error) {
     throw new Error(error.message);
@@ -160,7 +160,7 @@ async function AddRole(_, { input }) {
       throw new Error('User already has the role');
     }
 
-    const updatedUser = await User.findOneAndUpdate({ _id }, { $addToSet: { roles: normalizedRole } }, { new: true });
+    const updatedUser = await UserModel.findOneAndUpdate({ _id }, { $addToSet: { roles: normalizedRole } }, { new: true });
     return updatedUser;
   } catch (error) {
     throw new Error(error.message);
@@ -208,7 +208,7 @@ async function DeleteRole(_, { input }) {
       throw new Error('Role cannot be removed');
     }
 
-    const updatedUser = await User.findOneAndUpdate({ _id }, { $pull: { roles: normalizedRole } }, { new: true }).lean();
+    const updatedUser = await UserModel.findOneAndUpdate({ _id }, { $pull: { roles: normalizedRole } }, { new: true }).lean();
     return updatedUser;
   } catch (error) {
     throw new Error(error.message);
@@ -248,7 +248,7 @@ async function DeleteUser(_, { _id, deletedBy }) {
     }
 
     //**************** soft-delete user by marking their status as 'deleted' and set deleted_at
-    await User.updateOne({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
+    await UserModel.updateOne({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     return 'User deleted successfully';
   } catch (error) {
     throw new Error(error.message);

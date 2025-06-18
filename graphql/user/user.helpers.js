@@ -3,8 +3,8 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
 //*************** IMPORT MODULE ***************
-const User = require('./user.model');
-const Student = require('../student/student.model');
+const UserModel = require('./user.model');
+const StudentModel = require('../student/student.model');
 
 //*************** IMPORT UTILS ***************
 const { ToTitleCase } = require('../../utils/common');
@@ -41,7 +41,7 @@ async function UserIsExist(userId) {
     const query = { _id: trimmedUserId, status: 'active' };
 
     //*************** db operation
-    const count = await User.countDocuments(query);
+    const count = await UserModel.countDocuments(query);
 
     const userIsExist = count > 0;
     return userIsExist;
@@ -128,7 +128,7 @@ async function UserHasRole(userId, role) {
     const query = { _id: trimmedUserId, roles: roleLowerCase };
 
     //*************** db operation
-    const count = await User.countDocuments(query);
+    const count = await UserModel.countDocuments(query);
     const roleIsAlreadyExists = count > 0;
     return roleIsAlreadyExists;
   } catch (error) {
@@ -157,7 +157,7 @@ async function UserIsReferencedByStudent(userId) {
     const query = { user_id: trimmedUserId, status: 'active' };
 
     //*************** db operation
-    const isReferenced = Boolean(await Student.exists(query));
+    const isReferenced = Boolean(await StudentModel.exists(query));
     return isReferenced;
   } catch (error) {
     throw new Error(error.message);
