@@ -263,8 +263,8 @@ async function StudentLoaderForUser(parent, _, context) {
   if (!parent?.user_id) {
     return null;
   }
-  const userLoader = await context.loaders.user.load(parent?.user_id.toString());
-  return userLoader;
+  const loadedUser = await context.loaders.user.load(parent?.user_id.toString());
+  return loadedUser;
 }
 
 /**
@@ -282,8 +282,8 @@ async function StudentLoaderForSchool(parent, _, context) {
   }
 
   //*************** load school
-  const schoolLoader = await context.loaders.school.load(parent.school_id);
-  return schoolLoader;
+  const loadedSchool = await context.loaders.school.load(parent.school_id);
+  return loadedSchool;
 }
 
 // *************** EXPORT MODULE ***************
