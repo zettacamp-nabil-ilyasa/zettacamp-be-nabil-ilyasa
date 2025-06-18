@@ -6,6 +6,7 @@ const StudentModel = require('./student.model.js');
 
 //*************** IMPORT UTILS ***************
 const { ToTitleCase } = require('../../utils/common.js');
+const { SanitizeAndValidateId } = require('../../utils/common-validator.js');
 
 //*************** regex pattern to ensure email is includes @ and .
 const emailRegexPattern = /^\S+@\S+\.\S+$/;
@@ -65,16 +66,10 @@ function ValidateDateOfBirth(dateInput) {
 async function StudentIsExist(studentId) {
   try {
     //*************** studentId input check
-    if (typeof studentId !== 'string') {
-      throw new Error('Invalid student id input');
-    }
-    const trimmedStudentId = studentId.trim();
-    if (trimmedStudentId === '' || !mongoose.Types.ObjectId.isValid(trimmedStudentId)) {
-      throw new Error('Invalid student id input');
-    }
+    const validatedStudentId = SanitizeAndValidateId(studentId);
 
     //*************** set query for db operation
-    const query = { _id: trimmedStudentId, status: 'active' };
+    const query = { _id: validatedStudentId, status: 'active' };
 
     const count = await StudentModel.countDocuments(query);
     const studentIsExist = count > 0;
@@ -103,21 +98,15 @@ async function StudentEmailIsExist(emailAcc, excludeId = null) {
     }
 
     //*************** excludeId input check
-    let trimmedExcludeId = '';
+    let validatedExcludeId = '';
     if (excludeId) {
-      if (typeof excludeId !== 'string') {
-        throw new Error('Invalid exclude id input');
-      }
-      trimmedExcludeId = excludeId.trim();
-      if (trimmedExcludeId === '' || !mongoose.Types.ObjectId.isValid(trimmedExcludeId)) {
-        throw new Error('Invalid exclude id input');
-      }
+      validatedExcludeId = SanitizeAndValidateId(excludeId);
     }
 
     //*************** set query for db operation
     const query = { email: trimmedEmail };
     if (excludeId) {
-      query._id = { $ne: trimmedExcludeId };
+      query._id = { $ne: validatedExcludeId };
     }
 
     const count = await StudentModel.countDocuments(query);
@@ -137,16 +126,10 @@ async function StudentEmailIsExist(emailAcc, excludeId = null) {
 async function GetReferencedUserId(studentId) {
   try {
     //*************** studentId input check
-    if (typeof studentId !== 'string') {
-      throw new Error('Invalid student id input');
-    }
-    const trimmedStudentId = studentId.trim();
-    if (trimmedStudentId === '' || !mongoose.Types.ObjectId.isValid(trimmedStudentId)) {
-      throw new Error('Invalid student id input');
-    }
+    const validatedStudentId = SanitizeAndValidateId(studentId);
 
     //*************** set query for db operation
-    const student = await StudentModel.findById(trimmedStudentId);
+    const student = await StudentModel.findById(validatedStudentId);
 
     //*************** check and extract referenced user_id if it exists
     if (!student) {
@@ -213,8 +196,8 @@ function ValidateStudentAndUserCreateInput(input) {
   if (!firstAndLastNameRegexPattern.test(last_name)) {
     throw new Error('last name contains invalid characters');
   }
-  if (school_id && !mongoose.Types.ObjectId.isValid(school_id)) {
-    throw new Error('invalid school id');
+  if (school_id) {
+    school_id = SanitizeAndValidateId(school_id);
   }
   if (date_of_birth) {
     //*************** validation to ensure date is in YYYY-MM-DD format
@@ -237,10 +220,9 @@ function ValidateStudentAndUserCreateInput(input) {
  */
 function ValidateStudentUpdateInput(input) {
   let { _id, first_name, last_name, email, date_of_birth, school_id } = input;
+  //*************** _id input check
+  _id = SanitizeAndValidateId(_id);
 
-  if (!mongoose.Types.ObjectId.isValid(_id)) {
-    throw new Error('invalid student id');
-  }
   if (email && !emailRegexPattern.test(email)) {
     throw new Error('email format is invalid');
   }
@@ -256,8 +238,8 @@ function ValidateStudentUpdateInput(input) {
     }
     last_name = ToTitleCase(last_name);
   }
-  if (school_id && !mongoose.Types.ObjectId.isValid(school_id)) {
-    throw new Error('invalid school id');
+  if (school_id) {
+    school_id = SanitizeAndValidateId(school_id);
   }
   if (date_of_birth) {
     //*************** validation to ensure date is in YYYY-MM-DD format
