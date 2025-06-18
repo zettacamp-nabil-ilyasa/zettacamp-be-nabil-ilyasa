@@ -2,7 +2,7 @@
 const mongoose = require('mongoose');
 
 //*************** IMPORT MODULE ***************
-const User = require('../graphql/user/user.model.js');
+const UserModel = require('../graphql/user/user.model.js');
 
 //*************** list of non-mandatory fields
 const nonMandatoryFields = ['address', 'date_of_birth'];
@@ -84,7 +84,7 @@ async function UserIsAdmin(userId) {
     }
     //*************** set query for db operation
     const query = { _id: trimmedUserId, roles: 'admin' };
-    const count = await User.countDocuments(query);
+    const count = await UserModel.countDocuments(query);
     const userIsAdmin = count > 0;
     return userIsAdmin;
   } catch (error) {

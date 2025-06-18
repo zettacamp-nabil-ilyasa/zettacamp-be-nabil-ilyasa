@@ -1,5 +1,5 @@
 // *************** IMPORT MODULE ***************
-const School = require('./school.model.js');
+const SchoolModel = require('./school.model.js');
 
 // *************** IMPORT HELPER ***************
 const {
@@ -13,7 +13,6 @@ const {
 // *************** IMPORT UTILS ***************
 const { CleanNonRequiredInput, SchoolIsExist } = require('../../utils/common.js');
 const { CleanRequiredInput, SanitizeAndValidateId, UserIsAdmin } = require('../../utils/validator.js');
-const { Student } = require('../student/student.resolver.js');
 
 //**************** QUERY ****************
 
@@ -24,7 +23,7 @@ const { Student } = require('../student/student.resolver.js');
  */
 async function GetAllSchools() {
   try {
-    const schools = await School.find({ status: 'active' }).lean();
+    const schools = await SchoolModel.find({ status: 'active' }).lean();
     return schools;
   } catch (error) {
     throw new Error(error.message);
@@ -43,7 +42,7 @@ async function GetOneSchool(_, { _id }) {
     //**************** sanitize and validate id
     const validId = SanitizeAndValidateId(_id);
 
-    const school = await School.findOne({ _id: validId, status: 'active' }).lean();
+    const school = await SchoolModel.findOne({ _id: validId, status: 'active' }).lean();
     return school;
   } catch (error) {
     throw new Error(error.message);
@@ -82,7 +81,7 @@ async function CreateSchool(_, { input }) {
     validatedSchoolInput.status = 'active';
 
     //*************** create school with validated input
-    const createdSchool = await School.create(validatedSchoolInput);
+    const createdSchool = await SchoolModel.create(validatedSchoolInput);
     return createdSchool;
   } catch (error) {
     throw new Error(error.message);
@@ -126,7 +125,7 @@ async function UpdateSchool(_, { input }) {
     }
 
     //*************** update school with validated input
-    const updatedSchool = await School.findOneAndUpdate({ _id: _id }, validatedSchoolInput, { new: true }).lean();
+    const updatedSchool = await SchoolModel.findOneAndUpdate({ _id: _id }, validatedSchoolInput, { new: true }).lean();
     return updatedSchool;
   } catch (error) {
     throw new Error(error.message);
@@ -166,7 +165,7 @@ async function DeleteSchool(_, { _id, deletedBy }) {
     }
 
     //**************** soft-delete school by marking their status as 'deleted' and set deleted_date
-    await School.updateOne({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
+    await SchoolModel.updateOne({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     return 'School deleted successfully';
   } catch (error) {
     throw new Error(error.message);

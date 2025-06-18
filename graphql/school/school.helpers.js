@@ -2,8 +2,8 @@
 const mongoose = require('mongoose');
 
 //*************** IMPORT MODULE ***************
-const School = require('./school.model');
-const Student = require('../student/student.model');
+const SchoolModel = require('./school.model.js');
+const StudentModel = require('../student/student.model.js');
 
 //*************** IMPORT UTILS ***************
 const { ToTitleCase } = require('../../utils/common.js');
@@ -49,7 +49,7 @@ async function SchoolLongNameIsExist(longName, excludeId = null) {
       query._id = { $ne: trimmedExcludeId };
     }
 
-    const count = await School.countDocuments(query);
+    const count = await SchoolModel.countDocuments(query);
     return count > 0;
   } catch (error) {
     throw new Error(error.message);
@@ -92,7 +92,7 @@ async function SchoolBrandNameIsExist(brandName, excludeId = null) {
       query._id = { $ne: trimmedExcludeId };
     }
 
-    const count = await School.countDocuments(query);
+    const count = await SchoolModel.countDocuments(query);
     return count > 0;
   } catch (error) {
     throw new Error(error.message);
@@ -120,7 +120,7 @@ async function SchoolIsReferencedByStudent(schoolId) {
     const query = { school_id: new mongoose.Types.ObjectId(trimmedSchoolId), status: 'active' };
 
     //*************** store db operation result as boolean
-    const referenceIsExist = Boolean(await Student.exists(query));
+    const referenceIsExist = Boolean(await StudentModel.exists(query));
     return referenceIsExist;
   } catch (error) {
     throw new Error(error.message);

@@ -2,8 +2,8 @@
 const mongoose = require('mongoose');
 
 //*************** IMPORT MODULE ***************
-const School = require('../graphql/school/school.model.js');
-const User = require('../graphql/user/user.model.js');
+const SchoolModel = require('../graphql/school/school.model.js');
+const UserModel = require('../graphql/user/user.model.js');
 
 //*************** list of non-mandatory fields
 const nonMandatoryFields = ['address', 'date_of_birth'];
@@ -97,7 +97,7 @@ async function SchoolIsExist(schoolId) {
     }
 
     const query = { _id: schoolId, status: 'active' };
-    const count = await School.countDocuments(query);
+    const count = await SchoolModel.countDocuments(query);
     return count > 0;
   } catch (error) {
     throw new Error(error.message);
@@ -131,7 +131,7 @@ async function UserEmailIsExist(emailAcc, excludeId = null) {
       query._id = { $ne: trimmedExcludeId };
     }
 
-    const count = await User.countDocuments(query);
+    const count = await UserModel.countDocuments(query);
     return count > 0;
   } catch (error) {
     throw new Error(error.message);

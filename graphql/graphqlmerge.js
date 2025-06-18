@@ -1,14 +1,13 @@
 // *************** IMPORT LIBRARY ***************
 const { mergeTypeDefs, mergeResolvers } = require('@graphql-tools/merge');
 const { gql } = require('apollo-server');
-const { GraphQLScalarType, Kind } = require('graphql');
 
 // *************** IMPORT MODULE ***************
-const userTypeDefs = require('./user/user.schema.js');
+const userTypeDefs = require('./user/user.typedef.js');
 const userResolvers = require('./user/user.resolver.js');
-const schoolTypeDefs = require('./school/school.schema.js');
+const schoolTypeDefs = require('./school/school.typedef.js');
 const schoolResolvers = require('./school/school.resolver.js');
-const studentTypeDefs = require('./student/student.schema.js');
+const studentTypeDefs = require('./student/student.typedef.js');
 const studentResolvers = require('./student/student.resolver.js');
 
 const baseTypeDefs = gql`
