@@ -189,8 +189,8 @@ async function SchoolLoaderForStudents(parent, _, context) {
   }
 
   //*************** load students
-  const students = await context.loaders.student.loadMany(parent.students);
-  return students;
+  const loadedStudents = await context.loaders.student.loadMany(parent.students);
+  return loadedStudents;
 }
 
 // *************** EXPORT MODULE ***************
