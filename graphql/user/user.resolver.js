@@ -271,8 +271,8 @@ async function UserLoaderForStudent(parent, _, context) {
     return null;
   }
   //*************** load student
-  const studentLoader = await context.loaders.student.load(parent.student_id);
-  return studentLoader;
+  const loadedStudent = await context.loaders.student.load(parent.student_id);
+  return loadedStudent;
 }
 
 // *************** EXPORT MODULE ***************
