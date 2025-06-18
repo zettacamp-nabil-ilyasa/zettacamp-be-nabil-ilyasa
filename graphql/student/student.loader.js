@@ -2,7 +2,7 @@
 const DataLoader = require('dataloader');
 
 //*************** IMPORT MODULE ***************
-const Student = require('./student.model.js');
+const StudentModel = require('./student.model.js');
 
 /**
  * Batch function to load students by array of student IDs
@@ -13,7 +13,7 @@ const Student = require('./student.model.js');
 async function BatchStudents(studentIds) {
   try {
     //**************** get all active students with id within studentIds and status is not deleted
-    const students = await Student.find({ _id: { $in: studentIds }, status: { $ne: 'deleted' } }).lean();
+    const students = await StudentModel.find({ _id: { $in: studentIds }, status: { $ne: 'deleted' } }).lean();
 
     //**************** set students data to dataMap
     const dataMap = new Map();

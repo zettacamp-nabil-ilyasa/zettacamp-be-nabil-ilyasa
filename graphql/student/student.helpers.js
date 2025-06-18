@@ -2,7 +2,7 @@
 const mongoose = require('mongoose');
 
 //*************** IMPORT MODULE ***************
-const Student = require('./student.model');
+const StudentModel = require('./student.model.js');
 
 //*************** IMPORT UTILS ***************
 const { ToTitleCase } = require('../../utils/common.js');
@@ -76,7 +76,7 @@ async function StudentIsExist(studentId) {
     //*************** set query for db operation
     const query = { _id: trimmedStudentId, status: 'active' };
 
-    const count = await Student.countDocuments(query);
+    const count = await StudentModel.countDocuments(query);
     const studentIsExist = count > 0;
     return studentIsExist;
   } catch (error) {
@@ -120,7 +120,7 @@ async function StudentEmailIsExist(emailAcc, excludeId = null) {
       query._id = { $ne: trimmedExcludeId };
     }
 
-    const count = await Student.countDocuments(query);
+    const count = await StudentModel.countDocuments(query);
     const studentEmailIsExist = count > 0;
     return studentEmailIsExist;
   } catch (error) {
@@ -146,7 +146,7 @@ async function GetReferencedUserId(studentId) {
     }
 
     //*************** set query for db operation
-    const student = await Student.findById(trimmedStudentId);
+    const student = await StudentModel.findById(trimmedStudentId);
 
     //*************** check and extract referenced user_id if it exists
     if (!student) {

@@ -1,11 +1,11 @@
 // *************** IMPORT MODULE ***************
-const Student = require('./student.model.js');
-const User = require('../user/user.model.js');
-const School = require('../school/school.model.js');
+const StudentModel = require('./student.model.js');
+const UserModel = require('../user/user.model.js');
+const SchoolModel = require('../school/school.model.js');
 
 // *************** IMPORT UTILS ***************
 const { CleanNonRequiredInput, UserEmailIsExist, SchoolIsExist, FormatDateToIsoString } = require('../../utils/common.js');
-const { CleanRequiredInput, SanitizeAndValidateId, UserIsAdmin } = require('../../utils/validator.js');
+const { CleanRequiredInput, SanitizeAndValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
 
 // *************** IMPORT HELPER ***************
 const {
@@ -15,7 +15,7 @@ const {
   StudentIsExist,
   StudentEmailIsExist,
   GetReferencedUserId,
-} = require('./student.helper.js');
+} = require('./student.helpers.js');
 
 //*************** QUERY ***************
 
@@ -26,7 +26,7 @@ const {
  */
 async function GetAllStudents() {
   try {
-    const students = await Student.find({ status: 'active' }).lean();
+    const students = await StudentModel.find({ status: 'active' }).lean();
     return students;
   } catch (error) {
     throw new Error(error.message);
@@ -45,7 +45,7 @@ async function GetOneStudent(_, { _id }) {
     //**************** sanitize and validate id
     const validId = SanitizeAndValidateId(_id);
 
-    const student = await Student.findOne({ _id: validId, status: 'active' }).lean();
+    const student = await StudentModel.findOne({ _id: validId, status: 'active' }).lean();
     return student;
   } catch (error) {
     throw new Error(error.message);
@@ -86,10 +86,10 @@ async function CreateStudent(_, { input }) {
     validatedStudentInput.status = 'active';
 
     //*************** create student
-    const createdStudent = await Student.create(validatedStudentInput);
+    const createdStudent = await StudentModel.create(validatedStudentInput);
 
     //*************** push created student id to student array in school document
-    await School.updateOne({ _id: school_id }, { $push: { students: createdStudent._id } });
+    await SchoolModel.updateOne({ _id: school_id }, { $push: { students: createdStudent._id } });
 
     return createdStudent;
   } catch (error) {
@@ -127,10 +127,10 @@ async function CreateStudentWithUser(_, { input }) {
       throw new Error('School does not exist');
     }
     //*************** create user with validated input, set status to active and roles to student
-    const createdUser = await User.create({ email, password, first_name, last_name, status: 'active', roles: ['student'] });
+    const createdUser = await UserModel.create({ email, password, first_name, last_name, status: 'active', roles: ['student'] });
     try {
       //*************** create student with validated input, set status to active
-      const createdStudent = await Student.create({
+      const createdStudent = await StudentModel.create({
         email,
         first_name,
         last_name,
@@ -141,15 +141,15 @@ async function CreateStudentWithUser(_, { input }) {
       });
 
       //*************** push created student id to student array in school document
-      await School.updateOne({ _id: school_id }, { $push: { students: createdStudent._id } });
+      await SchoolModel.updateOne({ _id: school_id }, { $push: { students: createdStudent._id } });
 
       //*************** set student id to student_id field in User
-      await User.updateOne({ _id: createdUser._id }, { student_id: createdStudent._id });
+      await UserModel.updateOne({ _id: createdUser._id }, { student_id: createdStudent._id });
 
       return createdStudent;
     } catch (error) {
       //*************** manual rollback if student creation fails
-      await User.findOneAndDelete({ email });
+      await UserModel.findOneAndDelete({ email });
       throw new Error(error.message);
     }
   } catch (error) {
@@ -196,7 +196,7 @@ async function UpdateStudent(_, { input }) {
     }
 
     //**************** update student with validated input
-    const updatedStudent = await Student.findOneAndUpdate({ _id: _id }, validatedStudentInput, { new: true }).lean();
+    const updatedStudent = await StudentModel.findOneAndUpdate({ _id: _id }, validatedStudentInput, { new: true }).lean();
     return updatedStudent;
   } catch (error) {
     throw new Error(error.message);
@@ -232,17 +232,17 @@ async function DeleteStudent(_, { _id, deletedBy }) {
     //**************** check if student is referenced by any user
     const referencedUserId = await GetReferencedUserId(validDeletedId);
     if (referencedUserId) {
-      await User.updateOne({ _id: referencedUserId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
+      await UserModel.updateOne({ _id: referencedUserId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     }
 
     //**************** pull student_id from student array in school document
-    await School.updateOne({ students: validDeletedId }, { $pull: { students: validDeletedId } });
+    await SchoolModel.updateOne({ students: validDeletedId }, { $pull: { students: validDeletedId } });
 
     //**************** set student id to student_id field in User as null
-    await User.updateOne({ student_id: validDeletedId }, { student_id: null });
+    await UserModel.updateOne({ student_id: validDeletedId }, { student_id: null });
 
     //**************** soft delete student by marking their status as 'deleted' and set the deleted_date
-    await Student.updateOne({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
+    await StudentModel.updateOne({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     return 'Student deleted successfully';
   } catch (error) {
     throw new Error(error.message);
