@@ -128,7 +128,7 @@ async function UserHasRole(userId, role) {
     const query = { _id: trimmedUserId, roles: roleLowerCase };
 
     //*************** db operation
-    const count = await User.countDocuments({ query });
+    const count = await User.countDocuments(query);
     const roleIsAlreadyExists = count > 0;
     return roleIsAlreadyExists;
   } catch (error) {
