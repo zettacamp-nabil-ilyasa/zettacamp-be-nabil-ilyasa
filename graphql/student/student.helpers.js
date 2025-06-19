@@ -17,8 +17,31 @@ const passwordRegexPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 //*************** regex pattern to ensure first and last name contains only letters
 const firstAndLastNameRegexPattern = /^[a-zA-Z\s'-]+$/;
 
-//*************** regex pattern to ensure date is in YYYY-MM-DD format
-const dateRegexPattern = /^\d{4}-\d{2}-\d{2}$/;
+//*************** regex pattern to ensure date is in DD-MM-YYYY format
+const dateRegexPattern = /^\d{2}-\d{2}-\d{4}$/;
+
+/**
+ *
+ * @param {string} dateStr - The date string to be parsed.
+ * @returns {Date} - The parsed date.
+ */
+function ParseDateDmy(dateStr) {
+  if (!dateStr) {
+    return null;
+  }
+  if (typeof dateStr !== 'string') {
+    throw new ApolloError('Invalid date input');
+  }
+  if (dateStr.trim() === '') {
+    return null;
+  }
+  //*************** split to get day, month and year
+  const [day, month, year] = dateStr.split('-');
+  if (day < 1 || day > 31 || month < 1 || month > 12) {
+    throw new ApolloError('Invalid date format');
+  }
+  return new Date(year, month - 1, day);
+}
 
 /**
  *
@@ -32,17 +55,18 @@ function ValidateDateOfBirth(dateInput) {
   if (typeof dateInput !== 'string') {
     throw new ApolloError('Invalid date input');
   }
-  if (dateInput.trim() === '') {
+  const trimmedDate = dateInput.trim();
+  if (trimmedDate === '') {
     return null;
   }
 
-  //*************** check with regex pattern to ensure date is in YYYY-MM-DD format
-  if (!dateRegexPattern.test(dateInput)) {
-    throw new ApolloError('Invalid date format');
+  //*************** check with regex pattern to ensure date is in DD-MM-YYYY format
+  if (!dateRegexPattern.test(trimmedDate)) {
+    throw new ApolloError('Date should be in DD-MM-YYYY format');
   }
 
   //*************** convert dateInput to Date object
-  birthDate = new Date(dateInput);
+  birthDate = ParseDateDmy(trimmedDate);
   const today = new Date();
 
   //*************** check if date is an invalid date

@@ -81,7 +81,11 @@ function FormatDateToIsoString(date) {
     return null;
   }
 
-  return parsedDate.toISOString().split('T')[0];
+  const day = parsedDate.getDate().toString().padStart(2, '0');
+  const month = (parsedDate.getMonth() + 1).toString().padStart(2, '0');
+  const year = parsedDate.getFullYear().toString().padStart(4, '0');
+
+  return `${day}-${month}-${year}`;
 }
 
 /**
