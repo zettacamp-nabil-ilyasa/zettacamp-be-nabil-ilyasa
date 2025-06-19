@@ -1,5 +1,6 @@
 //*************** IMPORT LIBRARY ***************
 const DataLoader = require('dataloader');
+const { ApolloError } = require('apollo-server-express');
 
 //*************** IMPORT MODULE ***************
 const StudentModel = require('./student.model.js');
@@ -24,7 +25,7 @@ async function BatchStudents(studentIds) {
     //**************** return array of student objects with order of studentIds
     return studentIds.map((studentId) => dataMap.get(studentId.toString()));
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 

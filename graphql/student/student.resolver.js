@@ -1,3 +1,6 @@
+// *************** IMPORT LIBRARY ***************
+const { ApolloError } = require('apollo-server-express');
+
 // *************** IMPORT MODULE ***************
 const StudentModel = require('./student.model.js');
 const UserModel = require('../user/user.model.js');
@@ -29,7 +32,7 @@ async function GetAllStudents() {
     const students = await StudentModel.find({ status: 'active' }).lean();
     return students;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -48,7 +51,7 @@ async function GetOneStudent(_, { _id }) {
     const student = await StudentModel.findOne({ _id: validId, status: 'active' }).lean();
     return student;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -73,13 +76,13 @@ async function CreateStudent(_, { input }) {
     //*************** check if email already exists
     const emailIsExist = await StudentEmailIsExist(email);
     if (emailIsExist) {
-      throw new Error('Email already exist');
+      throw new ApolloError('Email already exist');
     }
 
     //*************** check if school to delete is exist
     const schoolIsExist = await SchoolIsExist(school_id);
     if (!schoolIsExist) {
-      throw new Error('School does not exist');
+      throw new ApolloError('School does not exist');
     }
 
     //*************** set student status to active
@@ -93,7 +96,7 @@ async function CreateStudent(_, { input }) {
 
     return createdStudent;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -118,13 +121,13 @@ async function CreateStudentWithUser(_, { input }) {
     const userEmailExist = await UserEmailIsExist(email);
     const studentEmailExist = await StudentEmailIsExist(email);
     if (userEmailExist || studentEmailExist) {
-      throw new Error('Email already exist');
+      throw new ApolloError('Email already exist');
     }
 
     //*************** check if school is exist
     const schoolIsExist = await SchoolIsExist(school_id);
     if (!schoolIsExist) {
-      throw new Error('School does not exist');
+      throw new ApolloError('School does not exist');
     }
     //*************** create user with validated input, set status to active and roles to student
     const createdUser = await UserModel.create({ email, password, first_name, last_name, status: 'active', roles: ['student'] });
@@ -150,10 +153,10 @@ async function CreateStudentWithUser(_, { input }) {
     } catch (error) {
       //*************** manual rollback if student creation fails
       await UserModel.findOneAndDelete({ email });
-      throw new Error(error.message);
+      throw new ApolloError(error.message);
     }
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -176,14 +179,14 @@ async function UpdateStudent(_, { input }) {
     //**************** check if student is exist
     const studentIsExist = await StudentIsExist(_id);
     if (!studentIsExist) {
-      throw new Error('Student does not exist');
+      throw new ApolloError('Student does not exist');
     }
 
     //**************** check if email already exists
     if (email) {
       const emailIsExist = await StudentEmailIsExist(email, _id);
       if (emailIsExist) {
-        throw new Error('Email already exist');
+        throw new ApolloError('Email already exist');
       }
     }
 
@@ -191,7 +194,7 @@ async function UpdateStudent(_, { input }) {
     if (school_id) {
       const schoolIsExist = await SchoolIsExist(school_id);
       if (!schoolIsExist) {
-        throw new Error('School does not exist');
+        throw new ApolloError('School does not exist');
       }
     }
 
@@ -199,7 +202,7 @@ async function UpdateStudent(_, { input }) {
     const updatedStudent = await StudentModel.findOneAndUpdate({ _id: _id }, validatedStudentInput, { new: true }).lean();
     return updatedStudent;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -220,13 +223,13 @@ async function DeleteStudent(_, { _id, deletedBy }) {
     //**************** check if user to delete is exist and has admin role
     const userIsAdmin = await UserIsAdmin(validDeletedBy);
     if (!userIsAdmin) {
-      throw new Error('Unauthorized access');
+      throw new ApolloError('Unauthorized access');
     }
 
     //**************** check if student to be deleted is exist
     const studentIsExist = await StudentIsExist(validDeletedId);
     if (!studentIsExist) {
-      throw new Error('Student does not exist');
+      throw new ApolloError('Student does not exist');
     }
 
     //**************** check if student is referenced by any user
@@ -245,7 +248,7 @@ async function DeleteStudent(_, { _id, deletedBy }) {
     await StudentModel.updateOne({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     return 'Student deleted successfully';
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 

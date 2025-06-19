@@ -1,5 +1,5 @@
 //*************** IMPORT LIBRARY ***************
-const mongoose = require('mongoose');
+const { ApolloError } = require('apollo-server-express');
 
 //*************** IMPORT MODULE ***************
 const StudentModel = require('./student.model.js');
@@ -30,7 +30,7 @@ function ValidateDateOfBirth(dateInput) {
   let birthDate;
   //*************** dateInput check
   if (typeof dateInput !== 'string') {
-    throw new Error('Invalid date input');
+    throw new ApolloError('Invalid date input');
   }
   if (dateInput.trim() === '') {
     return null;
@@ -38,7 +38,7 @@ function ValidateDateOfBirth(dateInput) {
 
   //*************** check with regex pattern to ensure date is in YYYY-MM-DD format
   if (!dateRegexPattern.test(dateInput)) {
-    throw new Error('Invalid date format');
+    throw new ApolloError('Invalid date format');
   }
 
   //*************** convert dateInput to Date object
@@ -47,12 +47,12 @@ function ValidateDateOfBirth(dateInput) {
 
   //*************** check if date is an invalid date
   if (isNaN(birthDate.getTime())) {
-    throw new Error('Invalid date format');
+    throw new ApolloError('Invalid date format');
   }
 
   //*************** check if date is in the future
   if (birthDate > today) {
-    throw new Error('Date of birth cannot be in the future');
+    throw new ApolloError('Date of birth cannot be in the future');
   }
   return birthDate;
 }
@@ -75,7 +75,7 @@ async function StudentIsExist(studentId) {
     const studentIsExist = count > 0;
     return studentIsExist;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -90,11 +90,11 @@ async function StudentEmailIsExist(emailAcc, excludeId = null) {
   try {
     //*************** emailAcc input check
     if (typeof emailAcc !== 'string') {
-      throw new Error('Invalid email input');
+      throw new ApolloError('Invalid email input');
     }
     const trimmedEmail = emailAcc.trim();
     if (trimmedEmail === '') {
-      throw new Error('Invalid email input');
+      throw new ApolloError('Invalid email input');
     }
 
     //*************** excludeId input check
@@ -113,7 +113,7 @@ async function StudentEmailIsExist(emailAcc, excludeId = null) {
     const studentEmailIsExist = count > 0;
     return studentEmailIsExist;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -138,7 +138,7 @@ async function GetReferencedUserId(studentId) {
     const referencedUser = student.user_id;
     return referencedUser;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -152,13 +152,13 @@ function ValidateStudentCreateInput(input) {
   let { first_name, last_name, email, date_of_birth, school_id } = input;
 
   if (!emailRegexPattern.test(email)) {
-    throw new Error('email format is invalid');
+    throw new ApolloError('email format is invalid');
   }
   if (!firstAndLastNameRegexPattern.test(first_name)) {
-    throw new Error('first name contains invalid characters');
+    throw new ApolloError('first name contains invalid characters');
   }
   if (!firstAndLastNameRegexPattern.test(last_name)) {
-    throw new Error('last name contains invalid characters');
+    throw new ApolloError('last name contains invalid characters');
   }
   if (date_of_birth) {
     //*************** validation to ensure date is in YYYY-MM-DD format
@@ -183,18 +183,18 @@ function ValidateStudentAndUserCreateInput(input) {
   let { first_name, last_name, email, password, date_of_birth, school_id } = input;
 
   if (!emailRegexPattern.test(email)) {
-    throw new Error('email format is invalid');
+    throw new ApolloError('email format is invalid');
   }
   if (!passwordRegexPattern.test(password)) {
-    throw new Error(
+    throw new ApolloError(
       'password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, and one number'
     );
   }
   if (!firstAndLastNameRegexPattern.test(first_name)) {
-    throw new Error('first name contains invalid characters');
+    throw new ApolloError('first name contains invalid characters');
   }
   if (!firstAndLastNameRegexPattern.test(last_name)) {
-    throw new Error('last name contains invalid characters');
+    throw new ApolloError('last name contains invalid characters');
   }
   if (school_id) {
     school_id = SanitizeAndValidateId(school_id);
@@ -224,17 +224,17 @@ function ValidateStudentUpdateInput(input) {
   _id = SanitizeAndValidateId(_id);
 
   if (email && !emailRegexPattern.test(email)) {
-    throw new Error('email format is invalid');
+    throw new ApolloError('email format is invalid');
   }
   if (first_name) {
     if (!firstAndLastNameRegexPattern.test(first_name)) {
-      throw new Error('first name contains invalid characters');
+      throw new ApolloError('first name contains invalid characters');
     }
     first_name = ToTitleCase(first_name);
   }
   if (last_name) {
     if (!firstAndLastNameRegexPattern.test(last_name)) {
-      throw new Error('last name contains invalid characters');
+      throw new ApolloError('last name contains invalid characters');
     }
     last_name = ToTitleCase(last_name);
   }
