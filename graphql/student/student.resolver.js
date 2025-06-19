@@ -18,6 +18,8 @@ const {
   StudentIsExist,
   StudentEmailIsExist,
   GetReferencedUserId,
+  GetPreviousSchoolId,
+  StudentIsAlreadyExistsInSchool,
 } = require('./student.helpers.js');
 
 //*************** QUERY ***************
@@ -196,8 +198,17 @@ async function UpdateStudent(_, { input }) {
       if (!schoolIsExist) {
         throw new ApolloError('School does not exist');
       }
-    }
 
+      //**************** remove student id from student array in previous school
+      const previousSchoolId = await GetPreviousSchoolId(school_id, _id);
+      if (previousSchoolId) {
+        if (previousSchoolId != school_id) {
+          await SchoolModel.updateOne({ _id: previousSchoolId }, { $pull: { students: _id } });
+        }
+      }
+      //**************** push student id to student array in school document
+      await SchoolModel.updateOne({ _id: school_id }, { $addToSet: { students: _id } });
+    }
     //**************** update student with validated input
     const updatedStudent = await StudentModel.findOneAndUpdate({ _id: _id }, validatedStudentInput, { new: true }).lean();
     return updatedStudent;

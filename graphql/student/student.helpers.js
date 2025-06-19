@@ -250,12 +250,41 @@ function ValidateStudentUpdateInput(input) {
   return validatedInput;
 }
 
+async function GetPreviousSchoolId(schoolId, studentId) {
+  try {
+    //*************** validate id input
+    const validatedStudentId = SanitizeAndValidateId(studentId);
+
+    const student = await StudentModel.findById(validatedStudentId);
+    if (!student) {
+      return false;
+    }
+    return student.school_id;
+  } catch (error) {
+    throw new ApolloError(error.message);
+  }
+}
+
+async function StudentIsAlreadyExistsInSchool(schoolId, studentId) {
+  try {
+    const validatedSchoolId = SanitizeAndValidateId(schoolId);
+    const validatedStudentId = SanitizeAndValidateId(studentId);
+
+    const studentAlreadyExistInSchool = Boolean(await StudentModel.exists({ _id: validatedStudentId, school_id: validatedSchoolId }));
+    return studentAlreadyExistInSchool;
+  } catch (error) {
+    throw new ApolloError(error.message);
+  }
+}
+
 // *************** EXPORT MODULE ***************
 
 module.exports = {
   StudentIsExist,
   StudentEmailIsExist,
   GetReferencedUserId,
+  GetPreviousSchoolId,
+  StudentIsAlreadyExistsInSchool,
   ValidateStudentCreateInput,
   ValidateStudentAndUserCreateInput,
   ValidateStudentUpdateInput,
