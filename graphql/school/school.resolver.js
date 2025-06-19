@@ -1,3 +1,6 @@
+// *************** IMPORT LIBRARY ***************
+const { ApolloError } = require('apollo-server-express');
+
 // *************** IMPORT MODULE ***************
 const SchoolModel = require('./school.model.js');
 
@@ -26,7 +29,7 @@ async function GetAllSchools() {
     const schools = await SchoolModel.find({ status: 'active' }).lean();
     return schools;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -45,7 +48,7 @@ async function GetOneSchool(_, { _id }) {
     const school = await SchoolModel.findOne({ _id: validId, status: 'active' }).lean();
     return school;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -71,10 +74,10 @@ async function CreateSchool(_, { input }) {
     const longNameIsExist = await SchoolLongNameIsExist(long_name);
     const brandNameIsExist = await SchoolBrandNameIsExist(brand_name);
     if (longNameIsExist) {
-      throw new Error("School's official name already exist");
+      throw new ApolloError("School's official name already exist");
     }
     if (brandNameIsExist) {
-      throw new Error("School's brand name already exist");
+      throw new ApolloError("School's brand name already exist");
     }
 
     //*************** assign status
@@ -84,7 +87,7 @@ async function CreateSchool(_, { input }) {
     const createdSchool = await SchoolModel.create(validatedSchoolInput);
     return createdSchool;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -107,20 +110,20 @@ async function UpdateSchool(_, { input }) {
     //*************** check if school exists
     const schoolIsExist = await SchoolIsExist(_id);
     if (!schoolIsExist) {
-      throw new Error('School does not exist');
+      throw new ApolloError('School does not exist');
     }
 
     //*************** check if school name already exist
     if (long_name) {
       const longNameIsExist = await SchoolLongNameIsExist(long_name, _id);
       if (longNameIsExist) {
-        throw new Error('School official name already exists');
+        throw new ApolloError('School official name already exists');
       }
     }
     if (brand_name) {
       const brandNameIsExist = await SchoolBrandNameIsExist(brand_name, _id);
       if (brandNameIsExist) {
-        throw new Error('School brand name already exists');
+        throw new ApolloError('School brand name already exists');
       }
     }
 
@@ -128,7 +131,7 @@ async function UpdateSchool(_, { input }) {
     const updatedSchool = await SchoolModel.findOneAndUpdate({ _id: _id }, validatedSchoolInput, { new: true }).lean();
     return updatedSchool;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -149,26 +152,26 @@ async function DeleteSchool(_, { _id, deletedBy }) {
     //**************** check if user to delete is exist and has admin role
     const userIsAdmin = await UserIsAdmin(validDeletedBy);
     if (!userIsAdmin) {
-      throw new Error('Unauthorized access');
+      throw new ApolloError('Unauthorized access');
     }
 
     //**************** check if school to be deleted is exist
     const schoolIsExist = await SchoolIsExist(validDeletedId);
     if (!schoolIsExist) {
-      throw new Error('School does not exist');
+      throw new ApolloError('School does not exist');
     }
 
     //**************** check if school is referenced by any student
     const schoolIsReferenced = await SchoolIsReferencedByStudent(validDeletedId);
     if (schoolIsReferenced) {
-      throw new Error('School that is referenced by a student cannot be deleted');
+      throw new ApolloError('School that is referenced by a student cannot be deleted');
     }
 
     //**************** soft-delete school by marking their status as 'deleted' and set deleted_date
     await SchoolModel.updateOne({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     return 'School deleted successfully';
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 

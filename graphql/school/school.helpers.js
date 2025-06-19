@@ -1,5 +1,6 @@
 //*************** IMPORT LIBRARY ***************
 const mongoose = require('mongoose');
+const { ApolloError } = require('apollo-server-express');
 
 //*************** IMPORT MODULE ***************
 const SchoolModel = require('./school.model.js');
@@ -26,11 +27,11 @@ async function SchoolLongNameIsExist(longName, excludeId = null) {
   try {
     //*************** longName input check
     if (typeof longName !== 'string') {
-      throw new Error('Invalid long name input');
+      throw new ApolloError('Invalid long name input');
     }
     const trimmedLongName = longName.trim();
     if (trimmedLongName === '') {
-      throw new Error('Invalid long name input');
+      throw new ApolloError('Invalid long name input');
     }
     //*************** excludeId input check
     let validatedExcludeId = '';
@@ -47,7 +48,7 @@ async function SchoolLongNameIsExist(longName, excludeId = null) {
     const count = await SchoolModel.countDocuments(query);
     return count > 0;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -62,11 +63,11 @@ async function SchoolBrandNameIsExist(brandName, excludeId = null) {
   try {
     //*************** brandName input check
     if (typeof brandName !== 'string') {
-      throw new Error('Invalid brand name input');
+      throw new ApolloError('Invalid brand name input');
     }
     const trimmedBrandName = brandName.trim();
     if (trimmedBrandName === '') {
-      throw new Error('Invalid brand name input');
+      throw new ApolloError('Invalid brand name input');
     }
 
     //*************** excludeId input check
@@ -84,7 +85,7 @@ async function SchoolBrandNameIsExist(brandName, excludeId = null) {
     const count = await SchoolModel.countDocuments(query);
     return count > 0;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -106,7 +107,7 @@ async function SchoolIsReferencedByStudent(schoolId) {
     const referenceIsExist = Boolean(await StudentModel.exists(query));
     return referenceIsExist;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -119,13 +120,13 @@ async function SchoolIsReferencedByStudent(schoolId) {
 function ValidateSchoolCreateInput(input) {
   let { brand_name, long_name, address } = input;
   if (!schoolNameRegexPattern.test(brand_name)) {
-    throw new Error('brand name contains invalid characters');
+    throw new ApolloError('brand name contains invalid characters');
   }
   if (!schoolNameRegexPattern.test(long_name)) {
-    throw new Error('long name contains invalid characters');
+    throw new ApolloError('long name contains invalid characters');
   }
   if (!addressRegexPattern.test(address)) {
-    throw new Error('address contains invalid characters');
+    throw new ApolloError('address contains invalid characters');
   }
   //*************** format long name using Title case
   long_name = ToTitleCase(long_name);
@@ -146,17 +147,17 @@ function ValidateSchoolUpdateInput(input) {
   _id = SanitizeAndValidateId(_id);
 
   if (brand_name && !schoolNameRegexPattern.test(brand_name)) {
-    throw new Error('brand name contains invalid characters');
+    throw new ApolloError('brand name contains invalid characters');
   }
   if (long_name) {
     if (!schoolNameRegexPattern.test(long_name)) {
-      throw new Error('long name contains invalid characters');
+      throw new ApolloError('long name contains invalid characters');
     }
     //*************** format long name using Title case
     long_name = ToTitleCase(long_name);
   }
   if (address && !addressRegexPattern.test(address)) {
-    throw new Error('address contains invalid characters');
+    throw new ApolloError('address contains invalid characters');
   }
 
   const validatedInput = { _id, brand_name, long_name, address };

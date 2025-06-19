@@ -1,5 +1,6 @@
 //*************** IMPORT LIBRARY ***************
 const mongoose = require('mongoose');
+const { ApolloError } = require('apollo-server-express');
 
 //*************** IMPORT MODULE ***************
 const SchoolModel = require('../graphql/school/school.model.js');
@@ -50,11 +51,11 @@ function CleanNonRequiredInput(input) {
 function ToTitleCase(string) {
   //*************** sanity check
   if (typeof string !== 'string') {
-    throw new Error('Invalid string input');
+    throw new ApolloError('Invalid string input');
   }
   const lowercase = string.trim().toLowerCase();
   if (lowercase === '') {
-    throw new Error('Invalid string input');
+    throw new ApolloError('Invalid string input');
   }
   const splittedString = lowercase.split(' ');
   const titledCase = splittedString.map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
@@ -93,14 +94,14 @@ async function SchoolIsExist(schoolId) {
   try {
     //*************** sanity check
     if (typeof schoolId !== 'string' || schoolId.trim() === '' || !mongoose.Types.ObjectId.isValid(schoolId)) {
-      throw new Error('Invalid school id input');
+      throw new ApolloError('Invalid school id input');
     }
 
     const query = { _id: schoolId, status: 'active' };
     const count = await SchoolModel.countDocuments(query);
     return count > 0;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -115,12 +116,12 @@ async function UserEmailIsExist(emailAcc, excludeId = null) {
   try {
     //*************** sanity check
     if (typeof emailAcc !== 'string' || emailAcc.trim() === '') {
-      throw new Error('Invalid email input');
+      throw new ApolloError('Invalid email input');
     }
     let trimmedExcludeId = '';
     if (excludeId) {
       if (typeof excludeId !== 'string' || excludeId.trim() === '' || !mongoose.Types.ObjectId.isValid(excludeId.trim())) {
-        throw new Error('Invalid exclude id input');
+        throw new ApolloError('Invalid exclude id input');
       }
       trimmedExcludeId = excludeId.trim();
     }
@@ -134,7 +135,7 @@ async function UserEmailIsExist(emailAcc, excludeId = null) {
     const count = await UserModel.countDocuments(query);
     return count > 0;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 

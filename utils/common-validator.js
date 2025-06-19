@@ -1,3 +1,5 @@
+const { ApolloError } = require('apollo-server');
+
 //*************** IMPORT LIBRARY ***************
 const mongoose = require('mongoose');
 
@@ -16,7 +18,7 @@ const nonMandatoryFields = ['address', 'date_of_birth'];
 function CleanRequiredInput(input) {
   //*************** input check
   if (typeof input !== 'object' || input === null || Array.isArray(input)) {
-    throw new TypeError('Input should be an object');
+    throw new ApolloError('Input should be an object');
   }
   //*************** create new object
   const cleanedInput = {};
@@ -24,7 +26,7 @@ function CleanRequiredInput(input) {
   for (const [key, value] of Object.entries(input)) {
     //*************** check for null and undefined
     if (value === null || value === undefined) {
-      throw new Error(`${key} is required`);
+      throw new ApolloError(`${key} is required`);
     }
     if (typeof value === 'string') {
       const trimmed = value.trim();
@@ -33,7 +35,7 @@ function CleanRequiredInput(input) {
         if (!nonMandatoryFields.includes(key)) {
           cleanedInput[key] = trimmed;
         } else {
-          throw new Error(`${key} is required`);
+          throw new ApolloError(`${key} is required`);
         }
         //*************** if it's not an empty string, assign the trimmed value
       } else {
@@ -56,12 +58,12 @@ function CleanRequiredInput(input) {
 function SanitizeAndValidateId(id) {
   //*************** check if id is not a string
   if (typeof id !== 'string') {
-    throw new Error('Invalid id input');
+    throw new ApolloError('Invalid id input');
   }
   const trimmedId = id.trim();
   //*************** check if id is empty and not an object id
   if (trimmedId === '' || !mongoose.Types.ObjectId.isValid(trimmedId)) {
-    throw new Error('Invalid id input');
+    throw new ApolloError('Invalid id input');
   }
   return trimmedId;
 }
@@ -82,7 +84,7 @@ async function UserIsAdmin(userId) {
     const userIsAdmin = count > 0;
     return userIsAdmin;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
