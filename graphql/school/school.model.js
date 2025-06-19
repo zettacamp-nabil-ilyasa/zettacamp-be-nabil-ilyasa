@@ -12,6 +12,15 @@ const school = new mongoose.Schema(
     //Address
     address: { type: String, trim: true, default: null },
 
+    //Country
+    country: { type: String, trim: true, default: null },
+
+    //City
+    city: { type: String, trim: true, default: null },
+
+    //Zipcode
+    zipcode: { type: String, trim: true, default: null },
+
     //Students associated with this school
     students: [{ type: mongoose.Schema.Types.ObjectId, ref: 'student' }],
 

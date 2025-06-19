@@ -7,7 +7,7 @@ const mongoose = require('mongoose');
 const UserModel = require('../graphql/user/user.model.js');
 
 //*************** list of non-mandatory fields
-const nonMandatoryFields = ['address', 'date_of_birth'];
+const nonMandatoryFields = ['address', 'date_of_birth', 'country', 'city', 'zipcode'];
 /**
  * Clean input from null, undefined, and empty string (shallow only).
  * Throws error if any field is null, undefined, or empty string.

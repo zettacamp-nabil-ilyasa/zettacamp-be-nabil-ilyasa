@@ -16,6 +16,15 @@ const schoolTypeDefs = gql`
     # Address
     address: String
 
+    # Country
+    country: String
+
+    # City
+    city: String
+
+    # Zipcode
+    zipcode: String
+
     # Students associated with this school
     students: [Student]
 
@@ -38,6 +47,15 @@ const schoolTypeDefs = gql`
 
     # Address for create school input
     address: String
+
+    # Country for create school input
+    country: String
+
+    # City for create school input
+    city: String
+
+    # Zipcode for create school input
+    zipcode: String
   }
 
   input UpdateSchoolInput {
@@ -52,6 +70,15 @@ const schoolTypeDefs = gql`
 
     # Address for update school input
     address: String
+
+    # Country for update school input
+    country: String
+
+    # City for update school input
+    city: String
+
+    # Zipcode for update school input
+    zipcode: String
   }
 
   extend type Query {

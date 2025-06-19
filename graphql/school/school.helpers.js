@@ -16,6 +16,15 @@ const schoolNameRegexPattern = /^[a-zA-Z\s'-\d]+$/;
 //*************** regex pattern to ensure address is at least 5 characters
 const addressRegexPattern = /^[a-zA-Z0-9\s,'./\-#()]{10,50}$/;
 
+//*************** regex pattern to ensure city name is at least 2 characters
+const cityNameRegexPattern = /^[a-zA-Z\s\-]{2,30}$/;
+
+//*************** regex pattern to ensure country name is at least 2 characters
+const countryNameRegexPattern = /^[a-zA-Z\s\-]{2,30}$/;
+
+//*************** regex pattern to ensure zip code is at least 4 characters
+const zipCodeRegexPattern = /^[A-Za-z0-9\s\-]{4,15}$/;
+
 /**
  * Check if school name already exist
  * @param {string} longName - The school's long name to be checked
@@ -118,7 +127,7 @@ async function SchoolIsReferencedByStudent(schoolId) {
  * @throws {Error} - If validation fails.
  */
 function ValidateSchoolCreateInput(input) {
-  let { brand_name, long_name, address } = input;
+  let { brand_name, long_name, address, country, city, zipcode } = input;
   if (!schoolNameRegexPattern.test(brand_name)) {
     throw new ApolloError('brand name contains invalid characters');
   }
@@ -128,10 +137,19 @@ function ValidateSchoolCreateInput(input) {
   if (!addressRegexPattern.test(address)) {
     throw new ApolloError('address contains invalid characters');
   }
+  if (country && !countryNameRegexPattern.test(country)) {
+    throw new ApolloError('country name contains invalid characters');
+  }
+  if (city && !cityNameRegexPattern.test(city)) {
+    throw new ApolloError('city name contains invalid characters');
+  }
+  if (zipcode && !zipCodeRegexPattern.test(zipcode)) {
+    throw new ApolloError('zip code contains invalid characters');
+  }
   //*************** format long name using Title case
   long_name = ToTitleCase(long_name);
 
-  const validatedInput = { brand_name, long_name, address };
+  const validatedInput = { brand_name, long_name, address, country, city, zipcode };
   return validatedInput;
 }
 
@@ -142,7 +160,7 @@ function ValidateSchoolCreateInput(input) {
  * @throws {Error} - If validation fails.
  */
 function ValidateSchoolUpdateInput(input) {
-  let { _id, brand_name, long_name, address } = input;
+  let { _id, brand_name, long_name, address, country, city, zipcode } = input;
   //*************** _id input check
   _id = SanitizeAndValidateId(_id);
 
@@ -159,8 +177,17 @@ function ValidateSchoolUpdateInput(input) {
   if (address && !addressRegexPattern.test(address)) {
     throw new ApolloError('address contains invalid characters');
   }
+  if (country && !countryNameRegexPattern.test(country)) {
+    throw new ApolloError('country name contains invalid characters');
+  }
+  if (city && !cityNameRegexPattern.test(city)) {
+    throw new ApolloError('city name contains invalid characters');
+  }
+  if (zipcode && !zipCodeRegexPattern.test(zipcode)) {
+    throw new ApolloError('zip code contains invalid characters');
+  }
 
-  const validatedInput = { _id, brand_name, long_name, address };
+  const validatedInput = { _id, brand_name, long_name, address, country, city, zipcode };
   return validatedInput;
 }
 

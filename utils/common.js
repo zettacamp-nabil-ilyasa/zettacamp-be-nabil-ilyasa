@@ -7,7 +7,7 @@ const SchoolModel = require('../graphql/school/school.model.js');
 const UserModel = require('../graphql/user/user.model.js');
 
 //*************** list of non-mandatory fields
-const nonMandatoryFields = ['address', 'date_of_birth'];
+const nonMandatoryFields = ['address', 'date_of_birth', 'country', 'city', 'zipcode'];
 
 /**
  * Cleans input from null, undefined, and empty string values (shallow only).
