@@ -1,3 +1,6 @@
+// *************** IMPORT LIBRARY ***************
+const { ApolloError } = require('apollo-server-express');
+
 // *************** IMPORT MODULE ***************
 const UserModel = require('./user.model.js');
 
@@ -29,7 +32,7 @@ async function GetAllUsers() {
     const users = await UserModel.find({ status: 'active' }).lean();
     return users;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -47,7 +50,7 @@ async function GetOneUser(_, { _id }) {
     const user = await UserModel.findOne({ _id: validId, status: 'active' }).lean();
     return user;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -72,7 +75,7 @@ async function CreateUser(_, { input }) {
     //**************** check if email already exist
     const emailIsExist = await UserEmailIsExist(email);
     if (emailIsExist) {
-      throw new Error('Email already exist');
+      throw new ApolloError('Email already exist');
     }
 
     //**************** set user status to active
@@ -86,7 +89,7 @@ async function CreateUser(_, { input }) {
     const createdUser = await UserModel.create(validatedUserInput);
     return createdUser;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -109,19 +112,19 @@ async function UpdateUser(_, { input }) {
     //**************** check if user exist
     const userIsExist = await UserIsExist(_id);
     if (!userIsExist) {
-      throw new Error('User does not exist');
+      throw new ApolloError('User does not exist');
     }
     //**************** check if email already exist
     if (email) {
       const emailIsExist = await UserEmailIsExist(email, _id);
       if (emailIsExist) {
-        throw new Error('Email already exist');
+        throw new ApolloError('Email already exist');
       }
     }
     const updatedUser = await UserModel.findOneAndUpdate({ _id: _id }, validatedInput, { new: true });
     return updatedUser;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -142,13 +145,13 @@ async function AddRole(_, { input }) {
     //**************** check if user's role is admin
     const isAdmin = await UserIsAdmin(updaterId);
     if (!isAdmin) {
-      throw new Error('Unauthorized access');
+      throw new ApolloError('Unauthorized access');
     }
 
     //**************** check if user whose role is to be added exist
     const userIsExist = await UserIsExist(_id);
     if (!userIsExist) {
-      throw new Error('User does not exist');
+      throw new ApolloError('User does not exist');
     }
 
     //**************** check if role is valid
@@ -157,13 +160,13 @@ async function AddRole(_, { input }) {
     //**************** check if user already has the role
     const userHasRole = await UserHasRole(_id, normalizedRole);
     if (userHasRole) {
-      throw new Error('User already has the role');
+      throw new ApolloError('User already has the role');
     }
 
     const updatedUser = await UserModel.findOneAndUpdate({ _id }, { $addToSet: { roles: normalizedRole } }, { new: true });
     return updatedUser;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -184,13 +187,13 @@ async function DeleteRole(_, { input }) {
     //**************** check if user's role is admin
     const isAdmin = await UserIsAdmin(updaterId);
     if (!isAdmin) {
-      throw new Error('Unauthorized access');
+      throw new ApolloError('Unauthorized access');
     }
 
     //**************** check if user whose role is to be added exist
     const userIsExist = await UserIsExist(_id);
     if (!userIsExist) {
-      throw new Error('User does not exist');
+      throw new ApolloError('User does not exist');
     }
 
     //**************** check if role is valid and normalized it
@@ -199,19 +202,19 @@ async function DeleteRole(_, { input }) {
     //**************** check if user has the role
     const userHasRole = await UserHasRole(_id, normalizedRole);
     if (!userHasRole) {
-      throw new Error('User does not have the role');
+      throw new ApolloError('User does not have the role');
     }
 
     //**************** check if role can be removed
     const isRemovableRole = IsRemovableRole(normalizedRole);
     if (!isRemovableRole) {
-      throw new Error('Role cannot be removed');
+      throw new ApolloError('Role cannot be removed');
     }
 
     const updatedUser = await UserModel.findOneAndUpdate({ _id }, { $pull: { roles: normalizedRole } }, { new: true }).lean();
     return updatedUser;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -232,26 +235,26 @@ async function DeleteUser(_, { _id, deletedBy }) {
     //**************** check if user to delete is exist and has admin role
     const userIsAdmin = await UserIsAdmin(validDeletedBy);
     if (!userIsAdmin) {
-      throw new Error('Unauthorized access');
+      throw new ApolloError('Unauthorized access');
     }
 
     //**************** check if user to be deleted is exist
     const userIsExist = await UserIsExist(validDeletedId);
     if (!userIsExist) {
-      throw new Error('User does not exist');
+      throw new ApolloError('User does not exist');
     }
 
     //**************** check if user is referenced by any student
     const userIsReferenced = await UserIsReferencedByStudent(validDeletedId);
     if (userIsReferenced) {
-      throw new Error('User that is referenced by a student cannot be deleted');
+      throw new ApolloError('User that is referenced by a student cannot be deleted');
     }
 
     //**************** soft-delete user by marking their status as 'deleted' and set deleted_at
     await UserModel.updateOne({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     return 'User deleted successfully';
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 

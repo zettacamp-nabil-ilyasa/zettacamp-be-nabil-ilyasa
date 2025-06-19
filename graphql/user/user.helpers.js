@@ -1,5 +1,5 @@
 //*************** IMPORT LIBRARY ***************
-const mongoose = require('mongoose');
+const { ApolloError } = require('apollo-server-express');
 const bcrypt = require('bcrypt');
 
 //*************** IMPORT MODULE ***************
@@ -41,7 +41,7 @@ async function UserIsExist(userId) {
     const userIsExist = count > 0;
     return userIsExist;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -54,11 +54,11 @@ async function UserIsExist(userId) {
 function NormalizeRole(role) {
   //*************** role input check, set to lowercase
   if (typeof role !== 'string') {
-    throw new Error('Invalid role input');
+    throw new ApolloError('Invalid role input');
   }
   const roleLowerCase = role.trim().toLowerCase();
   if (roleLowerCase === '') {
-    throw new Error('Invalid role input');
+    throw new ApolloError('Invalid role input');
   }
 
   const validRoles = ['admin', 'user', 'student'];
@@ -66,7 +66,7 @@ function NormalizeRole(role) {
   //*************** check if role is a valid role
   const isValidRole = validRoles.includes(roleLowerCase);
   if (!isValidRole) {
-    throw new Error('Invalid role');
+    throw new ApolloError('Invalid role');
   }
   return roleLowerCase;
 }
@@ -80,11 +80,11 @@ function NormalizeRole(role) {
 function IsRemovableRole(role) {
   //*************** role input check, set to lowercase
   if (typeof role !== 'string') {
-    throw new Error('Invalid role input');
+    throw new ApolloError('Invalid role input');
   }
   const roleLowerCase = role.trim().toLowerCase();
   if (roleLowerCase === '') {
-    throw new Error('Invalid role input');
+    throw new ApolloError('Invalid role input');
   }
 
   //*************** check if role is not a protected role
@@ -106,11 +106,11 @@ async function UserHasRole(userId, role) {
 
     //*************** role input check, set to lowercase
     if (typeof role !== 'string') {
-      throw new Error('Invalid role input');
+      throw new ApolloError('Invalid role input');
     }
     const roleLowerCase = role.trim().toLowerCase();
     if (roleLowerCase === '') {
-      throw new Error('Invalid role input');
+      throw new ApolloError('Invalid role input');
     }
 
     //*************** set query for db operation
@@ -121,7 +121,7 @@ async function UserHasRole(userId, role) {
     const roleIsAlreadyExists = count > 0;
     return roleIsAlreadyExists;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -143,7 +143,7 @@ async function UserIsReferencedByStudent(userId) {
     const isReferenced = Boolean(await StudentModel.exists(query));
     return isReferenced;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -157,11 +157,11 @@ async function HashPassword(password) {
   try {
     //*************** password input check
     if (typeof password !== 'string') {
-      throw new Error('Invalid password input');
+      throw new ApolloError('Invalid password input');
     }
     const trimmedPassword = password.trim();
     if (trimmedPassword === '') {
-      throw new Error('Invalid password input');
+      throw new ApolloError('Invalid password input');
     }
 
     const saltRounds = 10;
@@ -170,7 +170,7 @@ async function HashPassword(password) {
     const hashedPassword = await bcrypt.hash(trimmedPassword, saltRounds);
     return hashedPassword;
   } catch (error) {
-    throw new Error(error.message);
+    throw new ApolloError(error.message);
   }
 }
 
@@ -184,18 +184,18 @@ function ValidateUserCreateInput(input) {
   let { first_name, last_name, email, password, role } = input;
 
   if (!emailRegexPattern.test(email)) {
-    throw new Error('email format is invalid');
+    throw new ApolloError('email format is invalid');
   }
   if (!passwordRegexPattern.test(password)) {
-    throw new Error(
+    throw new ApolloError(
       'password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, and one number'
     );
   }
   if (!firstAndLastNameRegexPattern.test(first_name)) {
-    throw new Error('first name contains invalid characters');
+    throw new ApolloError('first name contains invalid characters');
   }
   if (!firstAndLastNameRegexPattern.test(last_name)) {
-    throw new Error('last name contains invalid characters');
+    throw new ApolloError('last name contains invalid characters');
   }
 
   //*************** convert first_name and last_name to Title case
@@ -218,23 +218,23 @@ function ValidateUserUpdateInput(input) {
   _id = SanitizeAndValidateId(_id);
 
   if (email && !emailRegexPattern.test(email)) {
-    throw new Error('email format is invalid');
+    throw new ApolloError('email format is invalid');
   }
   if (password && !passwordRegexPattern.test(password)) {
-    throw new Error(
+    throw new ApolloError(
       'password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, and one number'
     );
   }
   if (first_name) {
     if (!firstAndLastNameRegexPattern.test(first_name)) {
-      throw new Error('first name contains invalid characters');
+      throw new ApolloError('first name contains invalid characters');
     }
     //*************** convert first_name to Title case
     first_name = ToTitleCase(first_name);
   }
   if (last_name) {
     if (!firstAndLastNameRegexPattern.test(last_name)) {
-      throw new Error('last name contains invalid characters');
+      throw new ApolloError('last name contains invalid characters');
     }
     //*************** convert last_name to Title case
     last_name = ToTitleCase(last_name);
