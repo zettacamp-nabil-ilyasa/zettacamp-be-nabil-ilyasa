@@ -11,7 +11,6 @@ const studentTypeDefs = require('./student/student.typedef.js');
 const studentResolvers = require('./student/student.resolver.js');
 
 const baseTypeDefs = gql`
-  # scalar Date
   enum Status {
     # Active and available
     active
