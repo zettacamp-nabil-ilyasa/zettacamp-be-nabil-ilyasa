@@ -1,26 +1,20 @@
 // *************** IMPORT LIBRARY ***************
 const { ApolloError } = require('apollo-server-express');
 
-// *************** IMPORT MODULE ***************
+// *************** IMPORT MODULES ***************
 const StudentModel = require('./student.model.js');
 const UserModel = require('../user/user.model.js');
 const SchoolModel = require('../school/school.model.js');
 
 // *************** IMPORT UTILS ***************
-const { CleanNonRequiredInput, UserEmailIsExist, SchoolIsExist, FormatDateToIsoString } = require('../../utils/common.js');
-const { CleanRequiredInput, SanitizeAndValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
+const { UserEmailIsExist, SchoolIsExist, FormatDateToIsoString, LogErrorToDb } = require('../../utils/common.js');
+const { SanitizeAndValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
 
-// *************** IMPORT HELPER ***************
-const {
-  ValidateStudentUpdateInput,
-  ValidateStudentCreateInput,
-  ValidateStudentAndUserCreateInput,
-  StudentIsExist,
-  StudentEmailIsExist,
-  GetReferencedUserId,
-  GetPreviousSchoolId,
-  StudentIsAlreadyExistsInSchool,
-} = require('./student.helpers.js');
+// *************** IMPORT VALIDATORS ***************
+const { ValidateStudentUpdateInput, ValidateStudentCreateInput, ValidateStudentAndUserCreateInput } = require('./student.validators.js');
+
+// *************** IMPORT HELPERS ***************
+const { StudentIsExist, StudentEmailIsExist, GetReferencedUserId, GetPreviousSchoolId } = require('./student.helpers.js');
 
 //*************** QUERY ***************
 
@@ -34,6 +28,9 @@ async function GetAllStudents() {
     const students = await StudentModel.find({ status: 'active' }).lean();
     return students;
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: {} });
+
     throw new ApolloError(error.message);
   }
 }
@@ -53,6 +50,9 @@ async function GetOneStudent(_, { _id }) {
     const student = await StudentModel.findOne({ _id: validId, status: 'active' }).lean();
     return student;
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: { _id } });
+
     throw new ApolloError(error.message);
   }
 }
@@ -68,12 +68,9 @@ async function GetOneStudent(_, { _id }) {
  */
 async function CreateStudent(_, { input }) {
   try {
-    //*************** clean input from null, undefined and empty string
-    const cleanedInput = CleanRequiredInput(input);
-
     //*************** validation to ensure input is formatted correctly
-    const validatedStudentInput = ValidateStudentCreateInput(cleanedInput);
-    const { email, school_id } = validatedStudentInput;
+    const validatedStudentInput = ValidateStudentCreateInput(input);
+    const { email, first_name, last_name, school_id, date_of_birth } = validatedStudentInput;
 
     //*************** check if email already exists
     const emailIsExist = await StudentEmailIsExist(email);
@@ -87,17 +84,27 @@ async function CreateStudent(_, { input }) {
       throw new ApolloError('School does not exist');
     }
 
-    //*************** set student status to active
-    validatedStudentInput.status = 'active';
+    //*************** compose object with validated input for Student
+    const validatedSchool = {
+      email,
+      first_name,
+      last_name,
+      school_id,
+      date_of_birth,
+      status: 'active',
+    };
 
     //*************** create student
-    const createdStudent = await StudentModel.create(validatedStudentInput);
+    const createdStudent = await StudentModel.create(validatedSchool);
 
     //*************** push created student id to student array in school document
-    await SchoolModel.updateOne({ _id: school_id }, { $push: { students: createdStudent._id } });
+    await SchoolModel.updateOne({ _id: school_id }, { $addToSet: { students: createdStudent._id } });
 
     return createdStudent;
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: { input } });
+
     throw new ApolloError(error.message);
   }
 }
@@ -112,11 +119,8 @@ async function CreateStudent(_, { input }) {
  */
 async function CreateStudentWithUser(_, { input }) {
   try {
-    //*************** clean input from null, undefined and empty string
-    const cleanedInput = CleanRequiredInput(input);
-
     //*************** validation to ensure input is formatted correctly
-    const validatedUserInput = ValidateStudentAndUserCreateInput(cleanedInput);
+    const validatedUserInput = ValidateStudentAndUserCreateInput(input);
     const { email, password, first_name, last_name, date_of_birth, school_id } = validatedUserInput;
 
     //*************** check if email already exists
@@ -131,11 +135,25 @@ async function CreateStudentWithUser(_, { input }) {
     if (!schoolIsExist) {
       throw new ApolloError('School does not exist');
     }
+
+    //*************** set password to hashed
+    const hashedPassword = await HashPassword(password);
+
+    //*************** compose object with validated input for User
+    const validatedUser = {
+      email,
+      password: hashedPassword,
+      first_name,
+      last_name,
+      status: 'active',
+      roles: ['student'],
+    };
+
     //*************** create user with validated input, set status to active and roles to student
-    const createdUser = await UserModel.create({ email, password, first_name, last_name, status: 'active', roles: ['student'] });
+    const createdUser = await UserModel.create(validatedUser);
     try {
-      //*************** create student with validated input, set status to active
-      const createdStudent = await StudentModel.create({
+      //*************** compose object with validated input for Student
+      const validatedStudent = {
         email,
         first_name,
         last_name,
@@ -143,21 +161,27 @@ async function CreateStudentWithUser(_, { input }) {
         school_id,
         status: 'active',
         user_id: createdUser._id,
-      });
+      };
+
+      //*************** create student with validated input, set status to active
+      const createdStudent = await StudentModel.create(validatedStudent);
 
       //*************** push created student id to student array in school document
-      await SchoolModel.updateOne({ _id: school_id }, { $push: { students: createdStudent._id } });
+      await SchoolModel.updateOne({ _id: school_id }, { $addToSet: { students: createdStudent._id } });
 
-      //*************** set student id to student_id field in User
+      //*************** set student's id to student_id field in User
       await UserModel.updateOne({ _id: createdUser._id }, { student_id: createdStudent._id });
 
       return createdStudent;
     } catch (error) {
       //*************** manual rollback if student creation fails
-      await UserModel.findOneAndDelete({ email });
+      await UserModel.findOneAndDelete({ id: createdUser._id });
       throw new ApolloError(error.message);
     }
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: { input } });
+
     throw new ApolloError(error.message);
   }
 }
@@ -171,12 +195,9 @@ async function CreateStudentWithUser(_, { input }) {
  */
 async function UpdateStudent(_, { input }) {
   try {
-    //**************** clean input from null, undefined and empty string
-    const cleanedInput = CleanNonRequiredInput(input);
-
     //**************** validation to ensure input is formatted correctly
-    const validatedStudentInput = ValidateStudentUpdateInput(cleanedInput);
-    const { _id, email, school_id } = validatedStudentInput;
+    const validatedStudentInput = ValidateStudentUpdateInput(input);
+    const { _id, email, first_name, last_name, date_of_birth, school_id } = validatedStudentInput;
 
     //**************** check if student is exist
     const studentIsExist = await StudentIsExist(_id);
@@ -206,13 +227,25 @@ async function UpdateStudent(_, { input }) {
           await SchoolModel.updateOne({ _id: previousSchoolId }, { $pull: { students: _id } });
         }
       }
-      //**************** push student id to student array in school document
+      //**************** add student id to student array in school document
       await SchoolModel.updateOne({ _id: school_id }, { $addToSet: { students: _id } });
     }
+    //**************** compose object with validated input for Student
+    const validatedStudent = {
+      email,
+      first_name,
+      last_name,
+      date_of_birth,
+      school_id,
+    };
+
     //**************** update student with validated input
-    const updatedStudent = await StudentModel.findOneAndUpdate({ _id: _id }, validatedStudentInput, { new: true }).lean();
+    const updatedStudent = await StudentModel.findOneAndUpdate({ _id: _id }, validatedStudent, { new: true }).lean();
     return updatedStudent;
   } catch (error) {
+    //**************** save error log to db
+    await LogErrorToDb({ error, parameterInput: { input } });
+
     throw new ApolloError(error.message);
   }
 }
@@ -259,6 +292,9 @@ async function DeleteStudent(_, { _id, deletedBy }) {
     await StudentModel.updateOne({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     return 'Student deleted successfully';
   } catch (error) {
+    //**************** save error log to db
+    await LogErrorToDb({ error, parameterInput: { _id, deletedBy } });
+
     throw new ApolloError(error.message);
   }
 }
@@ -274,11 +310,18 @@ async function DeleteStudent(_, { _id, deletedBy }) {
  * @throws {Error} - Throws error if loading fails.
  */
 async function StudentLoaderForUser(parent, _, context) {
-  if (!parent?.user_id) {
-    return null;
+  try {
+    if (!parent?.user_id) {
+      return null;
+    }
+    const loadedUser = await context.loaders.user.load(parent?.user_id.toString());
+    return loadedUser;
+  } catch (error) {
+    //**************** save error log to db
+    await LogErrorToDb({ error, parameterInput: {} });
+
+    throw new ApolloError(error.message);
   }
-  const loadedUser = await context.loaders.user.load(parent?.user_id.toString());
-  return loadedUser;
 }
 
 /**
@@ -290,14 +333,21 @@ async function StudentLoaderForUser(parent, _, context) {
  * @throws {Error} - Throws error if loading fails.
  */
 async function StudentLoaderForSchool(parent, _, context) {
-  //*************** check if student has any school
-  if (!parent?.school_id) {
-    return null;
-  }
+  try {
+    //*************** check if student has any school
+    if (!parent?.school_id) {
+      return null;
+    }
 
-  //*************** load school
-  const loadedSchool = await context.loaders.school.load(parent.school_id);
-  return loadedSchool;
+    //*************** load school
+    const loadedSchool = await context.loaders.school.load(parent.school_id);
+    return loadedSchool;
+  } catch (error) {
+    //**************** save error log to db
+    await LogErrorToDb({ error, parameterInput: {} });
+
+    throw new ApolloError(error.message);
+  }
 }
 
 // *************** EXPORT MODULE ***************
