@@ -16,7 +16,7 @@ const userTypeDefs = gql`
     # Email
     email: String!
 
-    # Role
+    # Roles
     roles: [Role!]
 
     # reference to student who is associated with this user

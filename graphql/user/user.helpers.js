@@ -7,16 +7,8 @@ const UserModel = require('./user.model');
 const StudentModel = require('../student/student.model');
 
 //*************** IMPORT UTILS ***************
-const { ToTitleCase } = require('../../utils/common');
 const { SanitizeAndValidateId } = require('../../utils/common-validator');
-
-//*************** regex pattern to ensure email is includes @ and .
-const emailRegexPattern = /^\S+@\S+\.\S+$/;
-//*************** regex pattern to ensure password is at least 8 characters and contain at least one uppercase letter, one lowercase letter, and one number
-const passwordRegexPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-
-//*************** regex pattern to ensure first and last name contains only letters
-const firstAndLastNameRegexPattern = /^[a-zA-Z\s'-]+$/;
+const { LogErrorToDb } = require('../../utils/common');
 
 //*************** list of protected roles
 const protectedRoles = ['user'];
@@ -41,6 +33,9 @@ async function UserIsExist(userId) {
     const userIsExist = count > 0;
     return userIsExist;
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: { userId } });
+
     throw new ApolloError(error.message);
   }
 }
@@ -121,6 +116,9 @@ async function UserHasRole(userId, role) {
     const roleIsAlreadyExists = count > 0;
     return roleIsAlreadyExists;
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: { userId, role } });
+
     throw new ApolloError(error.message);
   }
 }
@@ -143,6 +141,9 @@ async function UserIsReferencedByStudent(userId) {
     const isReferenced = Boolean(await StudentModel.exists(query));
     return isReferenced;
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: { userId } });
+
     throw new ApolloError(error.message);
   }
 }
@@ -170,80 +171,14 @@ async function HashPassword(password) {
     const hashedPassword = await bcrypt.hash(trimmedPassword, saltRounds);
     return hashedPassword;
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: { password } });
+
     throw new ApolloError(error.message);
   }
 }
 
-/**
- * Validates user creation input.
- * @param {object} input - The input object containing user data.
- * @returns {object} - The validated and formatted input.
- * @throws {Error} - If validation fails.
- */
-function ValidateUserCreateInput(input) {
-  let { first_name, last_name, email, password, role } = input;
-
-  if (!emailRegexPattern.test(email)) {
-    throw new ApolloError('email format is invalid');
-  }
-  if (!passwordRegexPattern.test(password)) {
-    throw new ApolloError(
-      'password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, and one number'
-    );
-  }
-  if (!firstAndLastNameRegexPattern.test(first_name)) {
-    throw new ApolloError('first name contains invalid characters');
-  }
-  if (!firstAndLastNameRegexPattern.test(last_name)) {
-    throw new ApolloError('last name contains invalid characters');
-  }
-
-  //*************** convert first_name and last_name to Title case
-  first_name = ToTitleCase(first_name);
-  last_name = ToTitleCase(last_name);
-
-  const validatedInput = { first_name, last_name, email, password, role };
-  return validatedInput;
-}
-
-/**
- * Validates user update input.
- * @param {object} input - The input object containing updated user data.
- * @returns {object} - The validated and formatted input.
- * @throws {Error} - If validation fails.
- */
-function ValidateUserUpdateInput(input) {
-  let { _id, first_name, last_name, email, password } = input;
-  //*************** _id input check
-  _id = SanitizeAndValidateId(_id);
-
-  if (email && !emailRegexPattern.test(email)) {
-    throw new ApolloError('email format is invalid');
-  }
-  if (password && !passwordRegexPattern.test(password)) {
-    throw new ApolloError(
-      'password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, and one number'
-    );
-  }
-  if (first_name) {
-    if (!firstAndLastNameRegexPattern.test(first_name)) {
-      throw new ApolloError('first name contains invalid characters');
-    }
-    //*************** convert first_name to Title case
-    first_name = ToTitleCase(first_name);
-  }
-  if (last_name) {
-    if (!firstAndLastNameRegexPattern.test(last_name)) {
-      throw new ApolloError('last name contains invalid characters');
-    }
-    //*************** convert last_name to Title case
-    last_name = ToTitleCase(last_name);
-  }
-  const validatedInput = { _id, first_name, last_name, email, password };
-  return validatedInput;
-}
-
-// *************** EXPORT MODULE ***************
+// *************** EXPORT MODULES ***************
 
 module.exports = {
   UserIsExist,
@@ -251,7 +186,5 @@ module.exports = {
   IsRemovableRole,
   UserHasRole,
   HashPassword,
-  ValidateUserCreateInput,
-  ValidateUserUpdateInput,
   UserIsReferencedByStudent,
 };

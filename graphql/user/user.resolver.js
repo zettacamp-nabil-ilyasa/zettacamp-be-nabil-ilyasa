@@ -5,20 +5,14 @@ const { ApolloError } = require('apollo-server-express');
 const UserModel = require('./user.model.js');
 
 // *************** IMPORT UTILS ***************
-const { CleanNonRequiredInput, UserEmailIsExist } = require('../../utils/common.js');
-const { CleanRequiredInput, SanitizeAndValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
+const { UserEmailIsExist, LogErrorToDb } = require('../../utils/common.js');
+const { SanitizeAndValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
 
-// *************** IMPORT HELPER ***************
-const {
-  ValidateUserCreateInput,
-  ValidateUserUpdateInput,
-  UserIsExist,
-  UserHasRole,
-  NormalizeRole,
-  IsRemovableRole,
-  HashPassword,
-  UserIsReferencedByStudent,
-} = require('./user.helpers.js');
+// *************** IMPORT VALIDATORS ***************
+const { ValidateUserCreateInput, ValidateUserUpdateInput } = require('./user.validators.js');
+
+// *************** IMPORT HELPERS ***************
+const { UserIsExist, UserHasRole, NormalizeRole, IsRemovableRole, HashPassword, UserIsReferencedByStudent } = require('./user.helpers.js');
 
 //*************** QUERY ***************
 
@@ -32,6 +26,9 @@ async function GetAllUsers() {
     const users = await UserModel.find({ status: 'active' }).lean();
     return users;
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: {} });
+
     throw new ApolloError(error.message);
   }
 }
@@ -50,6 +47,9 @@ async function GetOneUser(_, { _id }) {
     const user = await UserModel.findOne({ _id: validId, status: 'active' }).lean();
     return user;
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: { _id } });
+
     throw new ApolloError(error.message);
   }
 }
@@ -65,12 +65,9 @@ async function GetOneUser(_, { _id }) {
  */
 async function CreateUser(_, { input }) {
   try {
-    //**************** clean input from null, undefined and empty string
-    const cleanedInput = CleanRequiredInput(input);
-
-    //**************** validation to ensure input is formatted correctly
-    const validatedUserInput = ValidateUserCreateInput(cleanedInput);
-    const { email } = validatedUserInput;
+    //**************** validation to ensure input is formatted correctly and
+    const validatedUserInput = ValidateUserCreateInput(input);
+    const { email, password, first_name, last_name } = validatedUserInput;
 
     //**************** check if email already exist
     const emailIsExist = await UserEmailIsExist(email);
@@ -78,17 +75,22 @@ async function CreateUser(_, { input }) {
       throw new ApolloError('Email already exist');
     }
 
-    //**************** set user status to active
-    validatedUserInput.status = 'active';
-
-    //**************** set user role to user
-    validatedUserInput.roles = 'user';
-
     //**************** set password to hashed
-    validatedUserInput.password = await HashPassword(validatedUserInput.password);
-    const createdUser = await UserModel.create(validatedUserInput);
+    const hashedPassword = await HashPassword(password);
+
+    //**************** compose new object with validated input for User
+    const validatedUser = {
+      email,
+      password: hashedPassword,
+      first_name,
+      last_name,
+    };
+    const createdUser = await UserModel.create(validatedUser);
     return createdUser;
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: { input } });
+
     throw new ApolloError(error.message);
   }
 }
@@ -102,12 +104,9 @@ async function CreateUser(_, { input }) {
  */
 async function UpdateUser(_, { input }) {
   try {
-    //**************** clean input from null, undefined and empty string
-    const cleanedInput = CleanNonRequiredInput(input);
-
     //**************** validation to ensure input is formatted correctly
-    const validatedInput = ValidateUserUpdateInput(cleanedInput);
-    const { _id, email } = validatedInput;
+    const validatedInput = ValidateUserUpdateInput(input);
+    const { _id, email, first_name, last_name, password } = validatedInput;
 
     //**************** check if user exist
     const userIsExist = await UserIsExist(_id);
@@ -121,9 +120,29 @@ async function UpdateUser(_, { input }) {
         throw new ApolloError('Email already exist');
       }
     }
-    const updatedUser = await UserModel.findOneAndUpdate({ _id: _id }, validatedInput, { new: true });
+    //**************** compose new object with validated input
+    const validatedUser = {};
+    if (first_name) {
+      validatedUser.first_name = first_name;
+    }
+    if (last_name) {
+      validatedUser.last_name = last_name;
+    }
+    if (email) {
+      validatedUser.email = email;
+    }
+    if (password) {
+      const hashedPassword = await HashPassword(password);
+      validatedUser.password = hashedPassword;
+    }
+
+    //**************** update user with validated input
+    const updatedUser = await UserModel.findOneAndUpdate({ _id: _id }, validatedUser, { new: true });
     return updatedUser;
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: { input } });
+
     throw new ApolloError(error.message);
   }
 }
@@ -137,10 +156,9 @@ async function UpdateUser(_, { input }) {
  */
 async function AddRole(_, { input }) {
   try {
-    //**************** clean input from null, undefined and empty string
-    const cleanedInput = CleanRequiredInput(input);
-
-    const { updaterId, _id, role } = cleanedInput;
+    //**************** validate input fields
+    const validatedInput = ValidateAddRoleInput(input);
+    const { updaterId, _id, role } = validatedInput;
 
     //**************** check if user's role is admin
     const isAdmin = await UserIsAdmin(updaterId);
@@ -166,6 +184,9 @@ async function AddRole(_, { input }) {
     const updatedUser = await UserModel.findOneAndUpdate({ _id }, { $addToSet: { roles: normalizedRole } }, { new: true });
     return updatedUser;
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: { input } });
+
     throw new ApolloError(error.message);
   }
 }
@@ -179,10 +200,10 @@ async function AddRole(_, { input }) {
  */
 async function DeleteRole(_, { input }) {
   try {
-    //**************** clean input from null, undefined and empty string
-    const cleanedInput = CleanNonRequiredInput(input);
+    //**************** validate input fields
+    const validatedInput = ValidateDeleteRoleInput(input);
 
-    const { _id, updaterId, role } = cleanedInput;
+    const { _id, updaterId, role } = validatedInput;
 
     //**************** check if user's role is admin
     const isAdmin = await UserIsAdmin(updaterId);
@@ -214,6 +235,9 @@ async function DeleteRole(_, { input }) {
     const updatedUser = await UserModel.findOneAndUpdate({ _id }, { $pull: { roles: normalizedRole } }, { new: true }).lean();
     return updatedUser;
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: { input } });
+
     throw new ApolloError(error.message);
   }
 }
@@ -232,7 +256,7 @@ async function DeleteUser(_, { _id, deletedBy }) {
     const validDeletedId = SanitizeAndValidateId(_id);
     const validDeletedBy = SanitizeAndValidateId(deletedBy);
 
-    //**************** check if user to delete is exist and has admin role
+    //**************** check if deleter user is exist and has admin role
     const userIsAdmin = await UserIsAdmin(validDeletedBy);
     if (!userIsAdmin) {
       throw new ApolloError('Unauthorized access');
@@ -244,16 +268,29 @@ async function DeleteUser(_, { _id, deletedBy }) {
       throw new ApolloError('User does not exist');
     }
 
+    //**************** check if user is trying to delete themselves
+    if (_id == deletedBy) {
+      throw new ApolloError('You cannot delete yourself');
+    }
+
     //**************** check if user is referenced by any student
     const userIsReferenced = await UserIsReferencedByStudent(validDeletedId);
     if (userIsReferenced) {
       throw new ApolloError('User that is referenced by a student cannot be deleted');
     }
 
+    const toBeDeletedUser = {
+      deleted_at: new Date(),
+      status: 'deleted',
+      deleted_by: validDeletedBy,
+    };
     //**************** soft-delete user by marking their status as 'deleted' and set deleted_at
-    await UserModel.updateOne({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
+    await UserModel.updateOne({ _id: validDeletedId }, toBeDeletedUser);
     return 'User deleted successfully';
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: { _id, deletedBy } });
+
     throw new ApolloError(error.message);
   }
 }
@@ -269,16 +306,23 @@ async function DeleteUser(_, { _id, deletedBy }) {
  * @throws {Error} - Throws error if loading fails.
  */
 async function UserLoaderForStudent(parent, _, context) {
-  //*************** check if user has any student
-  if (!parent?.student_id) {
-    return null;
+  try {
+    //*************** check if user has any student
+    if (!parent?.student_id) {
+      return null;
+    }
+    //*************** load student
+    const loadedStudent = await context.loaders.student.load(parent.student_id);
+    return loadedStudent;
+  } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: {} });
+
+    throw new ApolloError(error.message);
   }
-  //*************** load student
-  const loadedStudent = await context.loaders.student.load(parent.student_id);
-  return loadedStudent;
 }
 
-// *************** EXPORT MODULE ***************
+// *************** EXPORT MODULES ***************
 module.exports = {
   Query: { GetAllUsers, GetOneUser },
   Mutation: { CreateUser, UpdateUser, AddRole, DeleteRole, DeleteUser },
