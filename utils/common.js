@@ -5,42 +5,7 @@ const { ApolloError } = require('apollo-server-express');
 //*************** IMPORT MODULE ***************
 const SchoolModel = require('../graphql/school/school.model.js');
 const UserModel = require('../graphql/user/user.model.js');
-
-//*************** list of non-mandatory fields
-const nonMandatoryFields = ['address', 'date_of_birth', 'country', 'city', 'zipcode'];
-
-/**
- * Cleans input from null, undefined, and empty string values (shallow only).
- * @param {Object} input - Input object to be cleaned.
- * @returns {Object} cleanedInput - Cleaned input object.
- */
-function CleanNonRequiredInput(input) {
-  //*************** sanity check
-  if (typeof input !== 'object' || input === null || Array.isArray(input)) {
-    throw new TypeError('Input should be an object');
-  }
-  const cleanedInput = {};
-  for (const [key, value] of Object.entries(input)) {
-    //*************** skip null, undefined
-    if (value === null || value === undefined) {
-      continue;
-    }
-    if (typeof value === 'string') {
-      const trimmed = value.trim();
-      //*************** allow empty string for non-mandatory fields
-      if (nonMandatoryFields.includes(key)) {
-        cleanedInput[key] = trimmed;
-
-        //*************** if it's not an empty string, assign the trimmed value
-      } else if (trimmed !== '') {
-        cleanedInput[key] = trimmed;
-      }
-    } else {
-      cleanedInput[key] = value;
-    }
-  }
-  return cleanedInput;
-}
+const ErrorLogModel = require('../graphql/errorLog/error_log.model.js');
 
 /**
  * Converts a string to title case.
@@ -105,6 +70,9 @@ async function SchoolIsExist(schoolId) {
     const count = await SchoolModel.countDocuments(query);
     return count > 0;
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: { schoolId } });
+
     throw new ApolloError(error.message);
   }
 }
@@ -139,9 +107,85 @@ async function UserEmailIsExist(emailAcc, excludeId = null) {
     const count = await UserModel.countDocuments(query);
     return count > 0;
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: { emailAcc, excludeId } });
+
     throw new ApolloError(error.message);
   }
 }
 
+/**
+ *
+ * @param {string} dateStr - The date string to be parsed.
+ * @returns {Date} - The parsed date.
+ */
+function ParseDateDmy(dateStr) {
+  if (!dateStr) {
+    return null;
+  }
+  if (typeof dateStr !== 'string') {
+    throw new ApolloError('Invalid date input');
+  }
+  if (dateStr.trim() === '') {
+    return null;
+  }
+  //*************** split to get day, month and year
+  const [day, month, year] = dateStr.split('-');
+  if (day < 1 || day > 31 || month < 1 || month > 12) {
+    throw new ApolloError('Invalid date format');
+  }
+  return new Date(year, month - 1, day);
+}
+
+/**
+ * Custom stringify function that handles errors gracefully.
+ * @param {object} obj - The object to be stringified.
+ * @returns {string} - The stringified object.
+ */
+function SafeStringify(obj) {
+  try {
+    return JSON.stringify(obj);
+  } catch {
+    return '[Error occured while stringifying object]';
+  }
+}
+
+/**
+ * Logs an error to the database.
+ * @param {object} error - The error object.
+ * @param {object} input - The input object.
+ */
+async function LogErrorToDb({ error, parameterInput }) {
+  //*************** compose log object
+  console.log('[DEBUG] Error before log:', {
+    error,
+    isError: error instanceof Error,
+    name: error.name,
+    stack: error.stack,
+    constructor: error.constructor?.name,
+  });
+
+  const errorLog = {
+    isError: error instanceof ApolloError,
+    error_name: error.name,
+    error_stack: error.stack,
+    parameter_input: SafeStringify(parameterInput),
+  };
+  try {
+    //*************** save error log to db
+    await ErrorLogModel.create(errorLog);
+  } catch (loggingError) {
+    throw new ApolloError(loggingError.message);
+  }
+}
+
 // *************** EXPORT MODULE ***************
-module.exports = { CleanNonRequiredInput, ToTitleCase, SchoolIsExist, UserEmailIsExist, FormatDateToIsoString };
+module.exports = {
+  ToTitleCase,
+  SchoolIsExist,
+  UserEmailIsExist,
+  FormatDateToIsoString,
+  ParseDateDmy,
+  SafeStringify,
+  LogErrorToDb,
+};

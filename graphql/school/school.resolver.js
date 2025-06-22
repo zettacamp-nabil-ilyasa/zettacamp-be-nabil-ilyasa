@@ -4,18 +4,15 @@ const { ApolloError } = require('apollo-server-express');
 // *************** IMPORT MODULE ***************
 const SchoolModel = require('./school.model.js');
 
-// *************** IMPORT HELPER ***************
-const {
-  ValidateSchoolUpdateInput,
-  ValidateSchoolCreateInput,
-  SchoolLongNameIsExist,
-  SchoolBrandNameIsExist,
-  SchoolIsReferencedByStudent,
-} = require('./school.helpers.js');
+//*************** IMPORT VALIDATORS ***********************
+const { ValidateSchoolCreateInput, ValidateSchoolUpdateInput } = require('./school.validators.js');
 
 // *************** IMPORT UTILS ***************
-const { CleanNonRequiredInput, SchoolIsExist } = require('../../utils/common.js');
-const { CleanRequiredInput, SanitizeAndValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
+const { SchoolIsExist, LogErrorToDb } = require('../../utils/common.js');
+const { SanitizeAndValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
+
+// *************** IMPORT HELPER ***************
+const { SchoolLongNameIsExist, SchoolBrandNameIsExist, SchoolIsReferencedByStudent } = require('./school.helpers.js');
 
 //**************** QUERY ****************
 
@@ -29,6 +26,9 @@ async function GetAllSchools() {
     const schools = await SchoolModel.find({ status: 'active' }).lean();
     return schools;
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: {} });
+
     throw new ApolloError(error.message);
   }
 }
@@ -48,6 +48,8 @@ async function GetOneSchool(_, { _id }) {
     const school = await SchoolModel.findOne({ _id: validId, status: 'active' }).lean();
     return school;
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: { _id } });
     throw new ApolloError(error.message);
   }
 }
@@ -63,30 +65,38 @@ async function GetOneSchool(_, { _id }) {
  */
 async function CreateSchool(_, { input }) {
   try {
-    //*************** clean input from null, undefined and empty string
-    const cleanedInput = CleanRequiredInput(input);
-
-    //*************** validation to ensure input is formatted correctly
-    const validatedSchoolInput = ValidateSchoolCreateInput(cleanedInput);
-    const { long_name, brand_name } = validatedSchoolInput;
+    //*************** validation to ensure input is sanitized and formatted correctly
+    const validatedSchoolInput = ValidateSchoolCreateInput(input);
+    const { long_name, brand_name, address, country, city, zipcode } = validatedSchoolInput;
 
     //*************** check if school name already exist
     const longNameIsExist = await SchoolLongNameIsExist(long_name);
-    const brandNameIsExist = await SchoolBrandNameIsExist(brand_name);
     if (longNameIsExist) {
       throw new ApolloError("School's official name already exist");
     }
+    const brandNameIsExist = await SchoolBrandNameIsExist(brand_name);
     if (brandNameIsExist) {
       throw new ApolloError("School's brand name already exist");
     }
 
-    //*************** assign status
-    validatedSchoolInput.status = 'active';
+    //*************** compose new object with validated input for School
+    const validatedSchool = {
+      long_name,
+      brand_name,
+      address,
+      country,
+      city,
+      zipcode,
+      status: 'active',
+    };
 
     //*************** create school with validated input
-    const createdSchool = await SchoolModel.create(validatedSchoolInput);
+    const createdSchool = await SchoolModel.create(validatedSchool);
     return createdSchool;
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, input: input });
+
     throw new ApolloError(error.message);
   }
 }
@@ -101,11 +111,8 @@ async function CreateSchool(_, { input }) {
 async function UpdateSchool(_, { input }) {
   try {
     //*************** clean input from null, undefined and empty string
-    const cleanedInput = CleanNonRequiredInput(input);
-
-    //*************** validation to ensure input is formatted correctly
-    const validatedSchoolInput = ValidateSchoolUpdateInput(cleanedInput);
-    const { _id, long_name, brand_name } = validatedSchoolInput;
+    const validatedInput = ValidateSchoolUpdateInput(input);
+    const { _id, long_name, brand_name, address, country, city, zipcode } = validatedInput;
 
     //*************** check if school exists
     const schoolIsExist = await SchoolIsExist(_id);
@@ -127,10 +134,33 @@ async function UpdateSchool(_, { input }) {
       }
     }
 
+    const validatedSchool = {};
+    if (long_name) {
+      validatedSchool.long_name = long_name;
+    }
+    if (brand_name) {
+      validatedSchool.brand_name = brand_name;
+    }
+    if (address !== null && address !== undefined) {
+      validatedSchool.address = address;
+    }
+    if (country !== null && country !== undefined) {
+      validatedSchool.country = country;
+    }
+    if (city !== null && city !== undefined) {
+      validatedSchool.city = city;
+    }
+    if (zipcode !== null && zipcode !== undefined) {
+      validatedSchool.zipcode = zipcode;
+    }
+
     //*************** update school with validated input
-    const updatedSchool = await SchoolModel.findOneAndUpdate({ _id: _id }, validatedSchoolInput, { new: true }).lean();
+    const updatedSchool = await SchoolModel.findOneAndUpdate({ _id: _id }, validatedSchool, { new: true }).lean();
     return updatedSchool;
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: input });
+
     throw new ApolloError(error.message);
   }
 }
@@ -149,7 +179,7 @@ async function DeleteSchool(_, { _id, deletedBy }) {
     const validDeletedId = SanitizeAndValidateId(_id);
     const validDeletedBy = SanitizeAndValidateId(deletedBy);
 
-    //**************** check if user to delete is exist and has admin role
+    //**************** check if deleter user is exist and has admin role
     const userIsAdmin = await UserIsAdmin(validDeletedBy);
     if (!userIsAdmin) {
       throw new ApolloError('Unauthorized access');
@@ -167,10 +197,19 @@ async function DeleteSchool(_, { _id, deletedBy }) {
       throw new ApolloError('School that is referenced by a student cannot be deleted');
     }
 
+    const toBeDeletedSchool = {
+      deleted_at: new Date(),
+      status: 'deleted',
+      deleted_by: validDeletedBy,
+    };
+
     //**************** soft-delete school by marking their status as 'deleted' and set deleted_date
-    await SchoolModel.updateOne({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
+    await SchoolModel.updateOne({ _id: validDeletedId }, toBeDeletedSchool);
     return 'School deleted successfully';
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: { _id, deletedBy } });
+
     throw new ApolloError(error.message);
   }
 }
@@ -186,17 +225,23 @@ async function DeleteSchool(_, { _id, deletedBy }) {
  * @throws {Error} - Throws error if loading fails.
  */
 async function SchoolLoaderForStudents(parent, _, context) {
-  //*************** check if school has any student
-  if (!parent?.students) {
-    return [];
-  }
+  try {
+    //*************** check if school has any student
+    if (!parent?.students) {
+      return [];
+    }
 
-  //*************** load students
-  const loadedStudents = await context.loaders.student.loadMany(parent.students);
-  return loadedStudents;
+    //*************** load students
+    const loadedStudents = await context.loaders.student.loadMany(parent.students);
+    return loadedStudents;
+  } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: {} });
+    throw new ApolloError(error.message);
+  }
 }
 
-// *************** EXPORT MODULE ***************
+// *************** EXPORT MODULES ***************
 module.exports = {
   Query: { GetAllSchools, GetOneSchool },
   Mutation: { CreateSchool, UpdateSchool, DeleteSchool },

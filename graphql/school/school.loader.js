@@ -5,6 +5,9 @@ const { ApolloError } = require('apollo-server-express');
 //*************** IMPORT MODULE ***************
 const SchoolModel = require('./school.model.js');
 
+//*************** IMPORT UTIL ***************
+const { LogErrorToDb } = require('../../utils/common.js');
+
 /**
  * Batch function to load schools by array of school IDs
  * @param {Array<string>} schoolIds - Array of school IDs
@@ -23,6 +26,8 @@ async function BatchSchools(schoolIds) {
     //**************** return array of school objects with order of schoolIds
     return schoolIds.map((schoolId) => dataMap.get(schoolId.toString()));
   } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: { schoolIds } });
     throw new ApolloError(error.message);
   }
 }
