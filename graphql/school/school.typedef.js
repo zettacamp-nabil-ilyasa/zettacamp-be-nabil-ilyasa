@@ -32,7 +32,7 @@ const schoolTypeDefs = gql`
     status: Status!
 
     # Soft-delete timestamp
-    deleted_at: String
+    deleted_at: Date
 
     # User who deleted this school
     deleted_by: ID!

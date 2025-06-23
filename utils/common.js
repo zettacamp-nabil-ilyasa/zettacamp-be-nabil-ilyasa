@@ -156,17 +156,8 @@ function SafeStringify(obj) {
  * @param {object} input - The input object.
  */
 async function LogErrorToDb({ error, parameterInput }) {
-  //*************** compose log object
-  console.log('[DEBUG] Error before log:', {
-    error,
-    isError: error instanceof Error,
-    name: error.name,
-    stack: error.stack,
-    constructor: error.constructor?.name,
-  });
-
+  //*************** compose error log
   const errorLog = {
-    isError: error instanceof ApolloError,
     error_name: error.name,
     error_stack: error.stack,
     parameter_input: SafeStringify(parameterInput),
