@@ -3,7 +3,6 @@ const { ApolloError } = require('apollo-server-express');
 
 //*************** IMPORT MODULE ***************
 const UserModel = require('./user.model');
-const StudentModel = require('../student/student.model');
 
 //*************** IMPORT UTILS ***************
 const { SanitizeAndValidateId } = require('../../utils/common-validator');

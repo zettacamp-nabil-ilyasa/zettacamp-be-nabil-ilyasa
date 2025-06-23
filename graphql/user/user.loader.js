@@ -25,7 +25,7 @@ async function BatchUsers(userIds) {
     });
 
     //**************** return array of user objects with order of userIds
-    return userIds.map((userId) => dataMap.get(userId.toString()));
+    return userIds.map((userId) => dataMap.get(userId.toString() || null));
   } catch (error) {
     //*************** save error log to db
     await LogErrorToDb({ error, parameterInput: { userIds } });

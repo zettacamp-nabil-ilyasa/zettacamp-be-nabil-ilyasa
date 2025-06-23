@@ -311,6 +311,13 @@ async function DeleteUser(_, { _id, deletedBy }) {
 
 // *************** LOADER ***************
 
+/**
+ * Resolve the user field for by using DataLoader.
+ * @param {object} parent - Parent, user object.
+ * @param {object} context - Resolver context.
+ * @returns {Promise<Object|null>} - The user document or null.
+ * @throws {Error} - Throws error if loading fails.
+ */
 async function UserLoaderForCreatedBy(parent, _, context) {
   try {
     //*************** check if user has any school
