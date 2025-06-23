@@ -3,11 +3,7 @@ const { ApolloError } = require('apollo-server-express');
 
 //*************** IMPORT UTILS ***************
 const { ToTitleCase, ParseDateDmy } = require('../../utils/common');
-const {
-  SanitizeAndValidateId,
-  SanitizeAndValidateRequiredString,
-  SanitizeAndValidateOptionalString,
-} = require('../../utils/common-validator');
+const { SanitizeAndValidateId, SanitizeAndValidateRequiredString } = require('../../utils/common-validator');
 
 //*************** regex pattern to ensure email includes @ and .
 const emailRegexPattern = /^\S+@\S+\.\S+$/;
@@ -16,7 +12,7 @@ const emailRegexPattern = /^\S+@\S+\.\S+$/;
 const passwordRegexPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
 //*************** regex pattern to ensure first and last name contains only letters
-const firstAndLastNameRegexPattern = /^[a-zA-Z\s'-]+$/;
+const firstAndLastNameRegexPattern = /^[\p{L}\s'-]+$/u;
 
 //*************** regex pattern to ensure date is in DD-MM-YYYY format
 const dateRegexPattern = /^\d{2}-\d{2}-\d{4}$/;
@@ -82,7 +78,7 @@ function ValidateStudentCreateInput(inputObject) {
   if (!firstAndLastNameRegexPattern.test(last_name)) {
     throw new ApolloError('last name contains invalid characters');
   }
-  if (date_of_birth) {
+  if (date_of_birth !== null && date_of_birth !== undefined) {
     //*************** validation to ensure date is in YYYY-MM-DD format
     date_of_birth = ValidateDateOfBirth(date_of_birth);
   }
@@ -119,7 +115,7 @@ function ValidateStudentAndUserCreateInput(inputObject) {
   //*************** validate school_id
   school_id = SanitizeAndValidateId(school_id);
 
-  if (date_of_birth) {
+  if (date_of_birth !== null && date_of_birth !== undefined) {
     //*************** validation to ensure date is in YYYY-MM-DD format
     date_of_birth = ValidateDateOfBirth(date_of_birth);
   }
@@ -143,13 +139,13 @@ function ValidateStudentUpdateInput(input) {
     throw new ApolloError('email format is invalid');
   }
   if (first_name) {
-    first_name = SanitizeAndValidateOptionalString(ToTitleCase(first_name));
+    first_name = SanitizeAndValidateRequiredString(ToTitleCase(first_name));
     if (!firstAndLastNameRegexPattern.test(first_name)) {
       throw new ApolloError('first name contains invalid characters');
     }
   }
   if (last_name) {
-    last_name = SanitizeAndValidateOptionalString(ToTitleCase(last_name));
+    last_name = SanitizeAndValidateRequiredString(ToTitleCase(last_name));
     if (!firstAndLastNameRegexPattern.test(last_name)) {
       throw new ApolloError('last name contains invalid characters');
     }
@@ -157,7 +153,7 @@ function ValidateStudentUpdateInput(input) {
   if (school_id) {
     school_id = SanitizeAndValidateId(school_id);
   }
-  if (date_of_birth) {
+  if (date_of_birth !== null && date_of_birth !== undefined) {
     //*************** validation to ensure date is in YYYY-MM-DD format
     date_of_birth = ValidateDateOfBirth(date_of_birth);
   }

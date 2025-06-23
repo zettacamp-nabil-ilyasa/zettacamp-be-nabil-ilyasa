@@ -7,7 +7,7 @@ const UserModel = require('../user/user.model.js');
 const SchoolModel = require('../school/school.model.js');
 
 // *************** IMPORT UTILS ***************
-const { UserEmailIsExist, SchoolIsExist, FormatDateToIsoString, LogErrorToDb } = require('../../utils/common.js');
+const { UserEmailIsExist, SchoolIsExist, FormatDateToIsoString, HashPassword, LogErrorToDb } = require('../../utils/common.js');
 const { SanitizeAndValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
 
 // *************** IMPORT VALIDATORS ***************
@@ -221,7 +221,7 @@ async function UpdateStudent(_, { input }) {
       }
 
       //**************** remove student id from student array in previous school
-      const previousSchoolId = await GetPreviousSchoolId(school_id, _id);
+      const previousSchoolId = await GetPreviousSchoolId(_id);
       if (previousSchoolId) {
         if (previousSchoolId != school_id) {
           await SchoolModel.updateOne({ _id: previousSchoolId }, { $pull: { students: _id } });
