@@ -26,7 +26,7 @@ async function BatchStudents(studentIds) {
     });
 
     //**************** return array of student objects with order of studentIds
-    return studentIds.map((studentId) => dataMap.get(studentId.toString()));
+    return studentIds.map((studentId) => dataMap.get(studentId.toString()) || null);
   } catch (error) {
     //*************** save error log to db
     await LogErrorToDb({ error, parameterInput: { studentIds } });

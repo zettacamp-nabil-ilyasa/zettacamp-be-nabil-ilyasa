@@ -75,37 +75,9 @@ async function StudentEmailIsExist(emailAcc, excludeId = null) {
 }
 
 /**
- *
- * @param {string} studentId - The id of the user to be checked.
- * @returns {promise<string>} - The referenced user id.
- * @throws {Error} - If failed in sanity check or db operation.
- */
-async function GetReferencedUserId(studentId) {
-  try {
-    //*************** studentId input check
-    const validatedStudentId = SanitizeAndValidateId(studentId);
-
-    //*************** set query for db operation
-    const student = await StudentModel.findById(validatedStudentId);
-
-    //*************** check and extract referenced user_id if it exists
-    if (!student) {
-      return null;
-    }
-    const referencedUser = student.user_id;
-    return referencedUser;
-  } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { studentId } });
-
-    throw new ApolloError(error.message);
-  }
-}
-
-/**
  * Get the previous school id of a student if there's any.
  * @param {string} studentId - Student id to be checked.
- * @returns {promise<string>||boolean} - The previous school id or null if there's none.
+ * @returns {promise<string>||null} - The previous school id or null if there's none.
  */
 async function GetPreviousSchoolId(studentId) {
   try {
@@ -114,7 +86,7 @@ async function GetPreviousSchoolId(studentId) {
 
     const student = await StudentModel.findById(validatedStudentId);
     if (!student) {
-      return false;
+      return null;
     }
     return student.school_id;
   } catch (error) {
@@ -130,6 +102,5 @@ async function GetPreviousSchoolId(studentId) {
 module.exports = {
   StudentIsExist,
   StudentEmailIsExist,
-  GetReferencedUserId,
   GetPreviousSchoolId,
 };

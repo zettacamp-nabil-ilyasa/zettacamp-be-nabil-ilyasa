@@ -3,18 +3,17 @@ const { ApolloError } = require('apollo-server-express');
 
 // *************** IMPORT MODULES ***************
 const StudentModel = require('./student.model.js');
-const UserModel = require('../user/user.model.js');
 const SchoolModel = require('../school/school.model.js');
 
 // *************** IMPORT UTILS ***************
-const { UserEmailIsExist, SchoolIsExist, FormatDateToIsoString, HashPassword, LogErrorToDb } = require('../../utils/common.js');
+const { SchoolIsExist, FormatDateToIsoString, LogErrorToDb } = require('../../utils/common.js');
 const { SanitizeAndValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
 
 // *************** IMPORT VALIDATORS ***************
-const { ValidateStudentUpdateInput, ValidateStudentCreateInput, ValidateStudentAndUserCreateInput } = require('./student.validators.js');
+const { ValidateStudentUpdateInput, ValidateStudentCreateInput } = require('./student.validators.js');
 
 // *************** IMPORT HELPERS ***************
-const { StudentIsExist, StudentEmailIsExist, GetReferencedUserId, GetPreviousSchoolId } = require('./student.helpers.js');
+const { StudentIsExist, StudentEmailIsExist, GetPreviousSchoolId } = require('./student.helpers.js');
 
 //*************** QUERY ***************
 
@@ -70,7 +69,13 @@ async function CreateStudent(_, { input }) {
   try {
     //*************** validation to ensure input is formatted correctly
     const validatedStudentInput = ValidateStudentCreateInput(input);
-    const { email, first_name, last_name, school_id, date_of_birth } = validatedStudentInput;
+    const { created_by, email, first_name, last_name, school_id, date_of_birth } = validatedStudentInput;
+
+    //*************** check if user to delete is exist and has admin role
+    const userIsAdmin = await UserIsAdmin(created_by);
+    if (!userIsAdmin) {
+      throw new ApolloError('Unauthorized access');
+    }
 
     //*************** check if email already exists
     const emailIsExist = await StudentEmailIsExist(email);
@@ -92,6 +97,7 @@ async function CreateStudent(_, { input }) {
       school_id,
       date_of_birth,
       status: 'active',
+      created_by,
     };
 
     //*************** create student
@@ -101,83 +107,6 @@ async function CreateStudent(_, { input }) {
     await SchoolModel.updateOne({ _id: school_id }, { $addToSet: { students: createdStudent._id } });
 
     return createdStudent;
-  } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { input } });
-
-    throw new ApolloError(error.message);
-  }
-}
-
-/**
- * Create both a new user and a new student linked together.
- * If student creation fails, user creation will be rolled back.
- * @param {object} args - Resolver arguments.
- * @param {object} args.input - Combined input for user and student.
- * @returns {Promise<Object>} - Created student document.
- * @throws {Error} - Throws error if validation fails or rollback is needed.
- */
-async function CreateStudentWithUser(_, { input }) {
-  try {
-    //*************** validation to ensure input is formatted correctly
-    const validatedUserInput = ValidateStudentAndUserCreateInput(input);
-    const { email, password, first_name, last_name, date_of_birth, school_id } = validatedUserInput;
-
-    //*************** check if email already exists
-    const userEmailExist = await UserEmailIsExist(email);
-    const studentEmailExist = await StudentEmailIsExist(email);
-    if (userEmailExist || studentEmailExist) {
-      throw new ApolloError('Email already exist');
-    }
-
-    //*************** check if school is exist
-    const schoolIsExist = await SchoolIsExist(school_id);
-    if (!schoolIsExist) {
-      throw new ApolloError('School does not exist');
-    }
-
-    //*************** set password to hashed
-    const hashedPassword = await HashPassword(password);
-
-    //*************** compose object with validated input for User
-    const validatedUser = {
-      email,
-      password: hashedPassword,
-      first_name,
-      last_name,
-      status: 'active',
-      roles: ['student'],
-    };
-
-    //*************** create user with validated input, set status to active and roles to student
-    const createdUser = await UserModel.create(validatedUser);
-    try {
-      //*************** compose object with validated input for Student
-      const validatedStudent = {
-        email,
-        first_name,
-        last_name,
-        date_of_birth,
-        school_id,
-        status: 'active',
-        user_id: createdUser._id,
-      };
-
-      //*************** create student with validated input, set status to active
-      const createdStudent = await StudentModel.create(validatedStudent);
-
-      //*************** push created student id to student array in school document
-      await SchoolModel.updateOne({ _id: school_id }, { $addToSet: { students: createdStudent._id } });
-
-      //*************** set student's id to student_id field in User
-      await UserModel.updateOne({ _id: createdUser._id }, { student_id: createdStudent._id });
-
-      return createdStudent;
-    } catch (error) {
-      //*************** manual rollback if student creation fails
-      await UserModel.findOneAndDelete({ id: createdUser._id });
-      throw new ApolloError(error.message);
-    }
   } catch (error) {
     //*************** save error log to db
     await LogErrorToDb({ error, parameterInput: { input } });
@@ -276,17 +205,8 @@ async function DeleteStudent(_, { _id, deletedBy }) {
       throw new ApolloError('Student does not exist');
     }
 
-    //**************** check if student is referenced by any user
-    const referencedUserId = await GetReferencedUserId(validDeletedId);
-    if (referencedUserId) {
-      await UserModel.updateOne({ _id: referencedUserId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
-    }
-
     //**************** pull student_id from student array in school document
     await SchoolModel.updateOne({ students: validDeletedId }, { $pull: { students: validDeletedId } });
-
-    //**************** set student id to student_id field in User as null
-    await UserModel.updateOne({ student_id: validDeletedId }, { student_id: null });
 
     //**************** soft delete student by marking their status as 'deleted' and set the deleted_date
     await StudentModel.updateOne({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
@@ -300,29 +220,6 @@ async function DeleteStudent(_, { _id, deletedBy }) {
 }
 
 // *************** LOADERS ***************
-
-/**
- * Resolve the user field in a Student by using DataLoader.
- * @param {object} parent - Parent, student object.
- * @param {object} context - Resolver context.
- * @param {object} context.loaders - DataLoader object.
- * @returns {Promise<Object|null>} - The user document or null.
- * @throws {Error} - Throws error if loading fails.
- */
-async function StudentLoaderForUser(parent, _, context) {
-  try {
-    if (!parent?.user_id) {
-      return null;
-    }
-    const loadedUser = await context.loaders.user.load(parent?.user_id.toString());
-    return loadedUser;
-  } catch (error) {
-    //**************** save error log to db
-    await LogErrorToDb({ error, parameterInput: {} });
-
-    throw new ApolloError(error.message);
-  }
-}
 
 /**
  * Resolve the school field in a Student by using DataLoader.
@@ -350,12 +247,30 @@ async function StudentLoaderForSchool(parent, _, context) {
   }
 }
 
+async function StudentLoaderForCreatedBy(parent, _, context) {
+  try {
+    //*************** check if student has any school
+    if (!parent?.created_by) {
+      return null;
+    }
+
+    //*************** load user
+    const loadedUser = await context.loaders.user.load(parent.created_by);
+    return loadedUser;
+  } catch (error) {
+    //**************** save error log to db
+    await LogErrorToDb({ error, parameterInput: {} });
+
+    throw new ApolloError(error.message);
+  }
+}
+
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllStudents, GetOneStudent },
-  Mutation: { CreateStudent, CreateStudentWithUser, UpdateStudent, DeleteStudent },
+  Mutation: { CreateStudent, UpdateStudent, DeleteStudent },
   Student: {
-    user: StudentLoaderForUser,
+    created_by: StudentLoaderForCreatedBy,
     school: StudentLoaderForSchool,
     //*************** for displayed date format
     date_of_birth: (parent) => FormatDateToIsoString(parent.date_of_birth),

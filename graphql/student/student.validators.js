@@ -62,11 +62,15 @@ function ValidateDateOfBirth(dateInput) {
  * @throws {Error} - If validation fails.
  */
 function ValidateStudentCreateInput(inputObject) {
-  let { first_name, last_name, email, date_of_birth, school_id } = inputObject;
+  let { created_by, first_name, last_name, email, date_of_birth, school_id } = inputObject;
+
+  //*************** validate user id stored in created_by
+  created_by = SanitizeAndValidateId(created_by);
 
   //*************** validate school_id
   school_id = SanitizeAndValidateId(school_id);
 
+  email = SanitizeAndValidateRequiredString(email.toLowerCase());
   if (!emailRegexPattern.test(email)) {
     throw new ApolloError('email format is invalid');
   }
@@ -82,7 +86,7 @@ function ValidateStudentCreateInput(inputObject) {
     //*************** validation to ensure date is in YYYY-MM-DD format
     date_of_birth = ValidateDateOfBirth(date_of_birth);
   }
-  const validatedInput = { first_name, last_name, email, date_of_birth, school_id };
+  const validatedInput = { created_by, first_name, last_name, email, date_of_birth, school_id };
   return validatedInput;
 }
 
