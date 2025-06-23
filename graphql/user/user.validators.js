@@ -15,7 +15,7 @@ const emailRegexPattern = /^\S+@\S+\.\S+$/;
 const passwordRegexPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
 //*************** regex pattern to ensure first and last name contains only letters
-const firstAndLastNameRegexPattern = /^[a-zA-Z\s'-]+$/;
+const firstAndLastNameRegexPattern = /^[\p{L}\s'-]+$/u;
 
 /**
  * Validates user creation input.

@@ -5,14 +5,14 @@ const { ApolloError } = require('apollo-server-express');
 const UserModel = require('./user.model.js');
 
 // *************** IMPORT UTILS ***************
-const { UserEmailIsExist, LogErrorToDb } = require('../../utils/common.js');
+const { UserEmailIsExist, HashPassword, LogErrorToDb } = require('../../utils/common.js');
 const { SanitizeAndValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
 
 // *************** IMPORT VALIDATORS ***************
-const { ValidateUserCreateInput, ValidateUserUpdateInput } = require('./user.validators.js');
+const { ValidateUserCreateInput, ValidateUserUpdateInput, ValidateEditRoleInput } = require('./user.validators.js');
 
 // *************** IMPORT HELPERS ***************
-const { UserIsExist, UserHasRole, NormalizeRole, IsRemovableRole, HashPassword, UserIsReferencedByStudent } = require('./user.helpers.js');
+const { UserIsExist, UserHasRole, NormalizeRole, IsRemovableRole, UserIsReferencedByStudent } = require('./user.helpers.js');
 
 //*************** QUERY ***************
 
@@ -157,11 +157,11 @@ async function UpdateUser(_, { input }) {
 async function AddRole(_, { input }) {
   try {
     //**************** validate input fields
-    const validatedInput = ValidateAddRoleInput(input);
-    const { updaterId, _id, role } = validatedInput;
+    const validatedInput = ValidateEditRoleInput(input);
+    const { updater_id, _id, role } = validatedInput;
 
     //**************** check if user's role is admin
-    const isAdmin = await UserIsAdmin(updaterId);
+    const isAdmin = await UserIsAdmin(updater_id);
     if (!isAdmin) {
       throw new ApolloError('Unauthorized access');
     }
@@ -201,12 +201,12 @@ async function AddRole(_, { input }) {
 async function DeleteRole(_, { input }) {
   try {
     //**************** validate input fields
-    const validatedInput = ValidateDeleteRoleInput(input);
+    const validatedInput = ValidateEditRoleInput(input);
 
-    const { _id, updaterId, role } = validatedInput;
+    const { _id, updater_id, role } = validatedInput;
 
     //**************** check if user's role is admin
-    const isAdmin = await UserIsAdmin(updaterId);
+    const isAdmin = await UserIsAdmin(updater_id);
     if (!isAdmin) {
       throw new ApolloError('Unauthorized access');
     }

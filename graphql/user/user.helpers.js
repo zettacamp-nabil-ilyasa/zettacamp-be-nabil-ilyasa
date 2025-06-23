@@ -1,6 +1,5 @@
 //*************** IMPORT LIBRARY ***************
 const { ApolloError } = require('apollo-server-express');
-const bcrypt = require('bcrypt');
 
 //*************** IMPORT MODULE ***************
 const UserModel = require('./user.model');
@@ -148,36 +147,6 @@ async function UserIsReferencedByStudent(userId) {
   }
 }
 
-/**
- *
- * @param {string} password - Plaintext to be hashed.
- * @returns string - Hashed password.
- * @throws {Error} - If failed sanity check or hashing process.
- */
-async function HashPassword(password) {
-  try {
-    //*************** password input check
-    if (typeof password !== 'string') {
-      throw new ApolloError('Invalid password input');
-    }
-    const trimmedPassword = password.trim();
-    if (trimmedPassword === '') {
-      throw new ApolloError('Invalid password input');
-    }
-
-    const saltRounds = 10;
-
-    //*************** hash password using bcrypt
-    const hashedPassword = await bcrypt.hash(trimmedPassword, saltRounds);
-    return hashedPassword;
-  } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { password } });
-
-    throw new ApolloError(error.message);
-  }
-}
-
 // *************** EXPORT MODULES ***************
 
 module.exports = {
@@ -185,6 +154,5 @@ module.exports = {
   NormalizeRole,
   IsRemovableRole,
   UserHasRole,
-  HashPassword,
   UserIsReferencedByStudent,
 };
