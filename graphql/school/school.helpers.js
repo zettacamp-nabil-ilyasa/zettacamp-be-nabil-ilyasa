@@ -5,10 +5,10 @@ const { ApolloError } = require('apollo-server-express');
 //*************** IMPORT MODULE ***************
 const SchoolModel = require('./school.model.js');
 const StudentModel = require('../student/student.model.js');
+const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 //*************** IMPORT UTILS ***************
 const { SanitizeAndValidateId, SanitizeAndValidateRequiredString } = require('../../utils/common-validator.js');
-const { LogErrorToDb } = require('../../utils/common.js');
 
 /**
  * Check if school name already exist
@@ -17,7 +17,7 @@ const { LogErrorToDb } = require('../../utils/common.js');
  * @returns {Promise<boolean>} - True if school name already exists, false otherwise
  * @throws {Error} - If failed in sanity check or db operation.
  */
-async function SchoolLongNameIsExist(longName, excludeId = null) {
+async function SchoolLongNameIsExist({ longName, excludeId = null }) {
   try {
     //*************** validate longName input
     const validLongName = SanitizeAndValidateRequiredString(longName);
@@ -38,8 +38,16 @@ async function SchoolLongNameIsExist(longName, excludeId = null) {
     return count > 0;
   } catch (error) {
     //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { longName, excludeId } });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'SchoolLongNameIsExist',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/school/school.helpers.js',
+        parameter_input: JSON.stringify({ longName, excludeId }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -51,7 +59,7 @@ async function SchoolLongNameIsExist(longName, excludeId = null) {
  * @returns {Promise<boolean>} - True if school name already exists, false otherwise
  * @throws {Error} - If failed in sanity check or db operation.
  */
-async function SchoolBrandNameIsExist(brandName, excludeId = null) {
+async function SchoolBrandNameIsExist({ brandName, excludeId = null }) {
   try {
     //*************** validate brandName input
     const validBrandName = SanitizeAndValidateRequiredString(brandName);
@@ -72,8 +80,16 @@ async function SchoolBrandNameIsExist(brandName, excludeId = null) {
     return count > 0;
   } catch (error) {
     //*************** log error to db
-    await LogErrorToDb({ error, parameterInput: { brandName, excludeId } });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'SchoolBrandNameIsExist',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/school/school.helpers.js',
+        parameter_input: JSON.stringify({ brandName, excludeId }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -96,9 +112,16 @@ async function SchoolIsReferencedByStudent(schoolId) {
     const referenceIsExist = Boolean(await StudentModel.exists(query));
     return referenceIsExist;
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { schoolId } });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'SchoolIsReferencedByStudent',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/school/school.helpers.js',
+        parameter_input: JSON.stringify({ schoolId }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }

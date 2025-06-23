@@ -4,9 +4,7 @@ const { ApolloError } = require('apollo-server-express');
 
 //*************** IMPORT MODULE ***************
 const SchoolModel = require('./school.model.js');
-
-//*************** IMPORT UTIL ***************
-const { LogErrorToDb } = require('../../utils/common.js');
+const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 /**
  * Batch function to load schools by array of school IDs
@@ -15,9 +13,6 @@ const { LogErrorToDb } = require('../../utils/common.js');
  */
 async function BatchSchools(schoolIds) {
   try {
-    if (!Array.isArray(schoolIds) || schoolIds.length === 0) {
-      throw new ApolloError('schoolIds must be an array');
-    }
     //**************** get all active schools with id within schoolIds and status is not deleted
     const schools = await SchoolModel.find({ _id: { $in: schoolIds }, status: { $ne: 'deleted' } }).lean();
 
@@ -29,8 +24,16 @@ async function BatchSchools(schoolIds) {
     //**************** return array of school objects with order of schoolIds
     return schoolIds.map((schoolId) => dataMap.get(schoolId.toString()));
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { schoolIds } });
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'BatchSchools',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/school/school.loader.js',
+        parameter_input: JSON.stringify({ schoolIds }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }

@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 
 //*************** IMPORT MODULE ***************
 const UserModel = require('../graphql/user/user.model.js');
+const ErrorLogModel = require('../graphql/errorLog/error_log.model.js');
 
 //*************** IMPORT UTIL ***************
 const { LogErrorToDb } = require('./common.js');
@@ -77,9 +78,16 @@ async function UserIsAdmin(userId) {
     const userIsAdmin = count > 0;
     return userIsAdmin;
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { userId } });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'UserIsAdmin',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/utils/common-validator.js',
+        parameter_input: JSON.stringify({ userId }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }

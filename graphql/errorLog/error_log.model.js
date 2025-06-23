@@ -3,14 +3,17 @@ const mongoose = require('mongoose');
 
 const error_log = new mongoose.Schema(
   {
-    //Name of the error
-    error_name: { type: String, required: true, trim: true },
-
     //Stack of the error
     error_stack: { type: String, required: true, trim: true },
 
     //Parameter input that caused the error (JSON string)
     parameter_input: { type: String },
+
+    //Name of the function that caused the error
+    function_name: { type: String, required: true, trim: true },
+
+    //Path of the file that caused the error
+    path: { type: String, required: true, trim: true },
   },
   {
     //Timestamp to set up created_at and updated_at

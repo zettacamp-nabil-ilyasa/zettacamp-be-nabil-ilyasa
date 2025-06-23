@@ -37,11 +37,8 @@ const school = new mongoose.Schema(
     deleted_by: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
   },
   {
-    // Timestamp set-up for created_at and updated_at
-    timestamps: {
-      createdAt: 'created_at',
-      updatedAt: 'updated_at',
-    },
+    // Timestamp set-up for createdAt and updatedAt
+    timestamps: true,
   }
 );
 

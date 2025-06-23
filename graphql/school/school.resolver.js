@@ -3,12 +3,13 @@ const { ApolloError } = require('apollo-server-express');
 
 // *************** IMPORT MODULE ***************
 const SchoolModel = require('./school.model.js');
+const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 //*************** IMPORT VALIDATORS ***********************
 const { ValidateSchoolCreateInput, ValidateSchoolUpdateInput } = require('./school.validators.js');
 
 // *************** IMPORT UTILS ***************
-const { SchoolIsExist, LogErrorToDb } = require('../../utils/common.js');
+const { SchoolIsExist } = require('../../utils/common.js');
 const { SanitizeAndValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
 
 // *************** IMPORT HELPER ***************
@@ -26,8 +27,16 @@ async function GetAllSchools() {
     const schools = await SchoolModel.find({ status: 'active' }).lean();
     return schools;
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: {} });
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'GetAllSchools',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/school/school.helpers.js',
+        parameter_input: JSON.stringify({}),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
 
     throw new ApolloError(error.message);
   }
@@ -48,8 +57,16 @@ async function GetOneSchool(_, { _id }) {
     const school = await SchoolModel.findOne({ _id: validId, status: 'active' }).lean();
     return school;
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { _id } });
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'GetOneSchool',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/school/school.resolver.js',
+        parameter_input: JSON.stringify({ _id }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -101,9 +118,16 @@ async function CreateSchool(_, { input }) {
     const createdSchool = await SchoolModel.create(validatedSchool);
     return createdSchool;
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, input: input });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'CreateSchool',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/school/school.resolver.js',
+        parameter_input: JSON.stringify(input),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -165,9 +189,16 @@ async function UpdateSchool(_, { input }) {
     const updatedSchool = await SchoolModel.findOneAndUpdate({ _id: _id }, validatedSchool, { new: true }).lean();
     return updatedSchool;
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: input });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'UpdateSchool',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/school/school.resolver.js',
+        parameter_input: JSON.stringify(input),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -214,9 +245,16 @@ async function DeleteSchool(_, { _id, deleted_by }) {
     await SchoolModel.updateOne({ _id: validDeletedId }, toBeDeletedSchool);
     return 'School deleted successfully';
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { _id, deleted_by } });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'DeleteSchool',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/school/school.resolver.js',
+        parameter_input: JSON.stringify({ _id, deleted_by }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -231,7 +269,7 @@ async function DeleteSchool(_, { _id, deleted_by }) {
  * @returns {Promise<Object|null>} - The students document or null.
  * @throws {Error} - Throws error if loading fails.
  */
-async function SchoolLoaderForStudents(parent, _, context) {
+async function Students(parent, _, context) {
   try {
     //*************** check if school has any student
     if (!parent?.students) {
@@ -242,8 +280,16 @@ async function SchoolLoaderForStudents(parent, _, context) {
     const loadedStudents = await context.loaders.student.loadMany(parent.students);
     return loadedStudents;
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: {} });
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'Students',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/school/school.resolver.js',
+        parameter_input: JSON.stringify({}),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -255,7 +301,7 @@ async function SchoolLoaderForStudents(parent, _, context) {
  * @returns {Promise<Object|null>} - The user document or null.
  * @throws {Error} - Throws error if loading fails.
  */
-async function SchoolLoaderForCreatedBy(parent, _, context) {
+async function Created_By(parent, _, context) {
   try {
     //*************** check if school has any student
     if (!parent?.created_by) {
@@ -266,9 +312,16 @@ async function SchoolLoaderForCreatedBy(parent, _, context) {
     const loadedUser = await context.loaders.user.load(parent.created_by);
     return loadedUser;
   } catch (error) {
-    //**************** save error log to db
-    await LogErrorToDb({ error, parameterInput: {} });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'Created_By',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/school/school.resolver.js',
+        parameter_input: JSON.stringify({}),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -278,7 +331,7 @@ module.exports = {
   Query: { GetAllSchools, GetOneSchool },
   Mutation: { CreateSchool, UpdateSchool, DeleteSchool },
   School: {
-    students: SchoolLoaderForStudents,
-    created_by: SchoolLoaderForCreatedBy,
+    students: Students,
+    created_by: Created_By,
   },
 };

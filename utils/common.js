@@ -72,9 +72,16 @@ async function SchoolIsExist(schoolId) {
     const count = await SchoolModel.countDocuments(query);
     return count > 0;
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { schoolId } });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'SchoolIsExist',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/utils/common.js',
+        parameter_input: JSON.stringify({ schoolId }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -102,9 +109,16 @@ async function HashPassword(password) {
     const hashedPassword = await bcrypt.hash(trimmedPassword, saltRounds);
     return hashedPassword;
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { password } });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'HashPassword',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/utils/common.js',
+        parameter_input: JSON.stringify({ password }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -133,40 +147,6 @@ function ParseDateDmy(dateStr) {
   return new Date(year, month - 1, day);
 }
 
-/**
- * Custom stringify function that handles errors gracefully.
- * Used for logging purposes.
- * @param {object} obj - The object to be stringified.
- * @returns {string} - The stringified object.
- */
-function SafeStringify(obj) {
-  try {
-    return JSON.stringify(obj);
-  } catch {
-    return '[Error occured while stringifying object]';
-  }
-}
-
-/**
- * Logs an error to the database.
- * @param {object} error - The error object.
- * @param {object} input - The input object.
- */
-async function LogErrorToDb({ error, parameterInput }) {
-  //*************** compose error log
-  const errorLog = {
-    error_name: error.name,
-    error_stack: error.stack,
-    parameter_input: SafeStringify(parameterInput),
-  };
-  try {
-    //*************** save error log to db
-    await ErrorLogModel.create(errorLog);
-  } catch (loggingError) {
-    throw new ApolloError(loggingError.message);
-  }
-}
-
 // *************** EXPORT MODULE ***************
 module.exports = {
   ToTitleCase,
@@ -174,6 +154,4 @@ module.exports = {
   HashPassword,
   FormatDateToIsoString,
   ParseDateDmy,
-  SafeStringify,
-  LogErrorToDb,
 };
