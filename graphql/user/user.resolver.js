@@ -5,14 +5,21 @@ const { ApolloError } = require('apollo-server-express');
 const UserModel = require('./user.model.js');
 
 // *************** IMPORT UTILS ***************
-const { UserEmailIsExist, HashPassword, LogErrorToDb } = require('../../utils/common.js');
+const { HashPassword, LogErrorToDb } = require('../../utils/common.js');
 const { SanitizeAndValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
 
 // *************** IMPORT VALIDATORS ***************
 const { ValidateUserCreateInput, ValidateUserUpdateInput, ValidateEditRoleInput } = require('./user.validators.js');
 
 // *************** IMPORT HELPERS ***************
-const { UserIsExist, UserHasRole, NormalizeRole, IsRemovableRole, UserIsReferencedByStudent } = require('./user.helpers.js');
+const {
+  UserIsExist,
+  UserEmailIsExist,
+  UserHasRole,
+  NormalizeRole,
+  IsRemovableRole,
+  UserIsReferencedByStudent,
+} = require('./user.helpers.js');
 
 //*************** QUERY ***************
 
@@ -67,7 +74,13 @@ async function CreateUser(_, { input }) {
   try {
     //**************** validation to ensure input is formatted correctly and
     const validatedUserInput = ValidateUserCreateInput(input);
-    const { email, password, first_name, last_name } = validatedUserInput;
+    const { created_by, email, password, first_name, last_name } = validatedUserInput;
+
+    //**************** check if user to delete is exist and has admin role
+    const userIsAdmin = await UserIsAdmin(created_by);
+    if (!userIsAdmin) {
+      throw new ApolloError('Unauthorized access');
+    }
 
     //**************** check if email already exist
     const emailIsExist = await UserEmailIsExist(email);
@@ -84,6 +97,7 @@ async function CreateUser(_, { input }) {
       password: hashedPassword,
       first_name,
       last_name,
+      created_by,
     };
     const createdUser = await UserModel.create(validatedUser);
     return createdUser;
@@ -297,25 +311,18 @@ async function DeleteUser(_, { _id, deletedBy }) {
 
 // *************** LOADER ***************
 
-/**
- * Resolve the student field by using DataLoader.
- * @param {object} parent - Parent, user object.
- * @param {object} context - Resolver context.
- * @param {object} context.loaders - DataLoader object.
- * @returns {Promise<Object|null>} - The student document or null.
- * @throws {Error} - Throws error if loading fails.
- */
-async function UserLoaderForStudent(parent, _, context) {
+async function UserLoaderForCreatedBy(parent, _, context) {
   try {
-    //*************** check if user has any student
-    if (!parent?.student_id) {
+    //*************** check if user has any school
+    if (!parent?.created_by) {
       return null;
     }
-    //*************** load student
-    const loadedStudent = await context.loaders.student.load(parent.student_id);
-    return loadedStudent;
+
+    //*************** load user
+    const loadedUser = await context.loaders.user.load(parent.created_by);
+    return loadedUser;
   } catch (error) {
-    //*************** save error log to db
+    //**************** save error log to db
     await LogErrorToDb({ error, parameterInput: {} });
 
     throw new ApolloError(error.message);
@@ -327,6 +334,6 @@ module.exports = {
   Query: { GetAllUsers, GetOneUser },
   Mutation: { CreateUser, UpdateUser, AddRole, DeleteRole, DeleteUser },
   User: {
-    student: UserLoaderForStudent,
+    created_by: UserLoaderForCreatedBy,
   },
 };

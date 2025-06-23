@@ -3,11 +3,7 @@ const { ApolloError } = require('apollo-server-express');
 
 //*************** IMPORT UTILS ***************
 const { ToTitleCase } = require('../../utils/common');
-const {
-  SanitizeAndValidateId,
-  SanitizeAndValidateRequiredString,
-  SanitizeAndValidateOptionalString,
-} = require('../../utils/common-validator');
+const { SanitizeAndValidateId, SanitizeAndValidateRequiredString } = require('../../utils/common-validator');
 
 //*************** regex pattern to ensure email is includes @ and .
 const emailRegexPattern = /^\S+@\S+\.\S+$/;
@@ -24,11 +20,18 @@ const firstAndLastNameRegexPattern = /^[\p{L}\s'-]+$/u;
  * @throws {Error} - If validation fails.
  */
 function ValidateUserCreateInput(inputObject) {
-  let { first_name, last_name, email, password } = inputObject;
+  let { created_by, first_name, last_name, email, password } = inputObject;
+  //*************** validate user id stored in created_by
+  created_by = SanitizeAndValidateId(created_by);
 
+  //*************** validate email
+  email = SanitizeAndValidateRequiredString(email.toLowerCase());
   if (!emailRegexPattern.test(email)) {
     throw new ApolloError('email format is invalid');
   }
+
+  //*************** validate password
+  password = SanitizeAndValidateRequiredString(password);
   if (!passwordRegexPattern.test(password)) {
     throw new ApolloError(
       'password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, and one number'
@@ -46,7 +49,7 @@ function ValidateUserCreateInput(inputObject) {
   if (!firstAndLastNameRegexPattern.test(last_name)) {
     throw new ApolloError('last name contains invalid characters');
   }
-  const validatedInput = { first_name, last_name, email, password };
+  const validatedInput = { created_by, first_name, last_name, email, password };
   return validatedInput;
 }
 
@@ -62,23 +65,30 @@ function ValidateUserUpdateInput(inputObject) {
   //*************** _id input check
   _id = SanitizeAndValidateId(_id);
 
-  if (email && !emailRegexPattern.test(email)) {
-    throw new ApolloError('email format is invalid');
+  if (email) {
+    email = SanitizeAndValidateRequiredString(email.toLowerCase());
+    if (!emailRegexPattern.test(email)) {
+      throw new ApolloError('email format is invalid');
+    }
   }
-  if (password && !passwordRegexPattern.test(password)) {
-    throw new ApolloError(
-      'password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, and one number'
-    );
+
+  if (password) {
+    password = SanitizeAndValidateRequiredString(password);
+    if (!passwordRegexPattern.test(password)) {
+      throw new ApolloError(
+        'password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, and one number'
+      );
+    }
   }
+
   if (first_name) {
-    //*************** validate first_name and convert to Title case
-    first_name = SanitizeAndValidateOptionalString(ToTitleCase(first_name));
+    first_name = SanitizeAndValidateRequiredString(ToTitleCase(first_name));
     if (!firstAndLastNameRegexPattern.test(first_name)) {
       throw new ApolloError('first name contains invalid characters');
     }
   }
   if (last_name) {
-    last_name = SanitizeAndValidateOptionalString(ToTitleCase(last_name));
+    last_name = SanitizeAndValidateRequiredString(ToTitleCase(last_name));
     if (!firstAndLastNameRegexPattern.test(last_name)) {
       throw new ApolloError('last name contains invalid characters');
     }

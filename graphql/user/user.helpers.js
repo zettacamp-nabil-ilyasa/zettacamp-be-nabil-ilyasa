@@ -40,6 +40,43 @@ async function UserIsExist(userId) {
 }
 
 /**
+ * Check if user email already exist
+ * @param {string} emailAcc - The email to be checked.
+ * @param {string} excludeId - The id of the user to be excluded.
+ * @returns {promise<boolean>} - True if email already exist, false otherwise
+ * @throws {Error} - If failed in sanity check or db operation.
+ */
+async function UserEmailIsExist(emailAcc, excludeId = null) {
+  try {
+    //*************** sanity check
+    if (typeof emailAcc !== 'string' || emailAcc.trim() === '') {
+      throw new ApolloError('Invalid email input');
+    }
+    let trimmedExcludeId = '';
+    if (excludeId) {
+      if (typeof excludeId !== 'string' || excludeId.trim() === '' || !mongoose.Types.ObjectId.isValid(excludeId.trim())) {
+        throw new ApolloError('Invalid exclude id input');
+      }
+      trimmedExcludeId = excludeId.trim();
+    }
+
+    //*************** set query for db operation
+    const query = { email: emailAcc.toLowerCase() };
+    if (excludeId) {
+      query._id = { $ne: trimmedExcludeId };
+    }
+
+    const count = await UserModel.countDocuments(query);
+    return count > 0;
+  } catch (error) {
+    //*************** save error log to db
+    await LogErrorToDb({ error, parameterInput: { emailAcc, excludeId } });
+
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
  * Check if role is valid
  * @param {string} role - The role to be checked.
  * @returns {string} - Role in lowercase.
@@ -122,37 +159,12 @@ async function UserHasRole(userId, role) {
   }
 }
 
-/**
- *
- * @param {string} userId - The id of the user to be checked.
- * @returns {promise<boolean>} - True if user is referenced by a student, false otherwise.
- * @throws {Error} - If failed in sanity check or db operation.
- */
-async function UserIsReferencedByStudent(userId) {
-  try {
-    //*************** userId input check
-    const validatedUserId = SanitizeAndValidateId(userId);
-
-    //*************** set query for db operation
-    const query = { user_id: validatedUserId, status: 'active' };
-
-    //*************** db operation
-    const isReferenced = Boolean(await StudentModel.exists(query));
-    return isReferenced;
-  } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { userId } });
-
-    throw new ApolloError(error.message);
-  }
-}
-
 // *************** EXPORT MODULES ***************
 
 module.exports = {
   UserIsExist,
+  UserEmailIsExist,
   NormalizeRole,
   IsRemovableRole,
   UserHasRole,
-  UserIsReferencedByStudent,
 };

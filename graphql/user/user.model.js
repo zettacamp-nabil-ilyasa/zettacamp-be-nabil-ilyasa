@@ -10,7 +10,7 @@ const user = new mongoose.Schema(
     last_name: { type: String, required: true, trim: true },
 
     //Email
-    email: { type: String, required: true, trim: true },
+    email: { type: String, required: true, lowercase: true, trim: true },
 
     //Password
     password: { type: String, required: true, minlength: 8 },
@@ -18,11 +18,11 @@ const user = new mongoose.Schema(
     //User role
     roles: { type: [String], enum: ['admin', 'user', 'student'], default: ['user'], required: true },
 
-    //Reference to student who is associated with this user
-    student_id: { type: mongoose.Schema.Types.ObjectId, ref: 'student' },
-
     //Account status
     status: { type: String, enum: ['active', 'deleted', 'suspended'], default: 'active' },
+
+    //Reference to user who created this user
+    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
 
     //Soft-delete timestamp
     deleted_at: { type: Date, default: null },
