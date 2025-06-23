@@ -15,6 +15,9 @@ const { LogErrorToDb } = require('../../utils/common.js');
  */
 async function BatchSchools(schoolIds) {
   try {
+    if (!Array.isArray(schoolIds) || schoolIds.length === 0) {
+      throw new ApolloError('schoolIds must be an array');
+    }
     //**************** get all active schools with id within schoolIds and status is not deleted
     const schools = await SchoolModel.find({ _id: { $in: schoolIds }, status: { $ne: 'deleted' } }).lean();
 

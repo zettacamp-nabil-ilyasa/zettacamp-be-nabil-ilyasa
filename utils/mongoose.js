@@ -16,6 +16,7 @@ async function ConnectDb() {
     await mongoose.connect(mongoUri);
   } catch (error) {
     console.error(error);
+    process.exit(1);
   }
 }
 

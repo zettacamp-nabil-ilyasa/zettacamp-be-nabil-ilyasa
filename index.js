@@ -6,7 +6,7 @@ const { ApolloServer } = require('apollo-server-express');
 const ConnectDb = require('./utils/mongoose');
 const { TypeDefs, Resolvers } = require('./graphql/graphqlmerge');
 
-// *************** IMPORT DATALOADER ***************
+// *************** IMPORT DATALOADERS ***************
 const { UserLoader } = require('./graphql/user/user.loader');
 const { SchoolLoader } = require('./graphql/school/school.loader');
 const { StudentLoader } = require('./graphql/student/student.loader');
@@ -19,16 +19,18 @@ const { StudentLoader } = require('./graphql/student/student.loader');
  */
 async function StartServer() {
   try {
-    //*************** set up express
+    // *************** START: Set up Express ***************
     const app = express();
     app.use(express.json());
+    // *************** END: Set up Express ***************
 
-    //*************** set up apollo server
+    // *************** START: Set up Apollo Server ***************
     const server = new ApolloServer({
       typeDefs: TypeDefs,
       resolvers: Resolvers,
       context: () => ({ loaders: { user: UserLoader(), school: SchoolLoader(), student: StudentLoader() } }),
     });
+    // *************** END: Set up Apollo Server ***************
 
     //*************** start server
     await server.start();
@@ -51,4 +53,4 @@ ConnectDb()
     //*************** start server
     StartServer();
   })
-  .catch((err) => console.log('Error connecting to mongodb', err));
+  .catch((err) => console.error('Error connecting to mongodb', err));

@@ -1,7 +1,6 @@
 // *************** IMPORT LIBRARY ***************
 const { gql } = require('apollo-server');
 
-// ***************
 const schoolTypeDefs = gql`
   type School {
     # Document id
@@ -14,13 +13,14 @@ const schoolTypeDefs = gql`
     zipcode: String
     students: [Student]
     status: Status!
-    deleted_at: Date
-    deleted_by: ID!
     created_at: Date
     updated_at: Date
+    created_by: User
+    deleted_at: Date
   }
 
   input CreateSchoolInput {
+    created_by: ID
     brand_name: String!
     long_name: String!
     address: String
@@ -47,7 +47,7 @@ const schoolTypeDefs = gql`
   extend type Mutation {
     CreateSchool(input: CreateSchoolInput): School
     UpdateSchool(input: UpdateSchoolInput): School
-    DeleteSchool(_id: ID!, deletedBy: ID!): String
+    DeleteSchool(_id: ID!, deleted_by: ID): String
   }
 `;
 

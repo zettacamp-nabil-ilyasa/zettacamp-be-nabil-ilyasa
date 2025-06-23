@@ -13,7 +13,7 @@ const { ToTitleCase } = require('../../utils/common.js');
 const schoolNameRegexPattern = /^[\p{L}\d\s'-]+$/u;
 
 //*************** regex pattern to ensure address is at least 5 characters
-const addressRegexPattern = /^[a-zA-Z0-9\s,'./\-#()]{10,50}$/;
+const addressRegexPattern = /^[\p{L}0-9\s,'./\-#()]{10,50}$/u;
 
 //*************** regex pattern to ensure city name is at least 2 characters
 const cityNameRegexPattern = /^[\p{L}\s\-']{2,30}$/u;
@@ -27,11 +27,13 @@ const zipCodeRegexPattern = /^[A-Za-z0-9\s\-]{4,15}$/;
 /**
  * Validates school creation input.
  * @param {object} input - The input object containing school data.
- * @returns {object} - The validated and formatted input.
+ * @returns {object} - Sanitized and validated input.
  * @throws {ApolloError} - If validation fails.
  */
 function ValidateSchoolCreateInput(inputObject) {
-  let { brand_name, long_name, address, country, city, zipcode } = inputObject;
+  let { created_by, brand_name, long_name, address, country, city, zipcode } = inputObject;
+  //*************** validate user id stored in created_by
+  created_by = SanitizeAndValidateId(created_by);
 
   brand_name = SanitizeAndValidateRequiredString(brand_name);
   if (!schoolNameRegexPattern.test(brand_name)) {
@@ -74,15 +76,15 @@ function ValidateSchoolCreateInput(inputObject) {
       throw new ApolloError('zip code contains invalid characters');
     }
   }
-  const validatedInput = { brand_name, long_name, address, country, city, zipcode };
+  const validatedInput = { created_by, brand_name, long_name, address, country, city, zipcode };
   return validatedInput;
 }
 
 /**
  * Validates school update input.
  * @param {object} inputObject - The input object containing updated school data.
- * @returns {object} - The validated and formatted input.
- * @throws {import('apollo-server-core').ApolloError} - If validation fails.
+ * @returns {object} - Sanitized and validated input.
+ * @throws {ApolloError} - If validation fails.
  */
 function ValidateSchoolUpdateInput(inputObject) {
   let { _id, brand_name, long_name, address, country, city, zipcode } = inputObject;

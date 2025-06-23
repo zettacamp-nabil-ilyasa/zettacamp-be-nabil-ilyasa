@@ -67,7 +67,13 @@ async function CreateSchool(_, { input }) {
   try {
     //*************** validation to ensure input is sanitized and formatted correctly
     const validatedSchoolInput = ValidateSchoolCreateInput(input);
-    const { long_name, brand_name, address, country, city, zipcode } = validatedSchoolInput;
+    const { created_by, long_name, brand_name, address, country, city, zipcode } = validatedSchoolInput;
+
+    //*************** check if user with id from created_by is exist and has admin role
+    const userIsAdmin = await UserIsAdmin(created_by);
+    if (!userIsAdmin) {
+      throw new ApolloError('User is not admin');
+    }
 
     //*************** check if school name already exist
     const longNameIsExist = await SchoolLongNameIsExist(long_name);
@@ -88,6 +94,7 @@ async function CreateSchool(_, { input }) {
       city,
       zipcode,
       status: 'active',
+      created_by,
     };
 
     //*************** create school with validated input
@@ -169,15 +176,15 @@ async function UpdateSchool(_, { input }) {
  * Soft delete a school by marking their status as 'deleted'.
  * @param {object} args - Resolver arguments.
  * @param {string} args._id - ID of the school to delete.
- * @param {string} args.deletedBy - ID of the admin performing the deletion.
+ * @param {string} args.deleted_by - ID of the admin performing the deletion.
  * @returns {Promise<string>} - Deletion success message.
  * @throws {Error} - Throws error if unauthorized or school not found.
  */
-async function DeleteSchool(_, { _id, deletedBy }) {
+async function DeleteSchool(_, { _id, deleted_by }) {
   try {
-    //**************** sanitize and validate id and deletedBy
+    //**************** sanitize and validate id and deleted_by
     const validDeletedId = SanitizeAndValidateId(_id);
-    const validDeletedBy = SanitizeAndValidateId(deletedBy);
+    const validDeletedBy = SanitizeAndValidateId(deleted_by);
 
     //**************** check if deleter user is exist and has admin role
     const userIsAdmin = await UserIsAdmin(validDeletedBy);
@@ -208,13 +215,13 @@ async function DeleteSchool(_, { _id, deletedBy }) {
     return 'School deleted successfully';
   } catch (error) {
     //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { _id, deletedBy } });
+    await LogErrorToDb({ error, parameterInput: { _id, deleted_by } });
 
     throw new ApolloError(error.message);
   }
 }
 
-//*************** LOADER ***************
+//*************** LOADERS ***************
 
 /**
  * Resolve the students field for by using DataLoader.
@@ -241,11 +248,30 @@ async function SchoolLoaderForStudents(parent, _, context) {
   }
 }
 
+async function SchoolLoaderForCreatedBy(parent, _, context) {
+  try {
+    //*************** check if school has any student
+    if (!parent?.created_by) {
+      return null;
+    }
+
+    //*************** load user
+    const loadedUser = await context.loaders.user.load(parent.created_by);
+    return loadedUser;
+  } catch (error) {
+    //**************** save error log to db
+    await LogErrorToDb({ error, parameterInput: {} });
+
+    throw new ApolloError(error.message);
+  }
+}
+
 // *************** EXPORT MODULES ***************
 module.exports = {
   Query: { GetAllSchools, GetOneSchool },
   Mutation: { CreateSchool, UpdateSchool, DeleteSchool },
   School: {
     students: SchoolLoaderForStudents,
+    created_by: SchoolLoaderForCreatedBy,
   },
 };

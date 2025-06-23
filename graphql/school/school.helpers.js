@@ -7,7 +7,7 @@ const SchoolModel = require('./school.model.js');
 const StudentModel = require('../student/student.model.js');
 
 //*************** IMPORT UTILS ***************
-const { SanitizeAndValidateId, SanitizeAndValidateOptionalString } = require('../../utils/common-validator.js');
+const { SanitizeAndValidateId, SanitizeAndValidateRequiredString } = require('../../utils/common-validator.js');
 const { LogErrorToDb } = require('../../utils/common.js');
 
 /**
@@ -20,7 +20,7 @@ const { LogErrorToDb } = require('../../utils/common.js');
 async function SchoolLongNameIsExist(longName, excludeId = null) {
   try {
     //*************** validate longName input
-    const validLongName = SanitizeAndValidateOptionalString(longName);
+    const validLongName = SanitizeAndValidateRequiredString(longName);
 
     //*************** excludeId input check
     let validExcludeId = '';
@@ -54,10 +54,7 @@ async function SchoolLongNameIsExist(longName, excludeId = null) {
 async function SchoolBrandNameIsExist(brandName, excludeId = null) {
   try {
     //*************** validate brandName input
-    const validBrandName = SanitizeAndValidateOptionalString(brandName);
-    if (validBrandName === '') {
-      throw new ApolloError('Invalid brand name input');
-    }
+    const validBrandName = SanitizeAndValidateRequiredString(brandName);
 
     //*************** excludeId input check
     let validExcludeId = '';
