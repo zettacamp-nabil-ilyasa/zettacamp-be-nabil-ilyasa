@@ -70,60 +70,30 @@ function ValidateStudentCreateInput(inputObject) {
   //*************** validate school_id
   school_id = SanitizeAndValidateId(school_id);
 
+  //*************** validate email and convert to lowercase
   email = SanitizeAndValidateRequiredString(email.toLowerCase());
   if (!emailRegexPattern.test(email)) {
     throw new ApolloError('email format is invalid');
   }
+
+  //*************** validate first_name and convert to Title case
   first_name = SanitizeAndValidateRequiredString(ToTitleCase(first_name));
   if (!firstAndLastNameRegexPattern.test(first_name)) {
     throw new ApolloError('first name contains invalid characters');
   }
+
+  //*************** validate last_name and convert to Title case
   last_name = SanitizeAndValidateRequiredString(ToTitleCase(last_name));
   if (!firstAndLastNameRegexPattern.test(last_name)) {
     throw new ApolloError('last name contains invalid characters');
   }
+
+  //*************** validate date_of_birth
   if (date_of_birth !== null && date_of_birth !== undefined) {
     //*************** validation to ensure date is in YYYY-MM-DD format
     date_of_birth = ValidateDateOfBirth(date_of_birth);
   }
   const validatedInput = { created_by, first_name, last_name, email, date_of_birth, school_id };
-  return validatedInput;
-}
-
-/**
- * Validates input for creating both a user and a student.
- * @param {object} input - The combined input object.
- * @returns {object} - The validated and formatted input.
- * @throws {Error} - If validation fails.
- */
-function ValidateStudentAndUserCreateInput(inputObject) {
-  let { first_name, last_name, email, password, date_of_birth, school_id } = inputObject;
-
-  if (!emailRegexPattern.test(email)) {
-    throw new ApolloError('email format is invalid');
-  }
-  if (!passwordRegexPattern.test(password)) {
-    throw new ApolloError(
-      'password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, and one number'
-    );
-  }
-  first_name = SanitizeAndValidateRequiredString(ToTitleCase(first_name));
-  if (!firstAndLastNameRegexPattern.test(first_name)) {
-    throw new ApolloError('first name contains invalid characters');
-  }
-  last_name = SanitizeAndValidateRequiredString(ToTitleCase(last_name));
-  if (!firstAndLastNameRegexPattern.test(last_name)) {
-    throw new ApolloError('last name contains invalid characters');
-  }
-
-  //*************** validate school_id
-  school_id = SanitizeAndValidateId(school_id);
-
-  if (date_of_birth !== null && date_of_birth !== undefined) {
-    //*************** validation to ensure date is in YYYY-MM-DD format
-    date_of_birth = ValidateDateOfBirth(date_of_birth);
-  }
-  const validatedInput = { first_name, last_name, email, password, date_of_birth, school_id };
   return validatedInput;
 }
 
@@ -139,8 +109,12 @@ function ValidateStudentUpdateInput(input) {
   //*************** validate _id
   _id = SanitizeAndValidateId(_id);
 
-  if (email && !emailRegexPattern.test(email)) {
-    throw new ApolloError('email format is invalid');
+  //*************** validate email
+  if (email) {
+    email = SanitizeAndValidateRequiredString(email.toLowerCase());
+    if (!emailRegexPattern.test(email)) {
+      throw new ApolloError('email format is invalid');
+    }
   }
   if (first_name) {
     first_name = SanitizeAndValidateRequiredString(ToTitleCase(first_name));
@@ -166,4 +140,4 @@ function ValidateStudentUpdateInput(input) {
 }
 
 //*************** MODULE EXPORTS ***************
-module.exports = { ValidateStudentCreateInput, ValidateStudentUpdateInput, ValidateStudentAndUserCreateInput };
+module.exports = { ValidateStudentCreateInput, ValidateStudentUpdateInput };

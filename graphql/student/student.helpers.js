@@ -4,7 +4,7 @@ const { ApolloError } = require('apollo-server-express');
 //*************** IMPORT MODULE ***************
 const StudentModel = require('./student.model.js');
 
-//*************** IMPORT UTIL ***************
+//*************** IMPORT UTILS ***************
 const { SanitizeAndValidateId } = require('../../utils/common-validator.js');
 const { LogErrorToDb } = require('../../utils/common.js');
 
