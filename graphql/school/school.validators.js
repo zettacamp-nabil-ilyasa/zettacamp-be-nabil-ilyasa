@@ -10,16 +10,16 @@ const {
 const { ToTitleCase } = require('../../utils/common.js');
 
 //*************** regex pattern to ensure school name only have letters and numbers
-const schoolNameRegexPattern = /^[a-zA-Z\s'-\d]+$/;
+const schoolNameRegexPattern = /^[\p{L}\d\s'-]+$/u;
 
 //*************** regex pattern to ensure address is at least 5 characters
 const addressRegexPattern = /^[a-zA-Z0-9\s,'./\-#()]{10,50}$/;
 
 //*************** regex pattern to ensure city name is at least 2 characters
-const cityNameRegexPattern = /^[a-zA-Z\s\-]{2,30}$/;
+const cityNameRegexPattern = /^[\p{L}\s\-']{2,30}$/u;
 
 //*************** regex pattern to ensure country name is at least 2 characters
-const countryNameRegexPattern = /^[a-zA-Z\s\-]{2,30}$/;
+const countryNameRegexPattern = /^[\p{L}\s\-']{2,30}$/u;
 
 //*************** regex pattern to ensure zip code is at least 4 characters
 const zipCodeRegexPattern = /^[A-Za-z0-9\s\-]{4,15}$/;
@@ -42,21 +42,37 @@ function ValidateSchoolCreateInput(inputObject) {
   if (!schoolNameRegexPattern.test(long_name)) {
     throw new ApolloError('long name contains invalid characters');
   }
-  address = SanitizeAndValidateOptionalString(address);
-  if (!addressRegexPattern.test(address)) {
-    throw new ApolloError('address contains invalid characters');
+  if (address !== null && address !== undefined) {
+    //*************** validate address
+    address = SanitizeAndValidateOptionalString(address);
+
+    if (address !== '' && !addressRegexPattern.test(address)) {
+      throw new ApolloError('address contains invalid characters');
+    }
   }
-  country = SanitizeAndValidateOptionalString(country);
-  if (country && !countryNameRegexPattern.test(country)) {
-    throw new ApolloError('country name contains invalid characters');
+  if (country !== null && country !== undefined) {
+    //*************** validate country
+    country = SanitizeAndValidateOptionalString(country);
+
+    if (country !== '' && !countryNameRegexPattern.test(country)) {
+      throw new ApolloError('country name contains invalid characters');
+    }
   }
-  city = SanitizeAndValidateOptionalString(city);
-  if (city && !cityNameRegexPattern.test(city)) {
-    throw new ApolloError('city name contains invalid characters');
+  if (city !== null && city !== undefined) {
+    //*************** validate city
+    city = SanitizeAndValidateOptionalString(city);
+
+    if (city !== '' && !cityNameRegexPattern.test(city)) {
+      throw new ApolloError('city name contains invalid characters');
+    }
   }
-  zipcode = SanitizeAndValidateOptionalString(zipcode);
-  if (zipcode && !zipCodeRegexPattern.test(zipcode)) {
-    throw new ApolloError('zip code contains invalid characters');
+  if (zipcode !== null && zipcode !== undefined) {
+    //*************** validate zip code
+    zipcode = SanitizeAndValidateOptionalString(zipcode);
+
+    if (zipcode !== '' && !zipCodeRegexPattern.test(zipcode)) {
+      throw new ApolloError('zip code contains invalid characters');
+    }
   }
   const validatedInput = { brand_name, long_name, address, country, city, zipcode };
   return validatedInput;
@@ -93,7 +109,7 @@ function ValidateSchoolUpdateInput(inputObject) {
     //*************** validate address
     address = SanitizeAndValidateOptionalString(address);
 
-    if (!addressRegexPattern.test(address)) {
+    if (address !== '' && !addressRegexPattern.test(address)) {
       throw new ApolloError('address contains invalid characters');
     }
   }
@@ -101,7 +117,7 @@ function ValidateSchoolUpdateInput(inputObject) {
     //*************** validate country
     country = SanitizeAndValidateOptionalString(country);
 
-    if (!countryNameRegexPattern.test(country)) {
+    if (country !== '' && !countryNameRegexPattern.test(country)) {
       throw new ApolloError('country name contains invalid characters');
     }
   }
@@ -109,7 +125,7 @@ function ValidateSchoolUpdateInput(inputObject) {
     //*************** validate city
     city = SanitizeAndValidateOptionalString(city);
 
-    if (!cityNameRegexPattern.test(city)) {
+    if (city !== '' && !cityNameRegexPattern.test(city)) {
       throw new ApolloError('city name contains invalid characters');
     }
   }
@@ -117,7 +133,7 @@ function ValidateSchoolUpdateInput(inputObject) {
     //*************** validate zip code
     zipcode = SanitizeAndValidateOptionalString(zipcode);
 
-    if (!zipCodeRegexPattern.test(zipcode)) {
+    if (zipcode !== '' && !zipCodeRegexPattern.test(zipcode)) {
       throw new ApolloError('zip code contains invalid characters');
     }
   }
