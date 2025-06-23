@@ -17,7 +17,7 @@ const studentTypeDefs = gql`
     email: String!
 
     # Date of birth
-    date_of_birth: String
+    date_of_birth: Date
 
     # Reference to school
     school: School!
@@ -35,7 +35,7 @@ const studentTypeDefs = gql`
     status: Status!
 
     # Soft-delete timestamp
-    deleted_at: String
+    deleted_at: Date
 
     # Reference to user who deleted this student
     deleted_by: ID
@@ -52,7 +52,7 @@ const studentTypeDefs = gql`
     email: String!
 
     # Date of birth for create student input
-    date_of_birth: String
+    date_of_birth: Date
 
     # School id for create student input
     school_id: String!
@@ -72,7 +72,7 @@ const studentTypeDefs = gql`
     password: String!
 
     # Date of birth for create student with user input
-    date_of_birth: String
+    date_of_birth: Date
 
     # Reference to school
     school_id: String!
@@ -92,7 +92,7 @@ const studentTypeDefs = gql`
     email: String
 
     # Date of birth for update student input
-    date_of_birth: String
+    date_of_birth: Date
 
     # School id for update student input
     school_id: String
