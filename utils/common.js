@@ -5,11 +5,11 @@ const bcrypt = require('bcrypt');
 
 //*************** IMPORT MODULE ***************
 const SchoolModel = require('../graphql/school/school.model.js');
-const UserModel = require('../graphql/user/user.model.js');
 const ErrorLogModel = require('../graphql/errorLog/error_log.model.js');
 
 /**
  * Converts a string to title case.
+ * Used for input validation.
  * @param {string} string - The string to convert.
  * @returns {string} - The converted string in title case.
  * @throws {Error} - If failed in sanity check.
@@ -30,6 +30,7 @@ function ToTitleCase(string) {
 
 /**
  * Converts a date to ISO date string.
+ * Used for date field display.
  * @param {Date} date - The date to convert.
  * @returns {string | null} - The converted date in ISO string format or null if date is invalid.
  */
@@ -79,7 +80,7 @@ async function SchoolIsExist(schoolId) {
 }
 
 /**
- *
+ * Hashes a plaintext password using bcrypt.
  * @param {string} password - Plaintext to be hashed.
  * @returns string - Hashed password.
  * @throws {Error} - If failed sanity check or hashing process.
@@ -109,7 +110,8 @@ async function HashPassword(password) {
 }
 
 /**
- *
+ * Parses a date string in DD-MM-YYYY format to a Date object.
+ * Used for date input validation.
  * @param {string} dateStr - The date string to be parsed.
  * @returns {Date} - The parsed date.
  */
@@ -133,6 +135,7 @@ function ParseDateDmy(dateStr) {
 
 /**
  * Custom stringify function that handles errors gracefully.
+ * Used for logging purposes.
  * @param {object} obj - The object to be stringified.
  * @returns {string} - The stringified object.
  */

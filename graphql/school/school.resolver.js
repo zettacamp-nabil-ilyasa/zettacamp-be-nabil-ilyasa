@@ -224,7 +224,7 @@ async function DeleteSchool(_, { _id, deleted_by }) {
 //*************** LOADERS ***************
 
 /**
- * Resolve the students field for by using DataLoader.
+ * Resolve the students field in School by using DataLoader.
  * @param {object} parent - Parent, school object.
  * @param {object} context - Resolver context.
  * @param {object} context.loaders - DataLoader object.
@@ -248,6 +248,13 @@ async function SchoolLoaderForStudents(parent, _, context) {
   }
 }
 
+/**
+ * Resolve the created_by field in School by using DataLoader.
+ * @param {object} parent - Parent, school object.
+ * @param {object} context - Resolver context.
+ * @returns {Promise<Object|null>} - The user document or null.
+ * @throws {Error} - Throws error if loading fails.
+ */
 async function SchoolLoaderForCreatedBy(parent, _, context) {
   try {
     //*************** check if school has any student
