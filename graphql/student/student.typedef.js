@@ -9,7 +9,7 @@ const studentTypeDefs = gql`
     last_name: String!
     email: String!
     date_of_birth: Date
-    school: School!
+    school_id: School!
     status: Status!
     created_by: User
     created_at: Date

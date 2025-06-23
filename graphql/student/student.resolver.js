@@ -4,9 +4,10 @@ const { ApolloError } = require('apollo-server-express');
 // *************** IMPORT MODULES ***************
 const StudentModel = require('./student.model.js');
 const SchoolModel = require('../school/school.model.js');
+const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT UTILS ***************
-const { SchoolIsExist, FormatDateToIsoString, LogErrorToDb } = require('../../utils/common.js');
+const { SchoolIsExist, FormatDateToIsoString } = require('../../utils/common.js');
 const { SanitizeAndValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
 
 // *************** IMPORT VALIDATORS ***************
@@ -27,9 +28,16 @@ async function GetAllStudents() {
     const students = await StudentModel.find({ status: 'active' }).lean();
     return students;
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: {} });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'GetAllStudents',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/student/student.resolver.js',
+        parameter_input: JSON.stringify({}),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -49,9 +57,16 @@ async function GetOneStudent(_, { _id }) {
     const student = await StudentModel.findOne({ _id: validId, status: 'active' }).lean();
     return student;
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { _id } });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'GetOneStudent',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/student/student.resolver.js',
+        parameter_input: JSON.stringify({ _id }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -108,9 +123,16 @@ async function CreateStudent(_, { input }) {
 
     return createdStudent;
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { input } });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'CreateStudent',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/student/student.resolver.js',
+        parameter_input: JSON.stringify({ input }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -172,9 +194,16 @@ async function UpdateStudent(_, { input }) {
     const updatedStudent = await StudentModel.findOneAndUpdate({ _id: _id }, validatedStudent, { new: true }).lean();
     return updatedStudent;
   } catch (error) {
-    //**************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { input } });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'UpdateStudent',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/student/student.resolver.js',
+        parameter_input: JSON.stringify({ input }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -212,9 +241,16 @@ async function DeleteStudent(_, { _id, deletedBy }) {
     await StudentModel.updateOne({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     return 'Student deleted successfully';
   } catch (error) {
-    //**************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { _id, deletedBy } });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'DeleteStudent',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/student/student.resolver.js',
+        parameter_input: JSON.stringify({ _id, deletedBy }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -228,7 +264,7 @@ async function DeleteStudent(_, { _id, deletedBy }) {
  * @returns {Promise<Object|null>} - The school document or null.
  * @throws {Error} - Throws error if loading fails.
  */
-async function StudentLoaderForSchool(parent, _, context) {
+async function School_Id(parent, _, context) {
   try {
     //*************** check if student has any school
     if (!parent?.school_id) {
@@ -239,9 +275,16 @@ async function StudentLoaderForSchool(parent, _, context) {
     const loadedSchool = await context.loaders.school.load(parent.school_id);
     return loadedSchool;
   } catch (error) {
-    //**************** save error log to db
-    await LogErrorToDb({ error, parameterInput: {} });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'School_Id',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/student/student.resolver.js',
+        parameter_input: JSON.stringify({}),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -253,7 +296,7 @@ async function StudentLoaderForSchool(parent, _, context) {
  * @returns {Promise<Object|null>} - The user document or null
  * @throws {Error} - Throws error if loading fails
  */
-async function StudentLoaderForCreatedBy(parent, _, context) {
+async function Created_By(parent, _, context) {
   try {
     //*************** check if student has any school
     if (!parent?.created_by) {
@@ -264,9 +307,16 @@ async function StudentLoaderForCreatedBy(parent, _, context) {
     const loadedUser = await context.loaders.user.load(parent.created_by);
     return loadedUser;
   } catch (error) {
-    //**************** save error log to db
-    await LogErrorToDb({ error, parameterInput: {} });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'Created_By',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/student/student.resolver.js',
+        parameter_input: JSON.stringify({}),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -276,8 +326,8 @@ module.exports = {
   Query: { GetAllStudents, GetOneStudent },
   Mutation: { CreateStudent, UpdateStudent, DeleteStudent },
   Student: {
-    created_by: StudentLoaderForCreatedBy,
-    school: StudentLoaderForSchool,
+    created_by: Created_By,
+    school_id: School_Id,
     //*************** for displayed date format
     date_of_birth: (parent) => FormatDateToIsoString(parent.date_of_birth),
   },
