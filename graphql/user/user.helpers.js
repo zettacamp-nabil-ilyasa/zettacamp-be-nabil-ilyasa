@@ -1,12 +1,12 @@
 //*************** IMPORT LIBRARY ***************
 const { ApolloError } = require('apollo-server-express');
 
-//*************** IMPORT MODULE ***************
+//*************** IMPORT MODULES ***************
 const UserModel = require('./user.model');
+const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 //*************** IMPORT UTILS ***************
 const { SanitizeAndValidateId } = require('../../utils/common-validator');
-const { LogErrorToDb } = require('../../utils/common');
 
 //*************** list of protected roles
 const protectedRoles = ['user'];
@@ -31,9 +31,16 @@ async function UserIsExist(userId) {
     const userIsExist = count > 0;
     return userIsExist;
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { userId } });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'UserIsExist',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.helpers.js',
+        parameter_input: JSON.stringify({ userId }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -45,7 +52,7 @@ async function UserIsExist(userId) {
  * @returns {promise<boolean>} - True if email already exist, false otherwise
  * @throws {Error} - If failed in sanity check or db operation.
  */
-async function UserEmailIsExist(emailAcc, excludeId = null) {
+async function UserEmailIsExist({ emailAcc, excludeId = null }) {
   try {
     //*************** sanity check
     if (typeof emailAcc !== 'string' || emailAcc.trim() === '') {
@@ -68,9 +75,16 @@ async function UserEmailIsExist(emailAcc, excludeId = null) {
     const count = await UserModel.countDocuments(query);
     return count > 0;
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { emailAcc, excludeId } });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'UserEmailIsExist',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.helpers.js',
+        parameter_input: JSON.stringify({ emailAcc, excludeId }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -129,7 +143,7 @@ function IsRemovableRole(role) {
  * @returns {promise<boolean>} - True if user already have the role, false otherwise.
  * @throws {Error} - If failed sanity check or db operation.
  */
-async function UserHasRole(userId, role) {
+async function UserHasRole({ userId, role }) {
   try {
     //*************** userId input check
     const validatedUserId = SanitizeAndValidateId(userId);
@@ -151,9 +165,16 @@ async function UserHasRole(userId, role) {
     const roleIsAlreadyExists = count > 0;
     return roleIsAlreadyExists;
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { userId, role } });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'UserHasRole',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.helpers.js',
+        parameter_input: JSON.stringify({ userId, role }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }

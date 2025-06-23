@@ -2,11 +2,9 @@
 const DataLoader = require('dataloader');
 const { ApolloError } = require('apollo-server-express');
 
-//*************** IMPORT MODULE ***************
+//*************** IMPORT MODULES ***************
 const UserModel = require('./user.model.js');
-
-//*************** IMPORT UTILS ***************
-const { LogErrorToDb } = require('../../utils/common.js');
+const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 /**
  * Batch function to load users by array of user IDs
@@ -27,9 +25,16 @@ async function BatchUsers(userIds) {
     //**************** return array of user objects with order of userIds
     return userIds.map((userId) => dataMap.get(userId.toString() || null));
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { userIds } });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'BatchUsers',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.loader.js',
+        parameter_input: JSON.stringify({ userIds }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }

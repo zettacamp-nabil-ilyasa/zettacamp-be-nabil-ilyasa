@@ -1,11 +1,12 @@
 // *************** IMPORT LIBRARY ***************
 const { ApolloError } = require('apollo-server-express');
 
-// *************** IMPORT MODULE ***************
+// *************** IMPORT MODULES ***************
 const UserModel = require('./user.model.js');
+const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT UTILS ***************
-const { HashPassword, LogErrorToDb } = require('../../utils/common.js');
+const { HashPassword } = require('../../utils/common.js');
 const { SanitizeAndValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
 
 // *************** IMPORT VALIDATORS ***************
@@ -33,9 +34,16 @@ async function GetAllUsers() {
     const users = await UserModel.find({ status: 'active' }).lean();
     return users;
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: {} });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'GetAllUsers',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.resolver.js',
+        parameter_input: JSON.stringify({}),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -54,9 +62,16 @@ async function GetOneUser(_, { _id }) {
     const user = await UserModel.findOne({ _id: validId, status: 'active' }).lean();
     return user;
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { _id } });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'GetOneUser',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.resolver.js',
+        parameter_input: JSON.stringify({ _id }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -102,9 +117,16 @@ async function CreateUser(_, { input }) {
     const createdUser = await UserModel.create(validatedUser);
     return createdUser;
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { input } });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'CreateUser',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.resolver.js',
+        parameter_input: JSON.stringify({ input }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -154,9 +176,16 @@ async function UpdateUser(_, { input }) {
     const updatedUser = await UserModel.findOneAndUpdate({ _id: _id }, validatedUser, { new: true });
     return updatedUser;
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { input } });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'UpdateUser',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.resolver.js',
+        parameter_input: JSON.stringify({ input }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -198,9 +227,16 @@ async function AddRole(_, { input }) {
     const updatedUser = await UserModel.findOneAndUpdate({ _id }, { $addToSet: { roles: normalizedRole } }, { new: true });
     return updatedUser;
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { input } });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'AddRole',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.resolver.js',
+        parameter_input: JSON.stringify({ input }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -249,9 +285,16 @@ async function DeleteRole(_, { input }) {
     const updatedUser = await UserModel.findOneAndUpdate({ _id }, { $pull: { roles: normalizedRole } }, { new: true }).lean();
     return updatedUser;
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { input } });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'DeleteRole',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.resolver.js',
+        parameter_input: JSON.stringify({ input }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -302,9 +345,16 @@ async function DeleteUser(_, { _id, deletedBy }) {
     await UserModel.updateOne({ _id: validDeletedId }, toBeDeletedUser);
     return 'User deleted successfully';
   } catch (error) {
-    //*************** save error log to db
-    await LogErrorToDb({ error, parameterInput: { _id, deletedBy } });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'DeleteUser',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.resolver.js',
+        parameter_input: JSON.stringify({ _id, deletedBy }),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -318,7 +368,7 @@ async function DeleteUser(_, { _id, deletedBy }) {
  * @returns {Promise<Object|null>} - The user document or null.
  * @throws {Error} - Throws error if loading fails.
  */
-async function UserLoaderForCreatedBy(parent, _, context) {
+async function Created_By(parent, _, context) {
   try {
     //*************** check if user has any school
     if (!parent?.created_by) {
@@ -329,9 +379,16 @@ async function UserLoaderForCreatedBy(parent, _, context) {
     const loadedUser = await context.loaders.user.load(parent.created_by);
     return loadedUser;
   } catch (error) {
-    //**************** save error log to db
-    await LogErrorToDb({ error, parameterInput: {} });
-
+    try {
+      await ErrorLogModel.create({
+        error_stack: error.stack,
+        function_name: 'Created_By',
+        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.resolver.js',
+        parameter_input: JSON.stringify({}),
+      });
+    } catch (loggingError) {
+      throw new ApolloError(loggingError.message);
+    }
     throw new ApolloError(error.message);
   }
 }
@@ -341,6 +398,6 @@ module.exports = {
   Query: { GetAllUsers, GetOneUser },
   Mutation: { CreateUser, UpdateUser, AddRole, DeleteRole, DeleteUser },
   User: {
-    created_by: UserLoaderForCreatedBy,
+    created_by: Created_By,
   },
 };
