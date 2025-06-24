@@ -12,6 +12,7 @@ const passwordRegexPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 //*************** regex pattern to ensure first and last name contains only letters
 const userNameRegexPattern = /^[\p{L}\s'-]+$/u;
 
+//*************** joi schema for create user
 const createUserSchema = Joi.object({
   first_name: Joi.string()
     .trim()
@@ -36,6 +37,7 @@ const createUserSchema = Joi.object({
     .messages({ 'string.min': 'password must be at least 8 characters', 'any.required': 'password is required' }),
 });
 
+//*************** joi schema for update user
 const updateUserSchema = createUserSchema.fork(['first_name', 'last_name', 'email', 'password'], (schema) => schema.optional());
 
 /**
