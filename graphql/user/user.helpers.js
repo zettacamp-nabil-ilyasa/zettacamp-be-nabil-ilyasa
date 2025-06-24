@@ -15,11 +15,11 @@ const protectedRoles = ['user'];
  * Check if a User with the given ID already exists.
  * @param {string} userId - The id of the user to be checked.
  * @returns {promise<boolean>} - True if user already exist, false otherwise.
- * @throws {Error} - If failed in sanity check or db operation.
+ * @throws {Error} - If failed in validation or db operation.
  */
 async function UserIsExist(userId) {
   try {
-    //*************** userId input check
+    //*************** validate userId
     ValidateId(userId);
 
     //*************** set query for db operation
@@ -44,7 +44,7 @@ async function UserIsExist(userId) {
  * @param {string} userEmail - The email to be checked.
  * @param {string} userId - The id of the user to be excluded.
  * @returns {promise<boolean>} - True if email already exist, false otherwise
- * @throws {Error} - If failed in sanity check or db operation.
+ * @throws {Error} - If failed in validation or db operation.
  */
 async function UserEmailIsExist({ userEmail, userId = null }) {
   try {
@@ -53,7 +53,7 @@ async function UserEmailIsExist({ userEmail, userId = null }) {
       throw new ApolloError('Invalid email input');
     }
 
-    //*************** validate _id
+    //*************** validate userId
     if (userId) {
       ValidateId(userId);
     }
@@ -80,15 +80,16 @@ async function UserEmailIsExist({ userEmail, userId = null }) {
 /**
  * Check if role is valid
  * @param {string} role - The role to be checked.
- * @throws {Error} - If failed sanity check.
+ * @throws {Error} - If failed validation.
  */
 function RoleIsValid(role) {
-  //*************** role input check, set to lowercase
+  //*************** role input check
   if (!role) {
     throw new ApolloError('Invalid role input');
   }
 
   const validRoles = ['admin', 'user'];
+
   //*************** check if role is a valid role
   const isValidRole = validRoles.includes(role);
   if (!isValidRole) {
@@ -100,7 +101,7 @@ function RoleIsValid(role) {
  * Check if role can be removed.
  * @param {string} role - The role to be checked.
  * @returns {boolean} - True if role can be removed, false otherwise.
- * @throws {Error} - If failed sanity check.
+ * @throws {Error} - If validation fails.
  */
 function IsRemovableRole(role) {
   //*************** role input check, set to lowercase
@@ -115,17 +116,17 @@ function IsRemovableRole(role) {
 
 /**
  * Check is a user already have the given role.
- * @param {string} _id - The id of the user.
+ * @param {string} userId - The id of the user.
  * @param {string} role - The role to be checked.
  * @returns {promise<boolean>} - True if user already have the role, false otherwise.
- * @throws {Error} - If failed sanity check or db operation.
+ * @throws {Error} - If failed in validation or db operation.
  */
 async function UserHasRole({ userId, role }) {
   try {
-    //*************** userId input check
+    //*************** validate userId
     ValidateId(userId);
 
-    //*************** role input check, set to lowercase
+    //*************** role input check
     if (!role) {
       throw new ApolloError('Invalid role input');
     }

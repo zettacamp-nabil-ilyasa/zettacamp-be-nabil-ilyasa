@@ -6,6 +6,9 @@ const Joi = require('joi');
 const { ToTitleCase } = require('../../utils/common');
 const { ValidateId } = require('../../utils/common-validator');
 
+//*************** IMPORT HELPER ***************
+const { RoleIsValid } = require('./user.helpers.js');
+
 //*************** regex pattern to ensure password is at least 8 characters and contain at least one uppercase letter, one lowercase letter, and one number
 const passwordRegexPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
@@ -51,6 +54,7 @@ function ValidateUserCreateInput(inputObject) {
   //*************** validate user id stored in created_by
   ValidateId(created_by);
 
+  //*************** validate input using joi schema
   const { error, value } = createUserSchema.validate({ first_name, last_name, email, password }, { abortEarly: true });
 
   if (error) {
@@ -72,6 +76,7 @@ function ValidateUserUpdateInput(inputObject) {
   //*************** _id input check
   ValidateId(_id);
 
+  //*************** validate input using joi schema
   const { error, value } = updateUserSchema.validate({ first_name, last_name, email, password }, { abortEarly: true });
 
   if (error) {
@@ -109,6 +114,7 @@ function ValidateEditRoleInput(inputObject) {
     throw new ApolloError('Role is required');
   }
   role = role.trim().toLowerCase();
+  RoleIsValid(role);
   const validatedInput = { _id, updater_id, role };
   return validatedInput;
 }

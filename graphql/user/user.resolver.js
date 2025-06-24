@@ -46,7 +46,7 @@ async function GetAllUsers() {
  */
 async function GetOneUser(_, { _id }) {
   try {
-    //**************** sanitize and validate id
+    //**************** validate id
     ValidateId(_id);
     const user = await UserModel.findOne({ _id: _id, status: 'active' }).lean();
     return user;
@@ -68,11 +68,11 @@ async function GetOneUser(_, { _id }) {
  * @param {object} args - Resolver arguments.
  * @param {object} args.input - User input fields.
  * @returns {Promise<Object>} - Created user document.
- * @throws {Error} - Throws error if validation fails or email already exists.
+ * @throws {Error} - Throws error if validation or db operation fails.
  */
 async function CreateUser(_, { input }) {
   try {
-    //**************** validation to ensure input is formatted correctly and
+    //**************** validation to ensure bad input is handled correctly
     const validatedUserInput = ValidateUserCreateInput(input);
     const { created_by, email, password, first_name, last_name } = validatedUserInput;
 
@@ -99,6 +99,8 @@ async function CreateUser(_, { input }) {
       last_name,
       created_by,
     };
+
+    //**************** create user with composed object
     const createdUser = await UserModel.create(validatedUser);
     return createdUser;
   } catch (error) {
@@ -117,11 +119,11 @@ async function CreateUser(_, { input }) {
  * @param {object} args - Resolver arguments.
  * @param {object} args.input - User update fields.
  * @returns {Promise<Object>} - Updated user document.
- * @throws {Error} - Throws error if validation fails or user/email conflict.
+ * @throws {Error} - Throws error if validation or db operation fails.
  */
 async function UpdateUser(_, { input }) {
   try {
-    //**************** validation to ensure input is formatted correctly
+    //**************** validation to ensure bad input is handled correctly
     const validatedInput = ValidateUserUpdateInput(input);
     const { _id, email, first_name, last_name, password } = validatedInput;
 
@@ -153,7 +155,7 @@ async function UpdateUser(_, { input }) {
       validatedUser.password = hashedPassword;
     }
 
-    //**************** update user with validated input
+    //**************** update user with composed object
     const updatedUser = await UserModel.findOneAndUpdate({ _id: _id }, validatedUser, { new: true });
     return updatedUser;
   } catch (error) {
@@ -176,11 +178,11 @@ async function UpdateUser(_, { input }) {
  */
 async function AddRole(_, { input }) {
   try {
-    //**************** validate input fields
+    //**************** validate input
     const validatedInput = ValidateEditRoleInput(input);
     const { updater_id, _id, role } = validatedInput;
 
-    //**************** check if user's role is admin
+    //**************** check if user has admin role
     const isAdmin = await UserIsAdmin(updater_id);
     if (!isAdmin) {
       throw new ApolloError('Unauthorized access');
@@ -191,9 +193,6 @@ async function AddRole(_, { input }) {
     if (!userIsExist) {
       throw new ApolloError('User does not exist');
     }
-
-    //**************** check if role is valid
-    RoleIsValid(role);
 
     //**************** check if user already has the role
     const userHasRole = await UserHasRole({ userId: _id, role });
@@ -223,12 +222,12 @@ async function AddRole(_, { input }) {
  */
 async function DeleteRole(_, { input }) {
   try {
-    //**************** validate input fields
+    //**************** validate input
     const validatedInput = ValidateEditRoleInput(input);
 
     const { _id, updater_id, role } = validatedInput;
 
-    //**************** check if user's role is admin
+    //**************** check if user has admin role
     const isAdmin = await UserIsAdmin(updater_id);
     if (!isAdmin) {
       throw new ApolloError('Unauthorized access');
@@ -239,9 +238,6 @@ async function DeleteRole(_, { input }) {
     if (!userIsExist) {
       throw new ApolloError('User does not exist');
     }
-
-    //**************** check if role is valid and normalized it
-    RoleIsValid(role);
 
     //**************** check if user has the role
     const userHasRole = await UserHasRole({ userId: _id, role });
@@ -278,7 +274,7 @@ async function DeleteRole(_, { input }) {
  */
 async function DeleteUser(_, { _id, deleted_by }) {
   try {
-    //**************** sanitize and validate id and deletedBy
+    //**************** valdiate id
     ValidateId(_id);
     ValidateId(deleted_by);
 
@@ -306,7 +302,7 @@ async function DeleteUser(_, { _id, deleted_by }) {
       deleted_by: deleted_by,
     };
 
-    //**************** soft-delete user by marking their status as 'deleted' and set deleted_at
+    //**************** soft-delete user by updating it with composed object
     await UserModel.updateOne({ _id: _id }, toBeDeletedUser);
     return 'User deleted successfully';
   } catch (error) {
@@ -331,7 +327,7 @@ async function DeleteUser(_, { _id, deleted_by }) {
  */
 async function created_by(parent, _, context) {
   try {
-    //*************** check if user has any school
+    //*************** check if user has any created_by
     if (!parent?.created_by) {
       return null;
     }
