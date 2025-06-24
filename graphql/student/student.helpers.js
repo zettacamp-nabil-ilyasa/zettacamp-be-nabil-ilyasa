@@ -22,8 +22,8 @@ async function StudentIsExist(studentId) {
     //*************** set query for db operation
     const query = { _id: studentId, status: 'active' };
 
-    const studentIsExist = await Boolean(StudentModel.exists(query));
-    return studentIsExist;
+    const isStudentExist = Boolean(await StudentModel.exists(query));
+    return isStudentExist;
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
@@ -37,36 +37,36 @@ async function StudentIsExist(studentId) {
 
 /**
  * Check if student email already exist
- * @param {string} email - The email to be checked.
- * @param {string} _id - The id of the user to be excluded.
+ * @param {string} studentEmail - The email to be checked.
+ * @param {string} studentId - The id of the user to be excluded.
  * @returns {promise<boolean>} - True if email already exist, false otherwise
  * @throws {Error} - If failed in sanity check or db operation.
  */
-async function StudentEmailIsExist({ email, _id = null }) {
+async function StudentEmailIsExist({ studentEmail, studentId = null }) {
   try {
-    if (!email) {
+    if (!studentEmail) {
       throw new ApolloError('Invalid email input');
     }
 
     //*************** _id input check
-    if (_id) {
-      ValidateId(_id);
+    if (studentId) {
+      ValidateId(studentId);
     }
 
     //*************** set query for db operation
-    const query = { email };
-    if (_id) {
-      query._id = { $ne: _id };
+    const query = { email: studentEmail };
+    if (studentId) {
+      query._id = { $ne: studentId };
     }
 
-    const emailIsExist = Boolean(await StudentModel.exists(query));
-    return emailIsExist;
+    const isEmailExist = Boolean(await StudentModel.exists(query));
+    return isEmailExist;
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'StudentEmailIsExist',
       path: '/graphql/student/student.helpers.js',
-      parameter_input: JSON.stringify({ email, _id }),
+      parameter_input: JSON.stringify({ studentEmail, studentId }),
     });
     throw new ApolloError(error.message);
   }
@@ -82,6 +82,7 @@ async function GetPreviousSchoolId(studentId) {
     //*************** validate id input
     ValidateId(studentId);
 
+    //*************** get student's recorded school id
     const student = await StudentModel.findById(studentId);
     if (!student) {
       return null;

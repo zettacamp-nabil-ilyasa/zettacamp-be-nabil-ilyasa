@@ -86,7 +86,7 @@ async function CreateStudent(_, { input }) {
     }
 
     //*************** check if email already exists
-    const emailIsExist = await StudentEmailIsExist({ email });
+    const emailIsExist = await StudentEmailIsExist({ studentEmail: email });
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
     }
@@ -147,7 +147,7 @@ async function UpdateStudent(_, { input }) {
 
     //**************** check if email already exists
     if (email) {
-      const emailIsExist = await StudentEmailIsExist({ email, _id });
+      const emailIsExist = await StudentEmailIsExist({ studentEmail: email, studentId: _id });
       if (emailIsExist) {
         throw new ApolloError('Email already exist');
       }
