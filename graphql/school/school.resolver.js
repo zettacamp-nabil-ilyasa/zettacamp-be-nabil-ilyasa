@@ -46,7 +46,7 @@ async function GetAllSchools() {
  */
 async function GetOneSchool(_, { _id }) {
   try {
-    //**************** sanitize and validate id
+    //**************** validate id
     ValidateId(_id);
 
     const school = await SchoolModel.findOne({ _id: _id, status: 'active' }).lean();
@@ -73,7 +73,7 @@ async function GetOneSchool(_, { _id }) {
  */
 async function CreateSchool(_, { input }) {
   try {
-    //*************** validation to ensure input is sanitized and formatted correctly
+    //*************** validation to ensure bad input is handled correctly
     const validatedSchoolInput = ValidateSchoolCreateInput(input);
     const { created_by, long_name, brand_name, address, country, city, zipcode } = validatedSchoolInput;
 
@@ -83,7 +83,7 @@ async function CreateSchool(_, { input }) {
       throw new ApolloError('User is not admin');
     }
 
-    //*************** check if school name already exist
+    //*************** check if school name already exists
     const longNameIsExist = await SchoolLongNameIsExist({ longName: long_name });
     if (longNameIsExist) {
       throw new ApolloError("School's official name already exist");
@@ -105,7 +105,7 @@ async function CreateSchool(_, { input }) {
       created_by,
     };
 
-    //*************** create school with validated input
+    //*************** create school with composed object
     const createdSchool = await SchoolModel.create(validatedSchool);
     return createdSchool;
   } catch (error) {
@@ -128,7 +128,7 @@ async function CreateSchool(_, { input }) {
  */
 async function UpdateSchool(_, { input }) {
   try {
-    //*************** clean input from null, undefined and empty string
+    //*************** validation to ensure bad input is handled correctly
     const validatedInput = ValidateSchoolUpdateInput(input);
     const { _id, long_name, brand_name, address, country, city, zipcode } = validatedInput;
 
@@ -152,6 +152,7 @@ async function UpdateSchool(_, { input }) {
       }
     }
 
+    //*************** compose object with validated input
     const validatedSchool = {};
     if (long_name) {
       validatedSchool.long_name = long_name;
@@ -172,7 +173,7 @@ async function UpdateSchool(_, { input }) {
       validatedSchool.zipcode = zipcode;
     }
 
-    //*************** update school with validated input
+    //*************** update school with composed object
     const updatedSchool = await SchoolModel.findOneAndUpdate({ _id: _id }, validatedSchool, { new: true }).lean();
     return updatedSchool;
   } catch (error) {
@@ -196,7 +197,7 @@ async function UpdateSchool(_, { input }) {
  */
 async function DeleteSchool(_, { _id, deleted_by }) {
   try {
-    //**************** sanitize and validate id and deleted_by
+    //**************** validate _id and deleted_by
     ValidateId(_id);
     ValidateId(deleted_by);
 
@@ -218,13 +219,14 @@ async function DeleteSchool(_, { _id, deleted_by }) {
       throw new ApolloError('School that is referenced by a student cannot be deleted');
     }
 
+    //**************** compose object with some set fields
     const toBeDeletedSchool = {
       deleted_at: new Date(),
       status: 'deleted',
       deleted_by: deleted_by,
     };
 
-    //**************** soft-delete school by marking their status as 'deleted' and set deleted_date
+    //**************** soft-delete school by updating it with composed object
     await SchoolModel.updateOne({ _id: _id }, toBeDeletedSchool);
     return 'School deleted successfully';
   } catch (error) {
@@ -278,7 +280,7 @@ async function students(parent, _, context) {
  */
 async function created_by(parent, _, context) {
   try {
-    //*************** check if school has any student
+    //*************** check if school has any created_by
     if (!parent?.created_by) {
       return null;
     }

@@ -29,7 +29,7 @@ function ValidateId(id) {
  */
 async function UserIsAdmin(userId) {
   try {
-    //*************** userId input check
+    //*************** validate userId
     ValidateId(userId);
 
     //*************** set query for db operation

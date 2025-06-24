@@ -6,19 +6,19 @@ const Joi = require('joi');
 const { ValidateId } = require('../../utils/common-validator.js');
 const { ToTitleCase } = require('../../utils/common.js');
 
-//*************** regex pattern to ensure school name only have letters and numbers
+//*************** regex pattern to ensure school name only contains letters, numbers, spaces, hyphens, and apostrophes
 const schoolRegexPattern = /^[\p{L}\d\s'-]+$/u;
 
-//*************** regex pattern to ensure address is at least 5 characters
+//*************** regex pattern to ensure address is at least 5 characters and at most 50
 const addressRegexPattern = /^[\p{L}0-9\s,'./\-#()]{10,50}$/u;
 
-//*************** regex pattern to ensure city name is at least 2 characters
+//*************** regex pattern to ensure city name is at least 2 characters and at most 30
 const cityRegexPattern = /^[\p{L}\s\-']{2,30}$/u;
 
-//*************** regex pattern to ensure country name is at least 2 characters
+//*************** regex pattern to ensure country name is at least 2 characters and at most 30
 const countryRegexPattern = /^[\p{L}\s\-']{2,30}$/u;
 
-//*************** regex pattern to ensure zip code is at least 4 characters
+//*************** regex pattern to ensure zip code is at least 4 characters and at most 15
 const zipcodeRegexPattern = /^[A-Za-z0-9\s\-]{4,15}$/;
 
 //*************** joi schema for create school
@@ -66,8 +66,10 @@ const updateSchoolSchema = createSchoolSchema.fork(['brand_name', 'long_name'], 
 function ValidateSchoolCreateInput(inputObject) {
   let { created_by, brand_name, long_name, address, country, city, zipcode } = inputObject;
 
-  //*************** validate created_by, prevent null, undefined and non object id values
+  //*************** validate id
   ValidateId(created_by);
+
+  //*************** validate input using joi schema
   const { error, value } = createSchoolSchema.validate({ brand_name, long_name, address, country, city, zipcode }, { abortEarly: true });
 
   if (error) {
@@ -94,8 +96,10 @@ function ValidateSchoolCreateInput(inputObject) {
 function ValidateSchoolUpdateInput(inputObject) {
   let { _id, brand_name, long_name, address, country, city, zipcode } = inputObject;
 
-  //*************** validate _id, prevent null, undefined and non object id values
+  //*************** validate id
   ValidateId(_id);
+
+  //*************** validate input using joi schema
   const { error, value } = updateSchoolSchema.validate({ brand_name, long_name, address, country, city, zipcode }, { abortEarly: true });
 
   if (error) {

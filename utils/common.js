@@ -1,5 +1,4 @@
 //*************** IMPORT LIBRARY ***************
-const mongoose = require('mongoose');
 const { ApolloError } = require('apollo-server-express');
 const bcrypt = require('bcrypt');
 
@@ -32,12 +31,11 @@ function ToTitleCase(string) {
 }
 
 /**
- * Converts a date to ISO date string.
- * Used for date field display.
+ * Process date object for display.
  * @param {Date} date - The date to convert.
  * @returns {string | null} - The converted date in ISO string format or null if date is invalid.
  */
-function FormatDateToIsoString(date) {
+function FormatDateToDisplayString(date) {
   //*************** date input check
   if (!date) {
     return null;
@@ -66,10 +64,12 @@ function FormatDateToIsoString(date) {
  */
 async function SchoolIsExist(schoolId) {
   try {
-    //*************** validate schoolId input
+    //*************** validate schoolId
     ValidateId(schoolId);
 
+    //*************** set query for db operation
     const query = { _id: schoolId, status: 'active' };
+
     const isSchoolExist = Boolean(await SchoolModel.exists(query));
     return isSchoolExist;
   } catch (error) {
@@ -116,18 +116,19 @@ async function HashPassword(password) {
 }
 
 /**
- * Parses a date string in DD-MM-YYYY format to a Date object.
- * Used for date input validation.
+ * Parses a string, then converts it to a Date object.
  * @param {string} dateStr - The date string to be parsed.
- * @returns {Date} - The parsed date.
+ * @returns {Date} - Date object from parsed date string.
  */
-function ParseDateDmy(dateStr) {
+function ConvertStringToDate(dateStr) {
+  //*************** date input check
   if (typeof dateStr !== 'string') {
     throw new ApolloError('Invalid date input');
   }
   if (dateStr.trim() === '') {
     return null;
   }
+
   //*************** split to get day, month and year
   const [day, month, year] = dateStr.split('-');
   if (day < 1 || day > 31 || month < 1 || month > 12) {
@@ -141,6 +142,6 @@ module.exports = {
   ToTitleCase,
   SchoolIsExist,
   HashPassword,
-  FormatDateToIsoString,
-  ParseDateDmy,
+  FormatDateToDisplayString,
+  ConvertStringToDate,
 };
