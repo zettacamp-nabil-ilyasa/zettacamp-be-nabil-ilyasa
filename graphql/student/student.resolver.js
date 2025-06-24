@@ -28,16 +28,12 @@ async function GetAllStudents() {
     const students = await StudentModel.find({ status: 'active' }).lean();
     return students;
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'GetAllStudents',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/student/student.resolver.js',
-        parameter_input: JSON.stringify({}),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'GetAllStudents',
+      path: '/graphql/student/student.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
     throw new ApolloError(error.message);
   }
 }
@@ -57,16 +53,12 @@ async function GetOneStudent(_, { _id }) {
     const student = await StudentModel.findOne({ _id: validId, status: 'active' }).lean();
     return student;
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'GetOneStudent',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/student/student.resolver.js',
-        parameter_input: JSON.stringify({ _id }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'GetOneStudent',
+      path: '/graphql/student/student.resolver.js',
+      parameter_input: JSON.stringify({ _id }),
+    });
     throw new ApolloError(error.message);
   }
 }
@@ -123,16 +115,12 @@ async function CreateStudent(_, { input }) {
 
     return createdStudent;
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'CreateStudent',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/student/student.resolver.js',
-        parameter_input: JSON.stringify({ input }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'CreateStudent',
+      path: '/graphql/student/student.resolver.js',
+      parameter_input: JSON.stringify({ input }),
+    });
     throw new ApolloError(error.message);
   }
 }
@@ -194,16 +182,12 @@ async function UpdateStudent(_, { input }) {
     const updatedStudent = await StudentModel.findOneAndUpdate({ _id: _id }, validatedStudent, { new: true }).lean();
     return updatedStudent;
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'UpdateStudent',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/student/student.resolver.js',
-        parameter_input: JSON.stringify({ input }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'UpdateStudent',
+      path: '/graphql/student/student.resolver.js',
+      parameter_input: JSON.stringify({ input }),
+    });
     throw new ApolloError(error.message);
   }
 }
@@ -241,16 +225,12 @@ async function DeleteStudent(_, { _id, deletedBy }) {
     await StudentModel.updateOne({ _id: validDeletedId }, { deleted_at: new Date(), status: 'deleted', deleted_by: validDeletedBy });
     return 'Student deleted successfully';
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'DeleteStudent',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/student/student.resolver.js',
-        parameter_input: JSON.stringify({ _id, deletedBy }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'DeleteStudent',
+      path: '/graphql/student/student.resolver.js',
+      parameter_input: JSON.stringify({ _id, deletedBy }),
+    });
     throw new ApolloError(error.message);
   }
 }
@@ -275,16 +255,12 @@ async function School_Id(parent, _, context) {
     const loadedSchool = await context.loaders.school.load(parent.school_id);
     return loadedSchool;
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'School_Id',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/student/student.resolver.js',
-        parameter_input: JSON.stringify({}),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'School_Id',
+      path: '/graphql/student/student.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
     throw new ApolloError(error.message);
   }
 }
@@ -307,16 +283,12 @@ async function Created_By(parent, _, context) {
     const loadedUser = await context.loaders.user.load(parent.created_by);
     return loadedUser;
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'Created_By',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/student/student.resolver.js',
-        parameter_input: JSON.stringify({}),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'Created_By',
+      path: '/graphql/student/student.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
     throw new ApolloError(error.message);
   }
 }

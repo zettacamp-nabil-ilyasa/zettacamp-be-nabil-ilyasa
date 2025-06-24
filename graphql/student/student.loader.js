@@ -6,9 +6,6 @@ const { ApolloError } = require('apollo-server-express');
 const StudentModel = require('./student.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
-//*************** IMPORT UTIL ***************
-const { LogErrorToDb } = require('../../utils/common.js');
-
 /**
  * Batch function to load students by array of student IDs
  * @param {Array<string>} studentIds - Array of student IDs
@@ -29,16 +26,12 @@ async function BatchStudents(studentIds) {
     //**************** return array of student objects with order of studentIds
     return studentIds.map((studentId) => dataMap.get(studentId.toString()) || null);
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'BatchStudents',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/student/student.loader.js',
-        parameter_input: JSON.stringify({ studentIds }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'BatchStudents',
+      path: '/graphql/student/student.loader.js',
+      parameter_input: JSON.stringify({ studentIds }),
+    });
     throw new ApolloError(error.message);
   }
 }

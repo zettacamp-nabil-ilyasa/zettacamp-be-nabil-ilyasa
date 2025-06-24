@@ -5,9 +5,8 @@ const { ApolloError } = require('apollo-server-express');
 const StudentModel = require('./student.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
-//*************** IMPORT UTILS ***************
+//*************** IMPORT UTIL ***************
 const { SanitizeAndValidateId } = require('../../utils/common-validator.js');
-const { LogErrorToDb } = require('../../utils/common.js');
 
 /**
  * Check if a Student with the given ID already exists.
@@ -27,17 +26,12 @@ async function StudentIsExist(studentId) {
     const studentIsExist = count > 0;
     return studentIsExist;
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'StudentIsExist',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/student/student.helpers.js',
-        parameter_input: JSON.stringify({ studentId }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
-
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'StudentIsExist',
+      path: '/graphql/student/student.helpers.js',
+      parameter_input: JSON.stringify({ studentId }),
+    });
     throw new ApolloError(error.message);
   }
 }
@@ -76,16 +70,12 @@ async function StudentEmailIsExist({ emailAcc, excludeId = null }) {
     const studentEmailIsExist = count > 0;
     return studentEmailIsExist;
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'StudentEmailIsExist',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/student/student.helpers.js',
-        parameter_input: JSON.stringify({ emailAcc, excludeId }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'StudentEmailIsExist',
+      path: '/graphql/student/student.helpers.js',
+      parameter_input: JSON.stringify({ emailAcc, excludeId }),
+    });
     throw new ApolloError(error.message);
   }
 }
@@ -106,16 +96,12 @@ async function GetPreviousSchoolId(studentId) {
     }
     return student.school_id;
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'GetPreviousSchoolId',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/student/student.helpers.js',
-        parameter_input: JSON.stringify({ studentId }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'GetPreviousSchoolId',
+      path: '/graphql/student/student.helpers.js',
+      parameter_input: JSON.stringify({ studentId }),
+    });
     throw new ApolloError(error.message);
   }
 }
