@@ -1,17 +1,42 @@
 //*************** IMPORT LIBRARY ***************
 const { ApolloError } = require('apollo-server-express');
+const Joi = require('joi');
 
 //*************** IMPORT UTILS ***************
 const { ToTitleCase } = require('../../utils/common');
-const { SanitizeAndValidateId, SanitizeAndValidateRequiredString } = require('../../utils/common-validator');
+const { ValidateId } = require('../../utils/common-validator');
 
-//*************** regex pattern to ensure email is includes @ and .
-const emailRegexPattern = /^\S+@\S+\.\S+$/;
 //*************** regex pattern to ensure password is at least 8 characters and contain at least one uppercase letter, one lowercase letter, and one number
 const passwordRegexPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
 //*************** regex pattern to ensure first and last name contains only letters
-const firstAndLastNameRegexPattern = /^[\p{L}\s'-]+$/u;
+const userNameRegexPattern = /^[\p{L}\s'-]+$/u;
+
+const createUserSchema = Joi.object({
+  first_name: Joi.string()
+    .trim()
+    .pattern(userNameRegexPattern)
+    .required()
+    .messages({ 'string.pattern.base': 'first name contains invalid characters', 'any.required': 'first name is required' }),
+  last_name: Joi.string()
+    .trim()
+    .pattern(userNameRegexPattern)
+    .required()
+    .messages({ 'string.pattern.base': 'last name contains invalid characters', 'any.required': 'last name is required' }),
+  email: Joi.string()
+    .trim()
+    .email()
+    .lowercase()
+    .required()
+    .messages({ 'string.email': 'email format is invalid', 'any.required': 'email is required' }),
+  password: Joi.string()
+    .trim()
+    .pattern(passwordRegexPattern)
+    .required()
+    .messages({ 'string.min': 'password must be at least 8 characters', 'any.required': 'password is required' }),
+});
+
+const updateUserSchema = createUserSchema.fork(['first_name', 'last_name', 'email', 'password'], (schema) => schema.optional());
 
 /**
  * Validates user creation input.
@@ -22,35 +47,15 @@ const firstAndLastNameRegexPattern = /^[\p{L}\s'-]+$/u;
 function ValidateUserCreateInput(inputObject) {
   let { created_by, first_name, last_name, email, password } = inputObject;
   //*************** validate user id stored in created_by
-  created_by = SanitizeAndValidateId(created_by);
+  ValidateId(created_by);
 
-  //*************** validate email
-  email = SanitizeAndValidateRequiredString(email.toLowerCase());
-  if (!emailRegexPattern.test(email)) {
-    throw new ApolloError('email format is invalid');
+  const { error, value } = createUserSchema.validate({ first_name, last_name, email, password }, { abortEarly: true });
+
+  if (error) {
+    throw new ApolloError(error.message);
   }
 
-  //*************** validate password
-  password = SanitizeAndValidateRequiredString(password);
-  if (!passwordRegexPattern.test(password)) {
-    throw new ApolloError(
-      'password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, and one number'
-    );
-  }
-
-  //*************** validate first_name and convert to Title case
-  first_name = SanitizeAndValidateRequiredString(ToTitleCase(first_name));
-  if (!firstAndLastNameRegexPattern.test(first_name)) {
-    throw new ApolloError('first name contains invalid characters');
-  }
-
-  //*************** validate last_name and convert to Title case
-  last_name = SanitizeAndValidateRequiredString(ToTitleCase(last_name));
-  if (!firstAndLastNameRegexPattern.test(last_name)) {
-    throw new ApolloError('last name contains invalid characters');
-  }
-  const validatedInput = { created_by, first_name, last_name, email, password };
-  return validatedInput;
+  return { created_by, first_name: ToTitleCase(value.first_name), last_name: ToTitleCase(value.last_name), email: value.email, password };
 }
 
 /**
@@ -63,38 +68,29 @@ function ValidateUserUpdateInput(inputObject) {
   let { _id, first_name, last_name, email, password } = inputObject;
 
   //*************** _id input check
-  _id = SanitizeAndValidateId(_id);
+  ValidateId(_id);
 
-  if (email) {
-    email = SanitizeAndValidateRequiredString(email.toLowerCase());
-    if (!emailRegexPattern.test(email)) {
-      throw new ApolloError('email format is invalid');
-    }
-  }
+  const { error, value } = updateUserSchema.validate({ first_name, last_name, email, password }, { abortEarly: true });
 
-  if (password) {
-    password = SanitizeAndValidateRequiredString(password);
-    if (!passwordRegexPattern.test(password)) {
-      throw new ApolloError(
-        'password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, and one number'
-      );
-    }
+  if (error) {
+    throw new ApolloError(error.message);
   }
 
-  if (first_name) {
-    first_name = SanitizeAndValidateRequiredString(ToTitleCase(first_name));
-    if (!firstAndLastNameRegexPattern.test(first_name)) {
-      throw new ApolloError('first name contains invalid characters');
-    }
+  //*************** format first and last name to title case
+  if (value.first_name) {
+    first_name = ToTitleCase(value.first_name);
   }
-  if (last_name) {
-    last_name = SanitizeAndValidateRequiredString(ToTitleCase(last_name));
-    if (!firstAndLastNameRegexPattern.test(last_name)) {
-      throw new ApolloError('last name contains invalid characters');
-    }
+  if (value.last_name) {
+    last_name = ToTitleCase(value.last_name);
   }
-  const validatedInput = { _id, first_name, last_name, email, password };
-  return validatedInput;
+
+  return {
+    _id,
+    first_name,
+    last_name,
+    email: value.email,
+    password: value.password,
+  };
 }
 
 /**
@@ -105,9 +101,12 @@ function ValidateUserUpdateInput(inputObject) {
 function ValidateEditRoleInput(inputObject) {
   let { _id, updater_id, role } = inputObject;
   //*************** _id input check
-  _id = SanitizeAndValidateId(_id);
-  updater_id = SanitizeAndValidateId(updater_id);
-  role = SanitizeAndValidateRequiredString(role);
+  ValidateId(_id);
+  ValidateId(updater_id);
+  if (!role) {
+    throw new ApolloError('Role is required');
+  }
+  role = role.trim().toLowerCase();
   const validatedInput = { _id, updater_id, role };
   return validatedInput;
 }

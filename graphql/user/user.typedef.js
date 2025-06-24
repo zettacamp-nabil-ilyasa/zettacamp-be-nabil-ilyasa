@@ -12,9 +12,9 @@ const userTypeDefs = gql`
     status: Status!
     deleted_at: Date
     deleted_by: ID
-    created_at: Date
+    createdAt: Date
     created_by: User
-    updated_at: Date
+    updatedAt: Date
   }
 
   input CreateUserInput {

@@ -7,7 +7,7 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT UTILS ***************
 const { HashPassword } = require('../../utils/common.js');
-const { SanitizeAndValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
+const { ValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
 
 // *************** IMPORT VALIDATORS ***************
 const { ValidateUserCreateInput, ValidateUserUpdateInput, ValidateEditRoleInput } = require('./user.validators.js');
@@ -17,7 +17,7 @@ const {
   UserIsExist,
   UserEmailIsExist,
   UserHasRole,
-  NormalizeRole,
+  RoleIsValid,
   IsRemovableRole,
   UserIsReferencedByStudent,
 } = require('./user.helpers.js');
@@ -54,8 +54,8 @@ async function GetAllUsers() {
 async function GetOneUser(_, { _id }) {
   try {
     //**************** sanitize and validate id
-    const validId = SanitizeAndValidateId(_id);
-    const user = await UserModel.findOne({ _id: validId, status: 'active' }).lean();
+    ValidateId(_id);
+    const user = await UserModel.findOne({ _id: _id, status: 'active' }).lean();
     return user;
   } catch (error) {
     await ErrorLogModel.create({
@@ -90,7 +90,7 @@ async function CreateUser(_, { input }) {
     }
 
     //**************** check if email already exist
-    const emailIsExist = await UserEmailIsExist(email);
+    const emailIsExist = await UserEmailIsExist({ email });
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
     }
@@ -139,7 +139,7 @@ async function UpdateUser(_, { input }) {
     }
     //**************** check if email already exist
     if (email) {
-      const emailIsExist = await UserEmailIsExist(email, _id);
+      const emailIsExist = await UserEmailIsExist({ email, _id });
       if (emailIsExist) {
         throw new ApolloError('Email already exist');
       }
@@ -200,15 +200,15 @@ async function AddRole(_, { input }) {
     }
 
     //**************** check if role is valid
-    const normalizedRole = NormalizeRole(role);
+    RoleIsValid(role);
 
     //**************** check if user already has the role
-    const userHasRole = await UserHasRole(_id, normalizedRole);
+    const userHasRole = await UserHasRole({ _id, role });
     if (userHasRole) {
       throw new ApolloError('User already has the role');
     }
 
-    const updatedUser = await UserModel.findOneAndUpdate({ _id }, { $addToSet: { roles: normalizedRole } }, { new: true });
+    const updatedUser = await UserModel.findOneAndUpdate({ _id }, { $addToSet: { roles: role } }, { new: true });
     return updatedUser;
   } catch (error) {
     await ErrorLogModel.create({
@@ -248,21 +248,21 @@ async function DeleteRole(_, { input }) {
     }
 
     //**************** check if role is valid and normalized it
-    const normalizedRole = NormalizeRole(role);
+    RoleIsValid(role);
 
     //**************** check if user has the role
-    const userHasRole = await UserHasRole(_id, normalizedRole);
+    const userHasRole = await UserHasRole({ _id, role });
     if (!userHasRole) {
       throw new ApolloError('User does not have the role');
     }
 
     //**************** check if role can be removed
-    const isRemovableRole = IsRemovableRole(normalizedRole);
+    const isRemovableRole = IsRemovableRole(role);
     if (!isRemovableRole) {
       throw new ApolloError('Role cannot be removed');
     }
 
-    const updatedUser = await UserModel.findOneAndUpdate({ _id }, { $pull: { roles: normalizedRole } }, { new: true }).lean();
+    const updatedUser = await UserModel.findOneAndUpdate({ _id }, { $pull: { roles: role } }, { new: true }).lean();
     return updatedUser;
   } catch (error) {
     await ErrorLogModel.create({
@@ -283,55 +283,51 @@ async function DeleteRole(_, { input }) {
  * @returns {Promise<string>} - Deletion success message.
  * @throws {Error} - Throws error if unauthorized or user not found.
  */
-async function DeleteUser(_, { _id, deletedBy }) {
+async function DeleteUser(_, { _id, deleted_by }) {
   try {
     //**************** sanitize and validate id and deletedBy
-    const validDeletedId = SanitizeAndValidateId(_id);
-    const validDeletedBy = SanitizeAndValidateId(deletedBy);
+    ValidateId(_id);
+    ValidateId(deleted_by);
 
     //**************** check if deleter user is exist and has admin role
-    const userIsAdmin = await UserIsAdmin(validDeletedBy);
+    const userIsAdmin = await UserIsAdmin(deleted_by);
     if (!userIsAdmin) {
       throw new ApolloError('Unauthorized access');
     }
 
     //**************** check if user to be deleted is exist
-    const userIsExist = await UserIsExist(validDeletedId);
+    const userIsExist = await UserIsExist(_id);
     if (!userIsExist) {
       throw new ApolloError('User does not exist');
     }
 
     //**************** check if user is trying to delete themselves
-    if (_id == deletedBy) {
+    if (_id == deleted_by) {
       throw new ApolloError('You cannot delete yourself');
     }
 
-    //**************** check if user is referenced by any student
-    const userIsReferenced = await UserIsReferencedByStudent(validDeletedId);
-    if (userIsReferenced) {
-      throw new ApolloError('User that is referenced by a student cannot be deleted');
-    }
-
+    //**************** compose new object for soft delete
     const toBeDeletedUser = {
       deleted_at: new Date(),
       status: 'deleted',
-      deleted_by: validDeletedBy,
+      deleted_by: deleted_by,
     };
+
     //**************** soft-delete user by marking their status as 'deleted' and set deleted_at
-    await UserModel.updateOne({ _id: validDeletedId }, toBeDeletedUser);
+    await UserModel.updateOne({ _id: _id }, toBeDeletedUser);
     return 'User deleted successfully';
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'DeleteUser',
       path: '/graphql/user/user.resolver.js',
-      parameter_input: JSON.stringify({ _id, deletedBy }),
+      parameter_input: JSON.stringify({ _id, deleted_by }),
     });
     throw new ApolloError(error.message);
   }
 }
 
-// *************** LOADER ***************
+// *************** LOADERS ***************
 
 /**
  * Resolve the user field for by using DataLoader.
@@ -340,7 +336,7 @@ async function DeleteUser(_, { _id, deletedBy }) {
  * @returns {Promise<Object|null>} - The user document or null.
  * @throws {Error} - Throws error if loading fails.
  */
-async function Created_By(parent, _, context) {
+async function created_by(parent, _, context) {
   try {
     //*************** check if user has any school
     if (!parent?.created_by) {
@@ -353,7 +349,7 @@ async function Created_By(parent, _, context) {
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
-      function_name: 'Created_By',
+      function_name: 'created_by',
       path: '/graphql/user/user.resolver.js',
       parameter_input: JSON.stringify({}),
     });
@@ -366,6 +362,6 @@ module.exports = {
   Query: { GetAllUsers, GetOneUser },
   Mutation: { CreateUser, UpdateUser, AddRole, DeleteRole, DeleteUser },
   User: {
-    created_by: Created_By,
+    created_by: created_by,
   },
 };

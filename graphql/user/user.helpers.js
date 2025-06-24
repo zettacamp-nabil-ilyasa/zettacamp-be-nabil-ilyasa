@@ -6,7 +6,7 @@ const UserModel = require('./user.model');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 //*************** IMPORT UTILS ***************
-const { SanitizeAndValidateId } = require('../../utils/common-validator');
+const { ValidateId } = require('../../utils/common-validator');
 
 //*************** list of protected roles
 const protectedRoles = ['user'];
@@ -20,15 +20,13 @@ const protectedRoles = ['user'];
 async function UserIsExist(userId) {
   try {
     //*************** userId input check
-    const validatedUserId = SanitizeAndValidateId(userId);
+    ValidateId(userId);
 
     //*************** set query for db operation
-    const query = { _id: validatedUserId, status: 'active' };
+    const query = { _id: userId, status: 'active' };
 
     //*************** db operation
-    const count = await UserModel.countDocuments(query);
-
-    const userIsExist = count > 0;
+    const userIsExist = Boolean(await UserModel.exists(query));
     return userIsExist;
   } catch (error) {
     await ErrorLogModel.create({
@@ -43,39 +41,37 @@ async function UserIsExist(userId) {
 
 /**
  * Check if user email already exist
- * @param {string} emailAcc - The email to be checked.
- * @param {string} excludeId - The id of the user to be excluded.
+ * @param {string} email - The email to be checked.
+ * @param {string} _id - The id of the user to be excluded.
  * @returns {promise<boolean>} - True if email already exist, false otherwise
  * @throws {Error} - If failed in sanity check or db operation.
  */
-async function UserEmailIsExist({ emailAcc, excludeId = null }) {
+async function UserEmailIsExist({ email, _id = null }) {
   try {
-    //*************** sanity check
-    if (typeof emailAcc !== 'string' || emailAcc.trim() === '') {
+    //*************** check if email is empty
+    if (!email) {
       throw new ApolloError('Invalid email input');
     }
-    let trimmedExcludeId = '';
-    if (excludeId) {
-      if (typeof excludeId !== 'string' || excludeId.trim() === '' || !mongoose.Types.ObjectId.isValid(excludeId.trim())) {
-        throw new ApolloError('Invalid exclude id input');
-      }
-      trimmedExcludeId = excludeId.trim();
+
+    //*************** validate _id
+    if (_id) {
+      ValidateId(_id);
     }
 
     //*************** set query for db operation
-    const query = { email: emailAcc.toLowerCase() };
-    if (excludeId) {
-      query._id = { $ne: trimmedExcludeId };
+    const query = { email };
+    if (_id) {
+      query._id = { $ne: _id };
     }
 
-    const count = await UserModel.countDocuments(query);
-    return count > 0;
+    const emailIsExist = Boolean(await UserModel.exists(query));
+    return emailIsExist;
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'UserEmailIsExist',
       path: '/graphql/user/user.helpers.js',
-      parameter_input: JSON.stringify({ emailAcc, excludeId }),
+      parameter_input: JSON.stringify({ email, _id }),
     });
     throw new ApolloError(error.message);
   }
@@ -84,27 +80,20 @@ async function UserEmailIsExist({ emailAcc, excludeId = null }) {
 /**
  * Check if role is valid
  * @param {string} role - The role to be checked.
- * @returns {string} - Role in lowercase.
  * @throws {Error} - If failed sanity check.
  */
-function NormalizeRole(role) {
+function RoleIsValid(role) {
   //*************** role input check, set to lowercase
-  if (typeof role !== 'string') {
-    throw new ApolloError('Invalid role input');
-  }
-  const roleLowerCase = role.trim().toLowerCase();
-  if (roleLowerCase === '') {
+  if (!role) {
     throw new ApolloError('Invalid role input');
   }
 
-  const validRoles = ['admin', 'user', 'student'];
-
+  const validRoles = ['admin', 'user'];
   //*************** check if role is a valid role
-  const isValidRole = validRoles.includes(roleLowerCase);
+  const isValidRole = validRoles.includes(role);
   if (!isValidRole) {
     throw new ApolloError('Invalid role');
   }
-  return roleLowerCase;
 }
 
 /**
@@ -115,53 +104,44 @@ function NormalizeRole(role) {
  */
 function IsRemovableRole(role) {
   //*************** role input check, set to lowercase
-  if (typeof role !== 'string') {
-    throw new ApolloError('Invalid role input');
-  }
-  const roleLowerCase = role.trim().toLowerCase();
-  if (roleLowerCase === '') {
+  if (!role) {
     throw new ApolloError('Invalid role input');
   }
 
   //*************** check if role is not a protected role
-  const isRemovableRole = !protectedRoles.includes(roleLowerCase);
+  const isRemovableRole = !protectedRoles.includes(role);
   return isRemovableRole;
 }
 
 /**
  * Check is a user already have the given role.
- * @param {string} userId - The id of the user.
+ * @param {string} _id - The id of the user.
  * @param {string} role - The role to be checked.
  * @returns {promise<boolean>} - True if user already have the role, false otherwise.
  * @throws {Error} - If failed sanity check or db operation.
  */
-async function UserHasRole({ userId, role }) {
+async function UserHasRole({ _id, role }) {
   try {
     //*************** userId input check
-    const validatedUserId = SanitizeAndValidateId(userId);
+    ValidateId(_id);
 
     //*************** role input check, set to lowercase
-    if (typeof role !== 'string') {
-      throw new ApolloError('Invalid role input');
-    }
-    const roleLowerCase = role.trim().toLowerCase();
-    if (roleLowerCase === '') {
+    if (!role) {
       throw new ApolloError('Invalid role input');
     }
 
     //*************** set query for db operation
-    const query = { _id: validatedUserId, roles: roleLowerCase };
+    const query = { _id, roles: role };
 
     //*************** db operation
-    const count = await UserModel.countDocuments(query);
-    const roleIsAlreadyExists = count > 0;
-    return roleIsAlreadyExists;
+    const isUserHasRole = Boolean(await UserModel.exists(query));
+    return isUserHasRole;
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'UserHasRole',
       path: '/graphql/user/user.helpers.js',
-      parameter_input: JSON.stringify({ userId, role }),
+      parameter_input: JSON.stringify({ _id, role }),
     });
     throw new ApolloError(error.message);
   }
@@ -172,7 +152,7 @@ async function UserHasRole({ userId, role }) {
 module.exports = {
   UserIsExist,
   UserEmailIsExist,
-  NormalizeRole,
+  RoleIsValid,
   IsRemovableRole,
   UserHasRole,
 };
