@@ -11,7 +11,7 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 const { ValidateId } = require('../../utils/common-validator.js');
 
 /**
- * Check if school name already exist
+ * Check if school long name already exist
  * @param {string} longName - The school's long name to be checked
  * @param {string} schoolId - The id of the school to be excluded
  * @returns {Promise<boolean>} - True if school name already exists, false otherwise
@@ -50,7 +50,7 @@ async function SchoolLongNameIsExist({ longName, schoolId = null }) {
 }
 
 /**
- * Check if school name already exist
+ * Check if school brand name already exist
  * @param {string} brandName - The school's brand name to be checked
  * @param {string} _id - The id of the school to be excluded
  * @returns {Promise<boolean>} - True if school name already exists, false otherwise
@@ -92,7 +92,7 @@ async function SchoolBrandNameIsExist({ brandName, schoolId = null }) {
  *
  * @param {string} schoolId - The id of the school to be checked
  * @returns {Promise<boolean>} - True if school name already exists, false otherwise
- * @throws {Error} - If failed in sanity check or db operation.
+ * @throws {Error} - If failed in validation or db operation.
  */
 async function SchoolIsReferencedByStudent(schoolId) {
   try {
