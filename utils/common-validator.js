@@ -8,55 +8,17 @@ const UserModel = require('../graphql/user/user.model.js');
 const ErrorLogModel = require('../graphql/errorLog/error_log.model.js');
 
 /**
- * Check if id is in valid format.
+ * Check if id is not empty and in valid format.
  * @param {string} id - id to be checked.
- * @returns {string} - Trimmed and validated object id.
- * @throws {Error} - If failed in sanity check.
+ * @throws {Error} - If failed in validation.
  */
-function SanitizeAndValidateId(id) {
-  //*************** check if id is not a string
-  if (typeof id !== 'string') {
-    throw new ApolloError('Invalid id input');
+function ValidateId(id) {
+  if (!id) {
+    throw new ApolloError('ID is required');
   }
-  const trimmedId = id.trim();
-  //*************** check if id is empty and not an object id
-  if (trimmedId === '' || !mongoose.Types.ObjectId.isValid(trimmedId)) {
-    throw new ApolloError('Invalid id input');
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new ApolloError('Invalid ID format');
   }
-  return trimmedId;
-}
-
-/**
- * Trim and validate string, throws error if it's not string or empty
- * @param {string} str - string to be checked
- * @returns {string} - trimmed and validated string
- * @throws {Error} - If failed in sanity check
- */
-function SanitizeAndValidateRequiredString(str) {
-  if (typeof str !== 'string') {
-    throw new ApolloError('Expected string input');
-  }
-  const trimmedStr = str.trim();
-  if (trimmedStr === '') {
-    throw new ApolloError('String input cannot be empty');
-  }
-  return trimmedStr;
-}
-
-/**
- * Trim and validate string, allows empty string
- * @param {string} str - string to be checked
- * @returns {string} - trimmed and validated string
- */
-function SanitizeAndValidateOptionalString(str) {
-  if (typeof str !== 'string') {
-    throw new ApolloError('Expected string input');
-  }
-  const trimmedStr = str.trim();
-  if (trimmedStr === '') {
-    return '';
-  }
-  return trimmedStr;
 }
 
 /**
@@ -68,12 +30,12 @@ function SanitizeAndValidateOptionalString(str) {
 async function UserIsAdmin(userId) {
   try {
     //*************** userId input check
-    const validatedUserId = SanitizeAndValidateId(userId);
+    ValidateId(userId);
+
     //*************** set query for db operation
-    const query = { _id: validatedUserId, roles: 'admin' };
-    const count = await UserModel.countDocuments(query);
-    const userIsAdmin = count > 0;
-    return userIsAdmin;
+    const query = { _id: userId, roles: 'admin' };
+    const isUserAdmin = Boolean(await UserModel.exists(query));
+    return isUserAdmin;
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
@@ -87,8 +49,6 @@ async function UserIsAdmin(userId) {
 
 //*************** EXPORT MODULE ***************
 module.exports = {
-  SanitizeAndValidateId,
-  SanitizeAndValidateRequiredString,
-  SanitizeAndValidateOptionalString,
+  ValidateId,
   UserIsAdmin,
 };

@@ -7,42 +7,43 @@ const SchoolModel = require('./school.model.js');
 const StudentModel = require('../student/student.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
-//*************** IMPORT UTILS ***************
-const { SanitizeAndValidateId, SanitizeAndValidateRequiredString } = require('../../utils/common-validator.js');
+//*************** IMPORT UTIL ***************
+const { ValidateId } = require('../../utils/common-validator.js');
 
 /**
  * Check if school name already exist
- * @param {string} longName - The school's long name to be checked
- * @param {string} excludeId - The id of the school to be excluded
+ * @param {string} long_name - The school's long name to be checked
+ * @param {string} _id - The id of the school to be excluded
  * @returns {Promise<boolean>} - True if school name already exists, false otherwise
  * @throws {Error} - If failed in sanity check or db operation.
  */
-async function SchoolLongNameIsExist({ longName, excludeId = null }) {
+async function SchoolLongNameIsExist({ long_name, _id = null }) {
   try {
-    //*************** validate longName input
-    const validLongName = SanitizeAndValidateRequiredString(longName);
+    //*************** validate long_name input
+    if (!long_name) {
+      throw new ApolloError('long name can not be empty or null');
+    }
 
-    //*************** excludeId input check
-    let validExcludeId = '';
-    if (excludeId) {
-      validExcludeId = SanitizeAndValidateId(excludeId);
+    //*************** _id input check
+    if (_id) {
+      ValidateId(_id);
     }
 
     //*************** set query for db operation
-    const query = { long_name: validLongName };
-    if (excludeId) {
-      query._id = { $ne: validExcludeId };
+    const query = { long_name };
+    if (_id) {
+      query._id = { $ne: _id };
     }
 
-    const count = await SchoolModel.countDocuments(query);
-    return count > 0;
+    const longNameIsExist = Boolean(await SchoolModel.exists(query));
+    return longNameIsExist;
   } catch (error) {
     //*************** save error log to db
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'SchoolLongNameIsExist',
       path: '/graphql/school/school.helpers.js',
-      parameter_input: JSON.stringify({ longName, excludeId }),
+      parameter_input: JSON.stringify({ long_name, _id }),
     });
     throw new ApolloError(error.message);
   }
@@ -50,37 +51,38 @@ async function SchoolLongNameIsExist({ longName, excludeId = null }) {
 
 /**
  * Check if school name already exist
- * @param {string} brandName - The school's brand name to be checked
- * @param {string} excludeId - The id of the school to be excluded
+ * @param {string} brand_name - The school's brand name to be checked
+ * @param {string} _id - The id of the school to be excluded
  * @returns {Promise<boolean>} - True if school name already exists, false otherwise
  * @throws {Error} - If failed in sanity check or db operation.
  */
-async function SchoolBrandNameIsExist({ brandName, excludeId = null }) {
+async function SchoolBrandNameIsExist({ brand_name, _id = null }) {
   try {
     //*************** validate brandName input
-    const validBrandName = SanitizeAndValidateRequiredString(brandName);
+    if (!brand_name) {
+      throw new ApolloError('brand name can not be empty or null');
+    }
 
-    //*************** excludeId input check
-    let validExcludeId = '';
-    if (excludeId) {
-      validExcludeId = SanitizeAndValidateId(excludeId);
+    //*************** _id input check
+    if (_id) {
+      ValidateId(_id);
     }
 
     //*************** set query for db operation
-    const query = { brand_name: validBrandName };
-    if (excludeId) {
-      query._id = { $ne: validExcludeId };
+    const query = { brand_name };
+    if (_id) {
+      query._id = { $ne: _id };
     }
 
-    const count = await SchoolModel.countDocuments(query);
-    return count > 0;
+    const brandNameIsExist = Boolean(await SchoolModel.exists(query));
+    return brandNameIsExist;
   } catch (error) {
     //*************** log error to db
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'SchoolBrandNameIsExist',
       path: '/graphql/school/school.helpers.js',
-      parameter_input: JSON.stringify({ brandName, excludeId }),
+      parameter_input: JSON.stringify({ brand_name, _id }),
     });
     throw new ApolloError(error.message);
   }
@@ -88,17 +90,17 @@ async function SchoolBrandNameIsExist({ brandName, excludeId = null }) {
 
 /**
  *
- * @param {string} schoolId - The id of the school to be checked
+ * @param {string} school_id - The id of the school to be checked
  * @returns {Promise<boolean>} - True if school name already exists, false otherwise
  * @throws {Error} - If failed in sanity check or db operation.
  */
-async function SchoolIsReferencedByStudent(schoolId) {
+async function SchoolIsReferencedByStudent(school_id) {
   try {
-    //*************** schoolId input check
-    const validSchoolId = SanitizeAndValidateId(schoolId);
+    //*************** school_id input check
+    ValidateId(school_id);
 
     //*************** set query for db operation
-    const query = { school_id: new mongoose.Types.ObjectId(validSchoolId), status: 'active' };
+    const query = { school_id: new mongoose.Types.ObjectId(school_id), status: 'active' };
 
     //*************** store db operation result as boolean
     const referenceIsExist = Boolean(await StudentModel.exists(query));
@@ -108,7 +110,7 @@ async function SchoolIsReferencedByStudent(schoolId) {
       error_stack: error.stack,
       function_name: 'SchoolIsReferencedByStudent',
       path: '/graphql/school/school.helpers.js',
-      parameter_input: JSON.stringify({ schoolId }),
+      parameter_input: JSON.stringify({ school_id }),
     });
     throw new ApolloError(error.message);
   }

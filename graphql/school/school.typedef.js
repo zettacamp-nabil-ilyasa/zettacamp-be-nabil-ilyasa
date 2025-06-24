@@ -13,8 +13,8 @@ const schoolTypeDefs = gql`
     zipcode: String
     students: [Student]
     status: Status!
-    created_at: Date
-    updated_at: Date
+    createdAt: Date
+    updatedAt: Date
     created_by: User
     deleted_at: Date
   }

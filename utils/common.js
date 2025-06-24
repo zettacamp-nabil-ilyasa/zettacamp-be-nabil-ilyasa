@@ -7,6 +7,9 @@ const bcrypt = require('bcrypt');
 const SchoolModel = require('../graphql/school/school.model.js');
 const ErrorLogModel = require('../graphql/errorLog/error_log.model.js');
 
+//*************** IMPORT UTIL ***************
+const { ValidateId } = require('./common-validator.js');
+
 /**
  * Converts a string to title case.
  * Used for input validation.
@@ -63,14 +66,12 @@ function FormatDateToIsoString(date) {
  */
 async function SchoolIsExist(schoolId) {
   try {
-    //*************** sanity check
-    if (typeof schoolId !== 'string' || schoolId.trim() === '' || !mongoose.Types.ObjectId.isValid(schoolId)) {
-      throw new ApolloError('Invalid school id input');
-    }
+    //*************** validate schoolId input
+    ValidateId(schoolId);
 
     const query = { _id: schoolId, status: 'active' };
-    const count = await SchoolModel.countDocuments(query);
-    return count > 0;
+    const isSchoolExist = Boolean(await SchoolModel.exists(query));
+    return isSchoolExist;
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
@@ -91,14 +92,13 @@ async function SchoolIsExist(schoolId) {
 async function HashPassword(password) {
   try {
     //*************** password input check
+    if (!password) {
+      throw new ApolloError('Invalid password input');
+    }
     if (typeof password !== 'string') {
       throw new ApolloError('Invalid password input');
     }
     const trimmedPassword = password.trim();
-    if (trimmedPassword === '') {
-      throw new ApolloError('Invalid password input');
-    }
-
     const saltRounds = 10;
 
     //*************** hash password using bcrypt
@@ -122,9 +122,6 @@ async function HashPassword(password) {
  * @returns {Date} - The parsed date.
  */
 function ParseDateDmy(dateStr) {
-  if (!dateStr) {
-    return null;
-  }
   if (typeof dateStr !== 'string') {
     throw new ApolloError('Invalid date input');
   }

@@ -10,7 +10,7 @@ const { ValidateSchoolCreateInput, ValidateSchoolUpdateInput } = require('./scho
 
 // *************** IMPORT UTILS ***************
 const { SchoolIsExist } = require('../../utils/common.js');
-const { SanitizeAndValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
+const { ValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
 
 // *************** IMPORT HELPER ***************
 const { SchoolLongNameIsExist, SchoolBrandNameIsExist, SchoolIsReferencedByStudent } = require('./school.helpers.js');
@@ -47,9 +47,9 @@ async function GetAllSchools() {
 async function GetOneSchool(_, { _id }) {
   try {
     //**************** sanitize and validate id
-    const validId = SanitizeAndValidateId(_id);
+    ValidateId(_id);
 
-    const school = await SchoolModel.findOne({ _id: validId, status: 'active' }).lean();
+    const school = await SchoolModel.findOne({ _id: _id, status: 'active' }).lean();
     return school;
   } catch (error) {
     await ErrorLogModel.create({
@@ -84,11 +84,11 @@ async function CreateSchool(_, { input }) {
     }
 
     //*************** check if school name already exist
-    const longNameIsExist = await SchoolLongNameIsExist(long_name);
+    const longNameIsExist = await SchoolLongNameIsExist({ long_name });
     if (longNameIsExist) {
       throw new ApolloError("School's official name already exist");
     }
-    const brandNameIsExist = await SchoolBrandNameIsExist(brand_name);
+    const brandNameIsExist = await SchoolBrandNameIsExist({ brand_name });
     if (brandNameIsExist) {
       throw new ApolloError("School's brand name already exist");
     }
@@ -140,13 +140,13 @@ async function UpdateSchool(_, { input }) {
 
     //*************** check if school name already exist
     if (long_name) {
-      const longNameIsExist = await SchoolLongNameIsExist(long_name, _id);
+      const longNameIsExist = await SchoolLongNameIsExist({ long_name, _id });
       if (longNameIsExist) {
         throw new ApolloError('School official name already exists');
       }
     }
     if (brand_name) {
-      const brandNameIsExist = await SchoolBrandNameIsExist(brand_name, _id);
+      const brandNameIsExist = await SchoolBrandNameIsExist({ brand_name, _id });
       if (brandNameIsExist) {
         throw new ApolloError('School brand name already exists');
       }
@@ -197,23 +197,23 @@ async function UpdateSchool(_, { input }) {
 async function DeleteSchool(_, { _id, deleted_by }) {
   try {
     //**************** sanitize and validate id and deleted_by
-    const validDeletedId = SanitizeAndValidateId(_id);
-    const validDeletedBy = SanitizeAndValidateId(deleted_by);
+    ValidateId(_id);
+    ValidateId(deleted_by);
 
     //**************** check if deleter user is exist and has admin role
-    const userIsAdmin = await UserIsAdmin(validDeletedBy);
+    const userIsAdmin = await UserIsAdmin(deleted_by);
     if (!userIsAdmin) {
       throw new ApolloError('Unauthorized access');
     }
 
     //**************** check if school to be deleted is exist
-    const schoolIsExist = await SchoolIsExist(validDeletedId);
+    const schoolIsExist = await SchoolIsExist(_id);
     if (!schoolIsExist) {
       throw new ApolloError('School does not exist');
     }
 
     //**************** check if school is referenced by any student
-    const schoolIsReferenced = await SchoolIsReferencedByStudent(validDeletedId);
+    const schoolIsReferenced = await SchoolIsReferencedByStudent(_id);
     if (schoolIsReferenced) {
       throw new ApolloError('School that is referenced by a student cannot be deleted');
     }
@@ -221,11 +221,11 @@ async function DeleteSchool(_, { _id, deleted_by }) {
     const toBeDeletedSchool = {
       deleted_at: new Date(),
       status: 'deleted',
-      deleted_by: validDeletedBy,
+      deleted_by: deleted_by,
     };
 
     //**************** soft-delete school by marking their status as 'deleted' and set deleted_date
-    await SchoolModel.updateOne({ _id: validDeletedId }, toBeDeletedSchool);
+    await SchoolModel.updateOne({ _id: _id }, toBeDeletedSchool);
     return 'School deleted successfully';
   } catch (error) {
     await ErrorLogModel.create({
@@ -248,7 +248,7 @@ async function DeleteSchool(_, { _id, deleted_by }) {
  * @returns {Promise<Object|null>} - The students document or null.
  * @throws {Error} - Throws error if loading fails.
  */
-async function Students(parent, _, context) {
+async function students(parent, _, context) {
   try {
     //*************** check if school has any student
     if (!parent?.students) {
@@ -261,7 +261,7 @@ async function Students(parent, _, context) {
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
-      function_name: 'Students',
+      function_name: 'students',
       path: '/graphql/school/school.resolver.js',
       parameter_input: JSON.stringify({}),
     });
@@ -276,7 +276,7 @@ async function Students(parent, _, context) {
  * @returns {Promise<Object|null>} - The user document or null.
  * @throws {Error} - Throws error if loading fails.
  */
-async function Created_By(parent, _, context) {
+async function created_by(parent, _, context) {
   try {
     //*************** check if school has any student
     if (!parent?.created_by) {
@@ -289,7 +289,7 @@ async function Created_By(parent, _, context) {
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
-      function_name: 'Created_By',
+      function_name: 'created_by',
       path: '/graphql/school/school.resolver.js',
       parameter_input: JSON.stringify({}),
     });
@@ -302,7 +302,7 @@ module.exports = {
   Query: { GetAllSchools, GetOneSchool },
   Mutation: { CreateSchool, UpdateSchool, DeleteSchool },
   School: {
-    students: Students,
-    created_by: Created_By,
+    students: students,
+    created_by: created_by,
   },
 };

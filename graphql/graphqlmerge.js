@@ -26,7 +26,6 @@ const baseTypeDefs = gql`
   enum Role {
     admin
     user
-    student
   }
 
   type Query
