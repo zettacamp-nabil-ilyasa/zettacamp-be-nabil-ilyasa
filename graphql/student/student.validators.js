@@ -35,7 +35,7 @@ const createStudentSchema = Joi.object({
     .pattern(dateRegexPattern)
     .optional()
     .allow('')
-    .custom(JoiValidateDateOfBirth, 'Custom date of birth validation')
+    .custom(JoiValidateDateOfBirth)
     .messages({ 'string.pattern.base': 'date of birth should be in DD-MM-YYYY format', 'any.invalid': '{{#message}}' }),
 });
 
