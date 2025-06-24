@@ -21,6 +21,7 @@ const countryRegexPattern = /^[\p{L}\s\-']{2,30}$/u;
 //*************** regex pattern to ensure zip code is at least 4 characters
 const zipcodeRegexPattern = /^[A-Za-z0-9\s\-]{4,15}$/;
 
+//*************** joi schema for create school
 const createSchoolSchema = Joi.object({
   brand_name: Joi.string()
     .trim()
@@ -53,6 +54,7 @@ const createSchoolSchema = Joi.object({
     .messages({ 'string.pattern.base': 'zipcode contains invalid characters' }),
 });
 
+//*************** joi schema for update school
 const updateSchoolSchema = createSchoolSchema.fork(['brand_name', 'long_name'], (schema) => schema.optional());
 
 /**

@@ -17,10 +17,7 @@ const error_log = new mongoose.Schema(
   },
   {
     //Timestamp to set up created_at and updated_at
-    timestamps: {
-      createdAt: 'created_at',
-      updatedAt: 'updated_at',
-    },
+    timestamps: true,
   }
 );
 
