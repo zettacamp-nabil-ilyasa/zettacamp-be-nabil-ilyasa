@@ -26,8 +26,8 @@ async function UserIsExist(userId) {
     const query = { _id: userId, status: 'active' };
 
     //*************** db operation
-    const userIsExist = Boolean(await UserModel.exists(query));
-    return userIsExist;
+    const isUserExist = Boolean(await UserModel.exists(query));
+    return isUserExist;
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
@@ -41,37 +41,37 @@ async function UserIsExist(userId) {
 
 /**
  * Check if user email already exist
- * @param {string} email - The email to be checked.
- * @param {string} _id - The id of the user to be excluded.
+ * @param {string} userEmail - The email to be checked.
+ * @param {string} userId - The id of the user to be excluded.
  * @returns {promise<boolean>} - True if email already exist, false otherwise
  * @throws {Error} - If failed in sanity check or db operation.
  */
-async function UserEmailIsExist({ email, _id = null }) {
+async function UserEmailIsExist({ userEmail, userId = null }) {
   try {
     //*************** check if email is empty
-    if (!email) {
+    if (!userEmail) {
       throw new ApolloError('Invalid email input');
     }
 
     //*************** validate _id
-    if (_id) {
-      ValidateId(_id);
+    if (userId) {
+      ValidateId(userId);
     }
 
     //*************** set query for db operation
-    const query = { email };
-    if (_id) {
-      query._id = { $ne: _id };
+    const query = { email: userEmail };
+    if (userId) {
+      query._id = { $ne: userId };
     }
 
-    const emailIsExist = Boolean(await UserModel.exists(query));
-    return emailIsExist;
+    const isEmailExist = Boolean(await UserModel.exists(query));
+    return isEmailExist;
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'UserEmailIsExist',
       path: '/graphql/user/user.helpers.js',
-      parameter_input: JSON.stringify({ email, _id }),
+      parameter_input: JSON.stringify({ userEmail, userId }),
     });
     throw new ApolloError(error.message);
   }
@@ -120,10 +120,10 @@ function IsRemovableRole(role) {
  * @returns {promise<boolean>} - True if user already have the role, false otherwise.
  * @throws {Error} - If failed sanity check or db operation.
  */
-async function UserHasRole({ _id, role }) {
+async function UserHasRole({ userId, role }) {
   try {
     //*************** userId input check
-    ValidateId(_id);
+    ValidateId(userId);
 
     //*************** role input check, set to lowercase
     if (!role) {
@@ -131,7 +131,7 @@ async function UserHasRole({ _id, role }) {
     }
 
     //*************** set query for db operation
-    const query = { _id, roles: role };
+    const query = { _id: userId, roles: role };
 
     //*************** db operation
     const isUserHasRole = Boolean(await UserModel.exists(query));
@@ -141,7 +141,7 @@ async function UserHasRole({ _id, role }) {
       error_stack: error.stack,
       function_name: 'UserHasRole',
       path: '/graphql/user/user.helpers.js',
-      parameter_input: JSON.stringify({ _id, role }),
+      parameter_input: JSON.stringify({ userId, role }),
     });
     throw new ApolloError(error.message);
   }

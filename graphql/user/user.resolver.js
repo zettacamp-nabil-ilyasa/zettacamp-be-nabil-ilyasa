@@ -13,14 +13,7 @@ const { ValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
 const { ValidateUserCreateInput, ValidateUserUpdateInput, ValidateEditRoleInput } = require('./user.validators.js');
 
 // *************** IMPORT HELPERS ***************
-const {
-  UserIsExist,
-  UserEmailIsExist,
-  UserHasRole,
-  RoleIsValid,
-  IsRemovableRole,
-  UserIsReferencedByStudent,
-} = require('./user.helpers.js');
+const { UserIsExist, UserEmailIsExist, UserHasRole, RoleIsValid, IsRemovableRole } = require('./user.helpers.js');
 
 //*************** QUERY ***************
 
@@ -90,7 +83,7 @@ async function CreateUser(_, { input }) {
     }
 
     //**************** check if email already exist
-    const emailIsExist = await UserEmailIsExist({ email });
+    const emailIsExist = await UserEmailIsExist({ userEmail: email });
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
     }
@@ -139,7 +132,7 @@ async function UpdateUser(_, { input }) {
     }
     //**************** check if email already exist
     if (email) {
-      const emailIsExist = await UserEmailIsExist({ email, _id });
+      const emailIsExist = await UserEmailIsExist({ userEmail: email, userId: _id });
       if (emailIsExist) {
         throw new ApolloError('Email already exist');
       }
@@ -203,7 +196,7 @@ async function AddRole(_, { input }) {
     RoleIsValid(role);
 
     //**************** check if user already has the role
-    const userHasRole = await UserHasRole({ _id, role });
+    const userHasRole = await UserHasRole({ userId: _id, role });
     if (userHasRole) {
       throw new ApolloError('User already has the role');
     }
@@ -251,7 +244,7 @@ async function DeleteRole(_, { input }) {
     RoleIsValid(role);
 
     //**************** check if user has the role
-    const userHasRole = await UserHasRole({ _id, role });
+    const userHasRole = await UserHasRole({ userId: _id, role });
     if (!userHasRole) {
       throw new ApolloError('User does not have the role');
     }
