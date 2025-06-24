@@ -18,7 +18,7 @@ const { ValidateId } = require('./common-validator.js');
  * @throws {Error} - If failed in sanity check.
  */
 function ToTitleCase(string) {
-  //*************** sanity check
+  //*************** input check
   if (typeof string !== 'string') {
     throw new ApolloError('Invalid string input');
   }

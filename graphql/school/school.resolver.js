@@ -84,11 +84,11 @@ async function CreateSchool(_, { input }) {
     }
 
     //*************** check if school name already exist
-    const longNameIsExist = await SchoolLongNameIsExist({ long_name });
+    const longNameIsExist = await SchoolLongNameIsExist({ longName: long_name });
     if (longNameIsExist) {
       throw new ApolloError("School's official name already exist");
     }
-    const brandNameIsExist = await SchoolBrandNameIsExist({ brand_name });
+    const brandNameIsExist = await SchoolBrandNameIsExist({ brandName: brand_name });
     if (brandNameIsExist) {
       throw new ApolloError("School's brand name already exist");
     }
@@ -140,13 +140,13 @@ async function UpdateSchool(_, { input }) {
 
     //*************** check if school name already exist
     if (long_name) {
-      const longNameIsExist = await SchoolLongNameIsExist({ long_name, _id });
+      const longNameIsExist = await SchoolLongNameIsExist({ longName: long_name, schoolId: _id });
       if (longNameIsExist) {
         throw new ApolloError('School official name already exists');
       }
     }
     if (brand_name) {
-      const brandNameIsExist = await SchoolBrandNameIsExist({ brand_name, _id });
+      const brandNameIsExist = await SchoolBrandNameIsExist({ brandName: brand_name, schoolId: _id });
       if (brandNameIsExist) {
         throw new ApolloError('School brand name already exists');
       }
