@@ -24,16 +24,12 @@ async function BatchSchools(schoolIds) {
     //**************** return array of school objects with order of schoolIds
     return schoolIds.map((schoolId) => dataMap.get(schoolId.toString()));
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'BatchSchools',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/school/school.loader.js',
-        parameter_input: JSON.stringify({ schoolIds }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'BatchSchools',
+      path: '/graphql/school/school.loader.js',
+      parameter_input: JSON.stringify({ schoolIds }),
+    });
     throw new ApolloError(error.message);
   }
 }

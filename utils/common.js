@@ -72,16 +72,12 @@ async function SchoolIsExist(schoolId) {
     const count = await SchoolModel.countDocuments(query);
     return count > 0;
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'SchoolIsExist',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/utils/common.js',
-        parameter_input: JSON.stringify({ schoolId }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'SchoolIsExist',
+      path: '/utils/common.js',
+      parameter_input: JSON.stringify({ schoolId }),
+    });
     throw new ApolloError(error.message);
   }
 }
@@ -109,16 +105,12 @@ async function HashPassword(password) {
     const hashedPassword = await bcrypt.hash(trimmedPassword, saltRounds);
     return hashedPassword;
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'HashPassword',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/utils/common.js',
-        parameter_input: JSON.stringify({ password }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'HashPassword',
+      path: '/utils/common.js',
+      parameter_input: JSON.stringify({ password }),
+    });
     throw new ApolloError(error.message);
   }
 }

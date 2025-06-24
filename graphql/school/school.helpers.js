@@ -38,16 +38,12 @@ async function SchoolLongNameIsExist({ longName, excludeId = null }) {
     return count > 0;
   } catch (error) {
     //*************** save error log to db
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'SchoolLongNameIsExist',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/school/school.helpers.js',
-        parameter_input: JSON.stringify({ longName, excludeId }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'SchoolLongNameIsExist',
+      path: '/graphql/school/school.helpers.js',
+      parameter_input: JSON.stringify({ longName, excludeId }),
+    });
     throw new ApolloError(error.message);
   }
 }
@@ -80,16 +76,12 @@ async function SchoolBrandNameIsExist({ brandName, excludeId = null }) {
     return count > 0;
   } catch (error) {
     //*************** log error to db
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'SchoolBrandNameIsExist',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/school/school.helpers.js',
-        parameter_input: JSON.stringify({ brandName, excludeId }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'SchoolBrandNameIsExist',
+      path: '/graphql/school/school.helpers.js',
+      parameter_input: JSON.stringify({ brandName, excludeId }),
+    });
     throw new ApolloError(error.message);
   }
 }
@@ -112,16 +104,12 @@ async function SchoolIsReferencedByStudent(schoolId) {
     const referenceIsExist = Boolean(await StudentModel.exists(query));
     return referenceIsExist;
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'SchoolIsReferencedByStudent',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/school/school.helpers.js',
-        parameter_input: JSON.stringify({ schoolId }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'SchoolIsReferencedByStudent',
+      path: '/graphql/school/school.helpers.js',
+      parameter_input: JSON.stringify({ schoolId }),
+    });
     throw new ApolloError(error.message);
   }
 }
