@@ -25,16 +25,12 @@ async function BatchUsers(userIds) {
     //**************** return array of user objects with order of userIds
     return userIds.map((userId) => dataMap.get(userId.toString() || null));
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'BatchUsers',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.loader.js',
-        parameter_input: JSON.stringify({ userIds }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'BatchUsers',
+      path: '/graphql/user/user.loader.js',
+      parameter_input: JSON.stringify({ userIds }),
+    });
     throw new ApolloError(error.message);
   }
 }

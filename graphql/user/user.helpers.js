@@ -31,16 +31,12 @@ async function UserIsExist(userId) {
     const userIsExist = count > 0;
     return userIsExist;
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'UserIsExist',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.helpers.js',
-        parameter_input: JSON.stringify({ userId }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'UserIsExist',
+      path: '/graphql/user/user.helpers.js',
+      parameter_input: JSON.stringify({ userId }),
+    });
     throw new ApolloError(error.message);
   }
 }
@@ -75,16 +71,12 @@ async function UserEmailIsExist({ emailAcc, excludeId = null }) {
     const count = await UserModel.countDocuments(query);
     return count > 0;
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'UserEmailIsExist',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.helpers.js',
-        parameter_input: JSON.stringify({ emailAcc, excludeId }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'UserEmailIsExist',
+      path: '/graphql/user/user.helpers.js',
+      parameter_input: JSON.stringify({ emailAcc, excludeId }),
+    });
     throw new ApolloError(error.message);
   }
 }
@@ -165,16 +157,12 @@ async function UserHasRole({ userId, role }) {
     const roleIsAlreadyExists = count > 0;
     return roleIsAlreadyExists;
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'UserHasRole',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.helpers.js',
-        parameter_input: JSON.stringify({ userId, role }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'UserHasRole',
+      path: '/graphql/user/user.helpers.js',
+      parameter_input: JSON.stringify({ userId, role }),
+    });
     throw new ApolloError(error.message);
   }
 }

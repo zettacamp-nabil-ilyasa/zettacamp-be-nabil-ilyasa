@@ -34,16 +34,12 @@ async function GetAllUsers() {
     const users = await UserModel.find({ status: 'active' }).lean();
     return users;
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'GetAllUsers',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.resolver.js',
-        parameter_input: JSON.stringify({}),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'GetAllUsers',
+      path: '/graphql/user/user.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
     throw new ApolloError(error.message);
   }
 }
@@ -62,16 +58,12 @@ async function GetOneUser(_, { _id }) {
     const user = await UserModel.findOne({ _id: validId, status: 'active' }).lean();
     return user;
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'GetOneUser',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.resolver.js',
-        parameter_input: JSON.stringify({ _id }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'GetOneUser',
+      path: '/graphql/user/user.resolver.js',
+      parameter_input: JSON.stringify({ _id }),
+    });
     throw new ApolloError(error.message);
   }
 }
@@ -117,16 +109,12 @@ async function CreateUser(_, { input }) {
     const createdUser = await UserModel.create(validatedUser);
     return createdUser;
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'CreateUser',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.resolver.js',
-        parameter_input: JSON.stringify({ input }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'CreateUser',
+      path: '/graphql/user/user.resolver.js',
+      parameter_input: JSON.stringify({ input }),
+    });
     throw new ApolloError(error.message);
   }
 }
@@ -176,16 +164,12 @@ async function UpdateUser(_, { input }) {
     const updatedUser = await UserModel.findOneAndUpdate({ _id: _id }, validatedUser, { new: true });
     return updatedUser;
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'UpdateUser',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.resolver.js',
-        parameter_input: JSON.stringify({ input }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'UpdateUser',
+      path: '/graphql/user/user.resolver.js',
+      parameter_input: JSON.stringify({ input }),
+    });
     throw new ApolloError(error.message);
   }
 }
@@ -227,16 +211,12 @@ async function AddRole(_, { input }) {
     const updatedUser = await UserModel.findOneAndUpdate({ _id }, { $addToSet: { roles: normalizedRole } }, { new: true });
     return updatedUser;
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'AddRole',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.resolver.js',
-        parameter_input: JSON.stringify({ input }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'AddRole',
+      path: '/graphql/user/user.resolver.js',
+      parameter_input: JSON.stringify({ input }),
+    });
     throw new ApolloError(error.message);
   }
 }
@@ -285,16 +265,12 @@ async function DeleteRole(_, { input }) {
     const updatedUser = await UserModel.findOneAndUpdate({ _id }, { $pull: { roles: normalizedRole } }, { new: true }).lean();
     return updatedUser;
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'DeleteRole',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.resolver.js',
-        parameter_input: JSON.stringify({ input }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'DeleteRole',
+      path: '/graphql/user/user.resolver.js',
+      parameter_input: JSON.stringify({ input }),
+    });
     throw new ApolloError(error.message);
   }
 }
@@ -345,16 +321,12 @@ async function DeleteUser(_, { _id, deletedBy }) {
     await UserModel.updateOne({ _id: validDeletedId }, toBeDeletedUser);
     return 'User deleted successfully';
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'DeleteUser',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.resolver.js',
-        parameter_input: JSON.stringify({ _id, deletedBy }),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'DeleteUser',
+      path: '/graphql/user/user.resolver.js',
+      parameter_input: JSON.stringify({ _id, deletedBy }),
+    });
     throw new ApolloError(error.message);
   }
 }
@@ -379,16 +351,12 @@ async function Created_By(parent, _, context) {
     const loadedUser = await context.loaders.user.load(parent.created_by);
     return loadedUser;
   } catch (error) {
-    try {
-      await ErrorLogModel.create({
-        error_stack: error.stack,
-        function_name: 'Created_By',
-        path: 'D:/Zettacamp/Zettacamp BE/zettacamp-be-nabil-ilyasa/graphql/user/user.resolver.js',
-        parameter_input: JSON.stringify({}),
-      });
-    } catch (loggingError) {
-      throw new ApolloError(loggingError.message);
-    }
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'Created_By',
+      path: '/graphql/user/user.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
     throw new ApolloError(error.message);
   }
 }
