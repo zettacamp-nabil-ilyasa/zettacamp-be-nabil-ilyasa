@@ -6,7 +6,7 @@ const StudentModel = require('./student.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 //*************** IMPORT UTIL ***************
-const { SanitizeAndValidateId } = require('../../utils/common-validator.js');
+const { ValidateId } = require('../../utils/common-validator.js');
 
 /**
  * Check if a Student with the given ID already exists.
@@ -17,13 +17,12 @@ const { SanitizeAndValidateId } = require('../../utils/common-validator.js');
 async function StudentIsExist(studentId) {
   try {
     //*************** studentId input check
-    const validatedStudentId = SanitizeAndValidateId(studentId);
+    ValidateId(studentId);
 
     //*************** set query for db operation
-    const query = { _id: validatedStudentId, status: 'active' };
+    const query = { _id: studentId, status: 'active' };
 
-    const count = await StudentModel.countDocuments(query);
-    const studentIsExist = count > 0;
+    const studentIsExist = await Boolean(StudentModel.exists(query));
     return studentIsExist;
   } catch (error) {
     await ErrorLogModel.create({
@@ -38,43 +37,36 @@ async function StudentIsExist(studentId) {
 
 /**
  * Check if student email already exist
- * @param {string} emailAcc - The email to be checked.
- * @param {string} excludeId - The id of the user to be excluded.
+ * @param {string} email - The email to be checked.
+ * @param {string} _id - The id of the user to be excluded.
  * @returns {promise<boolean>} - True if email already exist, false otherwise
  * @throws {Error} - If failed in sanity check or db operation.
  */
-async function StudentEmailIsExist({ emailAcc, excludeId = null }) {
+async function StudentEmailIsExist({ email, _id = null }) {
   try {
-    //*************** emailAcc input check
-    if (typeof emailAcc !== 'string') {
-      throw new ApolloError('Invalid email input');
-    }
-    const trimmedEmail = emailAcc.trim();
-    if (trimmedEmail === '') {
+    if (!email) {
       throw new ApolloError('Invalid email input');
     }
 
-    //*************** excludeId input check
-    let validatedExcludeId = '';
-    if (excludeId) {
-      validatedExcludeId = SanitizeAndValidateId(excludeId);
+    //*************** _id input check
+    if (_id) {
+      ValidateId(_id);
     }
 
     //*************** set query for db operation
-    const query = { email: trimmedEmail };
-    if (excludeId) {
-      query._id = { $ne: validatedExcludeId };
+    const query = { email };
+    if (_id) {
+      query._id = { $ne: _id };
     }
 
-    const count = await StudentModel.countDocuments(query);
-    const studentEmailIsExist = count > 0;
-    return studentEmailIsExist;
+    const emailIsExist = Boolean(await StudentModel.exists(query));
+    return emailIsExist;
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'StudentEmailIsExist',
       path: '/graphql/student/student.helpers.js',
-      parameter_input: JSON.stringify({ emailAcc, excludeId }),
+      parameter_input: JSON.stringify({ email, _id }),
     });
     throw new ApolloError(error.message);
   }
@@ -88,9 +80,9 @@ async function StudentEmailIsExist({ emailAcc, excludeId = null }) {
 async function GetPreviousSchoolId(studentId) {
   try {
     //*************** validate id input
-    const validatedStudentId = SanitizeAndValidateId(studentId);
+    ValidateId(studentId);
 
-    const student = await StudentModel.findById(validatedStudentId);
+    const student = await StudentModel.findById(studentId);
     if (!student) {
       return null;
     }

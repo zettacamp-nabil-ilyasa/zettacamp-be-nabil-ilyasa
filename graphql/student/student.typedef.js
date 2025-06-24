@@ -12,8 +12,8 @@ const studentTypeDefs = gql`
     school_id: School!
     status: Status!
     created_by: User
-    created_at: Date
-    updated_at: Date
+    createdAt: Date
+    updatedAt: Date
   }
 
   input CreateStudentInput {
