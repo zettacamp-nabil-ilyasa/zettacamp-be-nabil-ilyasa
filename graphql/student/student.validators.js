@@ -3,7 +3,7 @@ const { ApolloError } = require('apollo-server-express');
 const Joi = require('joi');
 
 //*************** IMPORT UTILS ***************
-const { ToTitleCase, ParseDateDmy } = require('../../utils/common');
+const { ToTitleCase, ConvertStringToDate } = require('../../utils/common');
 const { ValidateId } = require('../../utils/common-validator');
 
 //*************** regex pattern to ensure first and last name contains only letters
@@ -49,17 +49,21 @@ const updateStudentSchema = createStudentSchema.fork(['first_name', 'last_name',
  * @throws {Error} - If validation fails.
  */
 function JoiValidateDateOfBirth(value, helpers) {
+  //*************** check if value is a string
   if (typeof value !== 'string') {
     return helpers.error('any.invalid', { message: 'Date of birth is invalid' });
   }
 
-  const birthDate = ParseDateDmy(value);
+  //*************** parse date to date object
+  const birthDate = ConvertStringToDate(value);
   const today = new Date();
 
+  //*************** check if date is an invalid date
   if (isNaN(birthDate.getTime())) {
     return helpers.error('any.invalid', { message: 'Invalid date format' });
   }
 
+  //*************** check if date is in the future
   if (birthDate > today) {
     return helpers.error('any.invalid', { message: 'Date of birth cannot be in the future' });
   }
@@ -68,17 +72,18 @@ function JoiValidateDateOfBirth(value, helpers) {
 
 /**
  * Validates student creation input.
- * @param {object} input - The input object containing student data.
+ * @param {object} inputObject - The input object containing student data.
  * @returns {object} - The validated and formatted input.
  * @throws {Error} - If validation fails.
  */
 function ValidateStudentCreateInput(inputObject) {
   let { created_by, first_name, last_name, email, date_of_birth, school_id } = inputObject;
 
-  //*************** validate user id stored in created_by
+  //*************** validate id
   ValidateId(created_by);
   ValidateId(school_id);
 
+  //*************** validate input using joi schema
   const { error, value } = createStudentSchema.validate({ first_name, last_name, email, date_of_birth }, { abortEarly: true });
   if (error) {
     throw new ApolloError(error.message);
@@ -96,12 +101,12 @@ function ValidateStudentCreateInput(inputObject) {
 
 /**
  * Validates student update input.
- * @param {object} input - The input object containing updated student data.
+ * @param {object} inputObject - The input object containing updated student data.
  * @returns {object} - The validated and formatted input.
  * @throws {Error} - If validation fails.
  */
-function ValidateStudentUpdateInput(input) {
-  let { _id, first_name, last_name, email, date_of_birth, school_id } = input;
+function ValidateStudentUpdateInput(inputObject) {
+  let { _id, first_name, last_name, email, date_of_birth, school_id } = inputObject;
 
   //*************** validate _id
   ValidateId(_id);
@@ -109,6 +114,7 @@ function ValidateStudentUpdateInput(input) {
     ValidateId(school_id);
   }
 
+  //*************** validate input using joi schema
   const { error, value } = updateStudentSchema.validate({ first_name, last_name, email, date_of_birth }, { abortEarly: true });
   if (error) {
     throw new ApolloError(error.message);

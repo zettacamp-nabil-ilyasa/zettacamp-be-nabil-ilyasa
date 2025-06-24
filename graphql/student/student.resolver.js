@@ -7,7 +7,7 @@ const SchoolModel = require('../school/school.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT UTILS ***************
-const { SchoolIsExist, FormatDateToIsoString } = require('../../utils/common.js');
+const { SchoolIsExist, FormatDateToDisplayString } = require('../../utils/common.js');
 const { ValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
 
 // *************** IMPORT VALIDATORS ***************
@@ -43,11 +43,11 @@ async function GetAllStudents() {
  * @param {object} args - Resolver arguments.
  * @param {string} args._id - ID of the student to retrieve.
  * @returns {Promise<Object|null>} - The student document or null.
- * @throws {Error} - Throws error if query fails.
+ * @throws {Error} - Throws error if validation or db operation fails.
  */
 async function GetOneStudent(_, { _id }) {
   try {
-    //**************** sanitize and validate id
+    //**************** validate _id
     ValidateId(_id);
 
     const student = await StudentModel.findOne({ _id: _id, status: 'active' }).lean();
@@ -70,16 +70,16 @@ async function GetOneStudent(_, { _id }) {
  * @param {object} args - Resolver arguments.
  * @param {object} args.input - Student input fields.
  * @returns {Promise<Object>} - Created student document.
- * @throws {Error} - Throws error if validation fails or email already exists.
+ * @throws {Error} - Throws error if validation or db operation fails.
  */
 async function CreateStudent(_, { input }) {
   try {
-    //*************** validation to ensure input is formatted correctly
+    //*************** validation to ensure bad input is handled correctly
     const validatedStudentInput = ValidateStudentCreateInput(input);
 
     const { created_by, email, first_name, last_name, school_id, date_of_birth } = validatedStudentInput;
 
-    //*************** check if user to delete is exist and has admin role
+    //*************** check if deleter user is exist and has admin role
     const userIsAdmin = await UserIsAdmin(created_by);
     if (!userIsAdmin) {
       throw new ApolloError('Unauthorized access');
@@ -108,10 +108,10 @@ async function CreateStudent(_, { input }) {
       created_by,
     };
 
-    //*************** create student
+    //*************** create student with composed object
     const createdStudent = await StudentModel.create(validatedSchool);
 
-    //*************** push created student id to student array in school document
+    //*************** add created student id to student array in school document
     await SchoolModel.updateOne({ _id: school_id }, { $addToSet: { students: createdStudent._id } });
 
     return createdStudent;
@@ -127,15 +127,15 @@ async function CreateStudent(_, { input }) {
 }
 
 /**
- * Update a student after cleaning input, validating input and checking existence.
+ * Update a student after validating input and checking existence
  * @param {object} args - Resolver arguments.
  * @param {object} args.input - Student update fields.
  * @returns {Promise<Object>} - Updated student document.
- * @throws {Error} - Throws error if validation fails or student/email conflict.
+ * @throws {Error} - Throws error if validation or db operation fails.
  */
 async function UpdateStudent(_, { input }) {
   try {
-    //**************** validation to ensure input is formatted correctly
+    //**************** validation to ensure bad input is handled correctly
     const validatedStudentInput = ValidateStudentUpdateInput(input);
     const { _id, email, first_name, last_name, date_of_birth, school_id } = validatedStudentInput;
 
@@ -188,7 +188,7 @@ async function UpdateStudent(_, { input }) {
       validatedStudent.school_id = school_id;
     }
 
-    //**************** update student with validated input
+    //**************** update student with composed object
     const updatedStudent = await StudentModel.findOneAndUpdate({ _id: _id }, validatedStudent, { new: true }).lean();
     return updatedStudent;
   } catch (error) {
@@ -212,11 +212,11 @@ async function UpdateStudent(_, { input }) {
  */
 async function DeleteStudent(_, { _id, deleted_by }) {
   try {
-    //**************** sanitize and validate id and deleted_by
+    //**************** validate id and deleted_by
     ValidateId(_id);
     ValidateId(deleted_by);
 
-    //**************** check if user to delete is exist and has admin role
+    //**************** check if deleter user is exist and has admin role
     const userIsAdmin = await UserIsAdmin(deleted_by);
     if (!userIsAdmin) {
       throw new ApolloError('Unauthorized access');
@@ -228,11 +228,17 @@ async function DeleteStudent(_, { _id, deleted_by }) {
       throw new ApolloError('Student does not exist');
     }
 
-    //**************** pull student_id from student array in school document
+    //**************** remove student_id from student array in school document
     await SchoolModel.updateOne({ students: _id }, { $pull: { students: _id } });
 
-    //**************** soft delete student by marking their status as 'deleted' and set the deleted_date
-    await StudentModel.updateOne({ _id: _id }, { deleted_at: new Date(), status: 'deleted', deleted_by: deleted_by });
+    //**************** compose object with validated input for Student
+    const toBeDeletedSchool = {
+      status: 'deleted',
+      deleted_at: new Date(),
+      deleted_by: deleted_by,
+    };
+    //**************** soft delete student by updating it with composed object
+    await StudentModel.updateOne({ _id: _id }, toBeDeletedSchool);
     return 'Student deleted successfully';
   } catch (error) {
     await ErrorLogModel.create({
@@ -248,7 +254,7 @@ async function DeleteStudent(_, { _id, deleted_by }) {
 // *************** LOADERS ***************
 
 /**
- * Resolve the school field in a Student by using DataLoader.
+ * Resolve the school_id field in a Student by using DataLoader.
  * @param {object} parent - Parent, student object.
  * @param {object} context - Resolver context.
  * @returns {Promise<Object|null>} - The school document or null.
@@ -256,7 +262,7 @@ async function DeleteStudent(_, { _id, deleted_by }) {
  */
 async function school_id(parent, _, context) {
   try {
-    //*************** check if student has any school
+    //*************** check if student has any school_id
     if (!parent?.school_id) {
       return null;
     }
@@ -284,7 +290,7 @@ async function school_id(parent, _, context) {
  */
 async function created_by(parent, _, context) {
   try {
-    //*************** check if student has any school
+    //*************** check if student has any created_by
     if (!parent?.created_by) {
       return null;
     }
@@ -311,6 +317,6 @@ module.exports = {
     created_by: created_by,
     school_id: school_id,
     //*************** for displayed date format
-    date_of_birth: (parent) => FormatDateToIsoString(parent.date_of_birth),
+    date_of_birth: (parent) => FormatDateToDisplayString(parent.date_of_birth),
   },
 };

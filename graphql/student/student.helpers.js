@@ -16,7 +16,7 @@ const { ValidateId } = require('../../utils/common-validator.js');
  */
 async function StudentIsExist(studentId) {
   try {
-    //*************** studentId input check
+    //*************** validate studentId
     ValidateId(studentId);
 
     //*************** set query for db operation
@@ -48,7 +48,7 @@ async function StudentEmailIsExist({ studentEmail, studentId = null }) {
       throw new ApolloError('Invalid email input');
     }
 
-    //*************** _id input check
+    //*************** validate studentId if exist
     if (studentId) {
       ValidateId(studentId);
     }
@@ -79,7 +79,7 @@ async function StudentEmailIsExist({ studentEmail, studentId = null }) {
  */
 async function GetPreviousSchoolId(studentId) {
   try {
-    //*************** validate id input
+    //*************** validate studentId
     ValidateId(studentId);
 
     //*************** get student's recorded school id
