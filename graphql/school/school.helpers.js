@@ -18,32 +18,42 @@ const { ValidateId } = require('../../utils/common-validator.js');
  * @returns {Promise<boolean>} - True if school name already exists, false otherwise
  */
 async function SchoolNameIsExist({ longName, brandName, schoolId = null }) {
-  //*************** throw error if both longName and brandName are empty
-  if (!longName && !brandName) {
-    throw new ApolloError('at least one of long name or brand name is required');
-  }
-  //*************** set base query object
-  const query = { status: 'active' };
+  try {
+    //*************** throw error if both longName and brandName are empty
+    if (!longName && !brandName) {
+      throw new ApolloError('at least one of long name or brand name is required');
+    }
+    //*************** set base query object
+    const query = { status: 'active' };
 
-  //*************** set query with or if both longName and brandName are not empty
-  if (longName && brandName) {
-    query.$or = [{ long_name: longName }, { brand_name: brandName }];
+    //*************** set query with or if both longName and brandName are not empty
+    if (longName && brandName) {
+      query.$or = [{ long_name: longName }, { brand_name: brandName }];
 
-    //*************** set query with longName if only longName is not empty
-  } else if (longName) {
-    query.long_name = longName;
+      //*************** set query with longName if only longName is not empty
+    } else if (longName) {
+      query.long_name = longName;
 
-    //*************** set query with brandName if only brandName is not empty
-  } else if (brandName) {
-    query.brand_name = brandName;
+      //*************** set query with brandName if only brandName is not empty
+    } else if (brandName) {
+      query.brand_name = brandName;
+    }
+    //*************** add _id to query if schoolId is provided
+    if (schoolId) {
+      ValidateId(schoolId);
+      query._id = { $ne: schoolId };
+    }
+    const isExist = Boolean(await SchoolModel.exists(query));
+    return isExist;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'SchoolNameIsExist',
+      path: '/graphql/school/school.helpers.js',
+      parameter_input: JSON.stringify({ longName, brandName, schoolId }),
+    });
+    throw new ApolloError(error.message);
   }
-  //*************** add _id to query if schoolId is provided
-  if (schoolId) {
-    ValidateId(schoolId);
-    query._id = { $ne: schoolId };
-  }
-  const isExist = Boolean(await SchoolModel.exists(query));
-  return isExist;
 }
 
 /**
