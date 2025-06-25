@@ -278,7 +278,7 @@ async function school_id(parent, _, context) {
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
-      function_name: 'School_Id',
+      function_name: 'school_id',
       path: '/graphql/student/student.resolver.js',
       parameter_input: JSON.stringify({}),
     });
@@ -306,7 +306,7 @@ async function created_by(parent, _, context) {
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
-      function_name: 'Created_By',
+      function_name: 'created_by',
       path: '/graphql/student/student.resolver.js',
       parameter_input: JSON.stringify({}),
     });
