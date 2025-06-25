@@ -8,12 +8,12 @@ const ErrorLogModel = require('../graphql/errorLog/error_log.model.js');
 /**
  * Process date object for display.
  * @param {Date} date - The date to convert.
- * @returns {string | null} - The converted date in ISO string format or null if date is invalid.
+ * @returns {string | null} - The converted date in string format or null if date is invalid.
  */
 function FormatDateToDisplayString(date) {
   //*************** date input check
   if (!date) {
-    return '';
+    return null;
   }
 
   //*************** set Date object using date
