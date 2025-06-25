@@ -88,22 +88,20 @@ async function CreateStudent(_, { input }) {
     //*************** validation to ensure bad input is handled correctly
     ValidateStudentCreateInput(newStudent);
 
-    const { created_by, email, school_id } = newStudent;
-
     //*************** check if deleter user is exist and has admin role
-    const userIsAdmin = await UserIsAdmin(created_by);
+    const userIsAdmin = await UserIsAdmin(newStudent.created_by);
     if (!userIsAdmin) {
       throw new ApolloError('Unauthorized access');
     }
 
     //*************** check if email already exists
-    const emailIsExist = await StudentEmailIsExist({ studentEmail: email });
+    const emailIsExist = await StudentEmailIsExist({ studentEmail: newStudent.email });
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
     }
 
     //*************** check if school to delete is exist
-    const schoolIsExist = await SchoolIsExist(school_id);
+    const schoolIsExist = await SchoolIsExist(newStudent.school_id);
     if (!schoolIsExist) {
       throw new ApolloError('School does not exist');
     }
@@ -117,7 +115,7 @@ async function CreateStudent(_, { input }) {
     const createdStudent = await StudentModel.create(newStudent);
 
     //*************** add created student id to student array in school document
-    await SchoolModel.updateOne({ _id: school_id }, { $addToSet: { students: createdStudent._id } });
+    await SchoolModel.updateOne({ _id: newStudent.school_id }, { $addToSet: { students: createdStudent._id } });
 
     return createdStudent;
   } catch (error) {
@@ -154,38 +152,36 @@ async function UpdateStudent(_, { input }) {
     //**************** validation to ensure bad input is handled correctly
     ValidateStudentUpdateInput(editedStudent);
 
-    const { _id, email, school_id } = editedStudent;
-
     //**************** check if student is exist
-    const studentIsExist = await StudentIsExist(_id);
+    const studentIsExist = await StudentIsExist(editedStudent._id);
     if (!studentIsExist) {
       throw new ApolloError('Student does not exist');
     }
 
     //**************** check if email already exists
-    if (email) {
-      const emailIsExist = await StudentEmailIsExist({ studentEmail: email, studentId: _id });
+    if (editedStudent.email) {
+      const emailIsExist = await StudentEmailIsExist({ studentEmail: editedStudent.email, studentId: editedStudent._id });
       if (emailIsExist) {
         throw new ApolloError('Email already exist');
       }
     }
 
     //**************** check if schoolId is provided and is exist
-    if (school_id) {
-      const schoolIsExist = await SchoolIsExist(school_id);
+    if (editedStudent.school_id) {
+      const schoolIsExist = await SchoolIsExist(editedStudent.school_id);
       if (!schoolIsExist) {
         throw new ApolloError('School does not exist');
       }
 
       //**************** remove student id from student array in previous school
-      const previousSchoolId = await GetPreviousSchoolId(_id);
+      const previousSchoolId = await GetPreviousSchoolId(editedStudent._id);
       if (previousSchoolId) {
         if (previousSchoolId != school_id) {
-          await SchoolModel.updateOne({ _id: previousSchoolId }, { $pull: { students: _id } });
+          await SchoolModel.updateOne({ _id: previousSchoolId }, { $pull: { students: editedStudent._id } });
         }
       }
       //**************** add student id to student array in school document
-      await SchoolModel.updateOne({ _id: school_id }, { $addToSet: { students: _id } });
+      await SchoolModel.updateOne({ _id: editedStudent.school_id }, { $addToSet: { students: editedStudent._id } });
     }
 
     //**************** check if date_of_birth is provided and convert validated string value to date
@@ -194,7 +190,7 @@ async function UpdateStudent(_, { input }) {
     }
 
     //**************** update student with composed object
-    const updatedStudent = await StudentModel.findOneAndUpdate({ _id: _id }, { $set: editedStudent }, { new: true }).lean();
+    const updatedStudent = await StudentModel.findOneAndUpdate({ _id: editedStudent._id }, { $set: editedStudent }, { new: true }).lean();
     return updatedStudent;
   } catch (error) {
     await ErrorLogModel.create({
