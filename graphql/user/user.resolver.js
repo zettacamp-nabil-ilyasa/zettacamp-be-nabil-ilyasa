@@ -72,9 +72,18 @@ async function GetOneUser(_, { _id }) {
  */
 async function CreateUser(_, { input }) {
   try {
+    //**************** compose new object from input
+    let newUser = {
+      email: input.email,
+      password: input.password,
+      first_name: input.first_name,
+      last_name: input.last_name,
+      created_by: input.created_by,
+    };
+
     //**************** validation to ensure bad input is handled correctly
-    const validatedUserInput = ValidateUserCreateInput(input);
-    const { created_by, email, password, first_name, last_name } = validatedUserInput;
+    ValidateUserCreateInput(newUser);
+    const { created_by, email, password, first_name, last_name } = newUser;
 
     //**************** check if user to delete is exist and has admin role
     const userIsAdmin = await UserIsAdmin(created_by);
@@ -88,20 +97,12 @@ async function CreateUser(_, { input }) {
       throw new ApolloError('Email already exist');
     }
 
-    //**************** set password to hashed
+    //**************** set password to hashed and assign to newUser password field
     const hashedPassword = await HashPassword(password);
-
-    //**************** compose new object with validated input for User
-    const validatedUser = {
-      email,
-      password: hashedPassword,
-      first_name,
-      last_name,
-      created_by,
-    };
+    newUser.password = hashedPassword;
 
     //**************** create user with composed object
-    const createdUser = await UserModel.create(validatedUser);
+    const createdUser = await UserModel.create(newUser);
     return createdUser;
   } catch (error) {
     await ErrorLogModel.create({
@@ -123,9 +124,18 @@ async function CreateUser(_, { input }) {
  */
 async function UpdateUser(_, { input }) {
   try {
+    //**************** compose new object from input
+    let editedUser = {
+      _id: input._id,
+      email: input.email,
+      first_name: input.first_name,
+      last_name: input.last_name,
+      password: input.password,
+    };
+
     //**************** validation to ensure bad input is handled correctly
-    const validatedInput = ValidateUserUpdateInput(input);
-    const { _id, email, first_name, last_name, password } = validatedInput;
+    ValidateUserUpdateInput(editedUser);
+    const { _id, email, first_name, last_name, password } = editedUser;
 
     //**************** check if user exist
     const userIsExist = await UserIsExist(_id);
@@ -139,24 +149,15 @@ async function UpdateUser(_, { input }) {
         throw new ApolloError('Email already exist');
       }
     }
-    //**************** compose new object with validated input
-    const validatedUser = {};
-    if (first_name) {
-      validatedUser.first_name = first_name;
-    }
-    if (last_name) {
-      validatedUser.last_name = last_name;
-    }
-    if (email) {
-      validatedUser.email = email;
-    }
+
+    //**************** set password to hashed and assign to editedUser password field if provided
     if (password) {
       const hashedPassword = await HashPassword(password);
-      validatedUser.password = hashedPassword;
+      editedUser.password = hashedPassword;
     }
 
     //**************** update user with composed object
-    const updatedUser = await UserModel.findOneAndUpdate({ _id: _id }, validatedUser, { new: true });
+    const updatedUser = await UserModel.findOneAndUpdate({ _id: _id }, { $set: editedUser }, { new: true });
     return updatedUser;
   } catch (error) {
     await ErrorLogModel.create({
@@ -351,6 +352,6 @@ module.exports = {
   Query: { GetAllUsers, GetOneUser },
   Mutation: { CreateUser, UpdateUser, AddRole, DeleteRole, DeleteUser },
   User: {
-    created_by: created_by,
+    created_by,
   },
 };

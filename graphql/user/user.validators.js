@@ -2,8 +2,7 @@
 const { ApolloError } = require('apollo-server-express');
 const Joi = require('joi');
 
-//*************** IMPORT UTILS ***************
-const { ToTitleCase } = require('../../utils/common');
+//*************** IMPORT UTIL ***************
 const { ValidateId } = require('../../utils/common-validator');
 
 //*************** IMPORT HELPER ***************
@@ -18,30 +17,47 @@ const userNameRegexPattern = /^[\p{L}\s'-]+$/u;
 //*************** joi schema for create user
 const createUserSchema = Joi.object({
   first_name: Joi.string()
+    .required()
     .trim()
     .pattern(userNameRegexPattern)
-    .required()
     .messages({ 'string.pattern.base': 'first name contains invalid characters', 'any.required': 'first name is required' }),
   last_name: Joi.string()
+    .required()
     .trim()
     .pattern(userNameRegexPattern)
-    .required()
     .messages({ 'string.pattern.base': 'last name contains invalid characters', 'any.required': 'last name is required' }),
   email: Joi.string()
+    .required()
     .trim()
     .email()
     .lowercase()
-    .required()
     .messages({ 'string.email': 'email format is invalid', 'any.required': 'email is required' }),
   password: Joi.string()
+    .required()
     .trim()
     .pattern(passwordRegexPattern)
-    .required()
     .messages({ 'string.min': 'password must be at least 8 characters', 'any.required': 'password is required' }),
 });
 
 //*************** joi schema for update user
-const updateUserSchema = createUserSchema.fork(['first_name', 'last_name', 'email', 'password'], (schema) => schema.optional());
+const updateUserSchema = Joi.object({
+  first_name: Joi.string()
+    .optional()
+    .trim()
+    .pattern(userNameRegexPattern)
+    .messages({ 'string.pattern.base': 'first name contains invalid characters' }),
+  last_name: Joi.string()
+    .optional()
+    .trim()
+    .pattern(userNameRegexPattern)
+    .messages({ 'string.pattern.base': 'last name contains invalid characters' }),
+  email: Joi.string().optional().trim().lowercase().email().messages({ 'string.email': 'email format is invalid' }),
+  password: Joi.string()
+    .optional()
+    .trim()
+    .pattern(passwordRegexPattern)
+    .messages({ 'string.min': 'password must be at least 8 characters' }),
+});
 
 /**
  * Validates user creation input.
@@ -54,14 +70,19 @@ function ValidateUserCreateInput(inputObject) {
   //*************** validate user id stored in created_by
   ValidateId(created_by);
 
-  //*************** validate input using joi schema
-  const { error, value } = createUserSchema.validate({ first_name, last_name, email, password }, { abortEarly: true });
+  //*************** check if first_name, last_name and email are provided
+  if (!email) throw new ApolloError('email is required');
+  if (!password) throw new ApolloError('password is required');
+  if (!first_name) throw new ApolloError('first name is required');
+  if (!last_name) throw new ApolloError('last name is required');
 
+  //*************** validate input using joi schema
+  const { error } = createUserSchema.validate({ first_name, last_name, email, password }, { abortEarly: true });
+
+  //*************** throw error if joi validation fails
   if (error) {
     throw new ApolloError(error.message);
   }
-
-  return { created_by, first_name: ToTitleCase(value.first_name), last_name: ToTitleCase(value.last_name), email: value.email, password };
 }
 
 /**
@@ -77,27 +98,12 @@ function ValidateUserUpdateInput(inputObject) {
   ValidateId(_id);
 
   //*************** validate input using joi schema
-  const { error, value } = updateUserSchema.validate({ first_name, last_name, email, password }, { abortEarly: true });
+  const { error } = updateUserSchema.validate({ first_name, last_name, email, password }, { abortEarly: true });
 
+  //*************** throw error if joi validation fails
   if (error) {
     throw new ApolloError(error.message);
   }
-
-  //*************** format first and last name to title case
-  if (value.first_name) {
-    first_name = ToTitleCase(value.first_name);
-  }
-  if (value.last_name) {
-    last_name = ToTitleCase(value.last_name);
-  }
-
-  return {
-    _id,
-    first_name,
-    last_name,
-    email: value.email,
-    password: value.password,
-  };
 }
 
 /**

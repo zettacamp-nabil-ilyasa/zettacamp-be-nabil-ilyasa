@@ -16,7 +16,7 @@ const user = new mongoose.Schema(
     password: { type: String, required: true, minlength: 8 },
 
     //User role
-    roles: { type: [String], enum: ['admin', 'user', 'student'], default: ['user'], required: true },
+    roles: { type: [String], enum: ['admin', 'user'], default: ['user'], required: true },
 
     //Account status
     status: { type: String, enum: ['active', 'deleted', 'suspended'], default: 'active' },
@@ -25,7 +25,7 @@ const user = new mongoose.Schema(
     created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
 
     //Soft-delete timestamp
-    deleted_at: { type: Date, default: null },
+    deleted_at: { type: Date },
 
     //Reference to user who deleted this user
     deleted_by: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
