@@ -24,11 +24,17 @@ function FormatDateToDisplayString(date) {
     return null;
   }
 
-  const day = parsedDate.getDate().toString().padStart(2, '0');
-  const month = (parsedDate.getMonth() + 1).toString().padStart(2, '0');
-  const year = parsedDate.getFullYear().toString().padStart(4, '0');
+  //*************** get day, month and year
+  const day = parsedDate.getDate();
+  const month = parsedDate.getMonth() + 1;
+  const year = parsedDate.getFullYear();
 
-  return `${day}-${month}-${year}`;
+  //*************** format date, add 0 if it's less than ten
+  const formattedDay = day < 10 ? '0' + day.toString() : day.toString();
+  const formattedMonth = month < 10 ? '0' + month.toString() : month.toString();
+  const formattedYear = year.toString();
+
+  return formattedDay + '-' + formattedMonth + '-' + formattedYear;
 }
 
 /**
