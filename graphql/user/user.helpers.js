@@ -46,7 +46,7 @@ async function UserIsExist(userId) {
  * @returns {promise<boolean>} - True if email already exist, false otherwise
  * @throws {Error} - If failed in validation or db operation.
  */
-async function UserEmailIsExist({ userEmail, userId = null }) {
+async function UserEmailIsExist({ userEmail, userId }) {
   try {
     //*************** check if email is empty
     if (!userEmail) {

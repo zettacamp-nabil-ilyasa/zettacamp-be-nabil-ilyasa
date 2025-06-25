@@ -176,28 +176,38 @@ async function UpdateUser(_, { input }) {
 async function AddRole(_, { input }) {
   try {
     //**************** validate input
-    const validatedInput = ValidateEditRoleInput(input);
-    const { updater_id, _id, role } = validatedInput;
+    const addedRoleForUser = {
+      _id: input._id,
+      updater_id: input.updater_id,
+      role: typeof input.role === 'string' ? input.role.trim().toLowerCase() : input.role,
+    };
+
+    //**************** validation to ensure bad input is handled correctly
+    ValidateEditRoleInput(addedRoleForUser);
 
     //**************** check if user has admin role
-    const isAdmin = await UserIsAdmin(updater_id);
+    const isAdmin = await UserIsAdmin(addedRoleForUser.updater_id);
     if (!isAdmin) {
       throw new ApolloError('Unauthorized access');
     }
 
     //**************** check if user whose role is to be added exist
-    const userIsExist = await UserIsExist(_id);
+    const userIsExist = await UserIsExist(addedRoleForUser._id);
     if (!userIsExist) {
       throw new ApolloError('User does not exist');
     }
 
     //**************** check if user already has the role
-    const userHasRole = await UserHasRole({ userId: _id, role });
+    const userHasRole = await UserHasRole({ userId: addedRoleForUser._id, role: addedRoleForUser.role });
     if (userHasRole) {
       throw new ApolloError('User already has the role');
     }
 
-    const updatedUser = await UserModel.findOneAndUpdate({ _id }, { $addToSet: { roles: role } }, { new: true });
+    const updatedUser = await UserModel.findOneAndUpdate(
+      { _id: addedRoleForUser._id },
+      { $addToSet: { roles: addedRoleForUser.role } },
+      { new: true }
+    );
     return updatedUser;
   } catch (error) {
     await ErrorLogModel.create({
@@ -219,36 +229,45 @@ async function AddRole(_, { input }) {
  */
 async function DeleteRole(_, { input }) {
   try {
-    //**************** validate input
-    const validatedInput = ValidateEditRoleInput(input);
+    //**************** compose new object from input
+    const deletedRoleFromUser = {
+      _id: input._id,
+      updater_id: input.updater_id,
+      role: typeof input.role === 'string' ? input.role.trim().toLowerCase() : input.role,
+    };
 
-    const { _id, updater_id, role } = validatedInput;
+    //**************** validation to ensure bad input is handled correctly
+    ValidateEditRoleInput(deletedRoleFromUser);
 
     //**************** check if user has admin role
-    const isAdmin = await UserIsAdmin(updater_id);
+    const isAdmin = await UserIsAdmin(deletedRoleFromUser.updater_id);
     if (!isAdmin) {
       throw new ApolloError('Unauthorized access');
     }
 
     //**************** check if user whose role is to be added exist
-    const userIsExist = await UserIsExist(_id);
+    const userIsExist = await UserIsExist(deletedRoleFromUser._id);
     if (!userIsExist) {
       throw new ApolloError('User does not exist');
     }
 
     //**************** check if user has the role
-    const userHasRole = await UserHasRole({ userId: _id, role });
+    const userHasRole = await UserHasRole({ userId: deletedRoleFromUser._id, role: deletedRole.role });
     if (!userHasRole) {
       throw new ApolloError('User does not have the role');
     }
 
     //**************** check if role can be removed
-    const isRemovableRole = IsRemovableRole(role);
+    const isRemovableRole = IsRemovableRole(deletedRoleFromUser.role);
     if (!isRemovableRole) {
       throw new ApolloError('Role cannot be removed');
     }
 
-    const updatedUser = await UserModel.findOneAndUpdate({ _id }, { $pull: { roles: role } }, { new: true }).lean();
+    const updatedUser = await UserModel.findOneAndUpdate(
+      { _id: deletedRoleFromUser._id },
+      { $pull: { roles: deletedRoleFromUser.role } },
+      { new: true }
+    ).lean();
     return updatedUser;
   } catch (error) {
     await ErrorLogModel.create({
@@ -288,7 +307,7 @@ async function DeleteUser(_, { _id, deleted_by }) {
     }
 
     //**************** check if user is trying to delete themselves
-    if (_id == deleted_by) {
+    if (_id === deleted_by) {
       throw new ApolloError('You cannot delete yourself');
     }
 
@@ -300,7 +319,7 @@ async function DeleteUser(_, { _id, deleted_by }) {
     };
 
     //**************** soft-delete user by updating it with composed object
-    await UserModel.updateOne({ _id: _id }, toBeDeletedUser);
+    await UserModel.updateOne({ _id: toBeDeletedUser._id }, { $set: toBeDeletedUser });
     return 'User deleted successfully';
   } catch (error) {
     await ErrorLogModel.create({
