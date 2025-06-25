@@ -13,7 +13,7 @@ const student = new mongoose.Schema(
     email: { type: String, trim: true, lowercase: true, required: true },
 
     //Date of birth
-    date_of_birth: { type: Date, default: null },
+    date_of_birth: { type: Date },
 
     //reference to school
     school_id: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'school' },
@@ -22,7 +22,7 @@ const student = new mongoose.Schema(
     status: { type: String, enum: ['active', 'deleted', 'suspended'], default: 'active' },
 
     //Soft-delete timestamp
-    deleted_at: { type: Date, default: null },
+    deleted_at: { type: Date },
 
     //reference to user who created this student
     created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },

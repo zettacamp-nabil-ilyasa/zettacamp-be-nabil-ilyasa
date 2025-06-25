@@ -7,7 +7,7 @@ const SchoolModel = require('../school/school.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT UTILS ***************
-const { SchoolIsExist, FormatDateToDisplayString } = require('../../utils/common.js');
+const { SchoolIsExist, FormatDateToDisplayString, ConvertStringToDate } = require('../../utils/common.js');
 const { ValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
 
 // *************** IMPORT VALIDATORS ***************
@@ -74,10 +74,21 @@ async function GetOneStudent(_, { _id }) {
  */
 async function CreateStudent(_, { input }) {
   try {
-    //*************** validation to ensure bad input is handled correctly
-    const validatedStudentInput = ValidateStudentCreateInput(input);
+    //*************** compose new object from input
+    let newStudent = {
+      email: input.email,
+      first_name: input.first_name,
+      last_name: input.last_name,
+      school_id: input.school_id,
+      //*************** set date_of_birth to undefined if it's an empty string
+      date_of_birth: typeof input.date_of_birth === 'string' && input.date_of_birth.trim() === '' ? undefined : input.date_of_birth,
+      created_by: input.created_by,
+    };
 
-    const { created_by, email, first_name, last_name, school_id, date_of_birth } = validatedStudentInput;
+    //*************** validation to ensure bad input is handled correctly
+    ValidateStudentCreateInput(newStudent);
+
+    const { created_by, email, school_id } = newStudent;
 
     //*************** check if deleter user is exist and has admin role
     const userIsAdmin = await UserIsAdmin(created_by);
@@ -97,19 +108,13 @@ async function CreateStudent(_, { input }) {
       throw new ApolloError('School does not exist');
     }
 
-    //*************** compose object with validated input for Student
-    const validatedSchool = {
-      email,
-      first_name,
-      last_name,
-      school_id,
-      date_of_birth,
-      status: 'active',
-      created_by,
-    };
+    //*************** convert string value to Date and assign to date_of_birth
+    if (newStudent.date_of_birth) {
+      newStudent.date_of_birth = ConvertStringToDate(newStudent.date_of_birth);
+    }
 
     //*************** create student with composed object
-    const createdStudent = await StudentModel.create(validatedSchool);
+    const createdStudent = await StudentModel.create(newStudent);
 
     //*************** add created student id to student array in school document
     await SchoolModel.updateOne({ _id: school_id }, { $addToSet: { students: createdStudent._id } });
@@ -135,9 +140,21 @@ async function CreateStudent(_, { input }) {
  */
 async function UpdateStudent(_, { input }) {
   try {
+    //**************** compose new object from input
+    let editedStudent = {
+      _id: input._id,
+      email: input.email,
+      first_name: input.first_name,
+      last_name: input.last_name,
+      //**************** set date_of_birth to undefined if it's an empty string
+      date_of_birth: typeof input.date_of_birth === 'string' && input.date_of_birth.trim() === '' ? undefined : input.date_of_birth,
+      school_id: input.school_id,
+    };
+
     //**************** validation to ensure bad input is handled correctly
-    const validatedStudentInput = ValidateStudentUpdateInput(input);
-    const { _id, email, first_name, last_name, date_of_birth, school_id } = validatedStudentInput;
+    ValidateStudentUpdateInput(editedStudent);
+
+    const { _id, email, school_id } = editedStudent;
 
     //**************** check if student is exist
     const studentIsExist = await StudentIsExist(_id);
@@ -153,7 +170,7 @@ async function UpdateStudent(_, { input }) {
       }
     }
 
-    //**************** check if school is exist
+    //**************** check if schoolId is provided and is exist
     if (school_id) {
       const schoolIsExist = await SchoolIsExist(school_id);
       if (!schoolIsExist) {
@@ -170,26 +187,14 @@ async function UpdateStudent(_, { input }) {
       //**************** add student id to student array in school document
       await SchoolModel.updateOne({ _id: school_id }, { $addToSet: { students: _id } });
     }
-    //**************** compose object with validated input for Student
-    const validatedStudent = {};
-    if (email) {
-      validatedStudent.email = email;
-    }
-    if (first_name) {
-      validatedStudent.first_name = first_name;
-    }
-    if (last_name) {
-      validatedStudent.last_name = last_name;
-    }
-    if (date_of_birth != null && date_of_birth != undefined) {
-      validatedStudent.date_of_birth = date_of_birth;
-    }
-    if (school_id) {
-      validatedStudent.school_id = school_id;
+
+    //**************** check if date_of_birth is provided and convert validated string value to date
+    if (editedStudent.date_of_birth) {
+      editedStudent.date_of_birth = ConvertStringToDate(editedStudent.date_of_birth);
     }
 
     //**************** update student with composed object
-    const updatedStudent = await StudentModel.findOneAndUpdate({ _id: _id }, validatedStudent, { new: true }).lean();
+    const updatedStudent = await StudentModel.findOneAndUpdate({ _id: _id }, { $set: editedStudent }, { new: true }).lean();
     return updatedStudent;
   } catch (error) {
     await ErrorLogModel.create({
@@ -314,8 +319,8 @@ module.exports = {
   Query: { GetAllStudents, GetOneStudent },
   Mutation: { CreateStudent, UpdateStudent, DeleteStudent },
   Student: {
-    created_by: created_by,
-    school_id: school_id,
+    created_by,
+    school_id,
     //*************** for displayed date format
     date_of_birth: (parent) => FormatDateToDisplayString(parent.date_of_birth),
   },
