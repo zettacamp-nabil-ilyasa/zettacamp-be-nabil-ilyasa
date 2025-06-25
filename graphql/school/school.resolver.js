@@ -197,15 +197,8 @@ async function DeleteSchool(_, { _id, deleted_by }) {
       throw new ApolloError('School that is referenced by a student cannot be deleted');
     }
 
-    //**************** compose object with some set fields
-    const toBeDeletedSchool = {
-      deleted_at: new Date(),
-      status: 'deleted',
-      deleted_by: deleted_by,
-    };
-
     //**************** soft-delete school by updating it with composed object
-    await SchoolModel.updateOne({ _id: toBeDeletedSchool._id }, { $set: toBeDeletedSchool });
+    await SchoolModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by, deleted_at: new Date() } });
     return 'School deleted successfully';
   } catch (error) {
     await ErrorLogModel.create({
