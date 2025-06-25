@@ -86,16 +86,14 @@ async function CreateSchool(_, { input }) {
     //*************** validation to ensure bad input is handled correctly
     ValidateSchoolCreateInput(newSchool);
 
-    const { created_by, long_name, brand_name } = newSchool;
-
     //*************** check if user with id from created_by is exist and has admin role
-    const userIsAdmin = await UserIsAdmin(created_by);
+    const userIsAdmin = await UserIsAdmin(newSchool.created_by);
     if (!userIsAdmin) {
       throw new ApolloError('User is not admin');
     }
 
     //*************** check if school name already exists
-    const isSchoolNameExist = await SchoolNameIsExist({ longName: long_name, brandName: brand_name });
+    const isSchoolNameExist = await SchoolNameIsExist({ longName: newSchool.long_name, brandName: newSchool.brand_name });
     if (isSchoolNameExist) {
       throw new ApolloError('School name already exist');
     }
@@ -137,36 +135,24 @@ async function UpdateSchool(_, { input }) {
     //*************** validation to ensure bad input is handled correctly
     ValidateSchoolUpdateInput(editedSchool);
 
-    const { _id, long_name, brand_name } = editedSchool;
-
     //*************** check if school exists
-    const schoolIsExist = await SchoolIsExist(_id);
+    const schoolIsExist = await SchoolIsExist(editedSchool._id);
     if (!schoolIsExist) {
       throw new ApolloError('School does not exist');
     }
 
-    //*************** check if school name already exist
-    let isSchoolNameExist;
-    //*************** set the function with both long_name and brand_name are provided
-    if (long_name && brand_name) {
-      isSchoolNameExist = await SchoolNameIsExist({ longName: long_name, brandName: brand_name, schoolId: _id });
-
-      //*************** set the function with only long_name is provided
-    } else if (long_name) {
-      isSchoolNameExist = await SchoolNameIsExist({ longName: long_name, schoolId: _id });
-
-      //*************** set the function with only brand_name is provided
-    } else if (brand_name) {
-      isSchoolNameExist = await SchoolNameIsExist({ brandName: brand_name, schoolId: _id });
-    }
-
-    //*************** throw error if school name already exist
+    //*************** check if school name already exists
+    const isSchoolNameExist = await SchoolNameIsExist({
+      longName: editedSchool.long_name,
+      brandName: editedSchool.brand_name,
+      schoolId: editedSchool._id,
+    });
     if (isSchoolNameExist) {
       throw new ApolloError('School name already exist');
     }
 
     //*************** update school with composed object
-    const updatedSchool = await SchoolModel.findOneAndUpdate({ _id: _id }, { $set: editedSchool }, { new: true }).lean();
+    const updatedSchool = await SchoolModel.findOneAndUpdate({ _id: editedSchool._id }, { $set: editedSchool }, { new: true }).lean();
     return updatedSchool;
   } catch (error) {
     await ErrorLogModel.create({
