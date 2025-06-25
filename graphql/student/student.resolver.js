@@ -7,14 +7,14 @@ const SchoolModel = require('../school/school.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT UTILS ***************
-const { FormatDateToDisplayString, ConvertStringToDate } = require('../../utils/common.js');
+const { ConvertStringToDate } = require('../../utils/common.js');
 const { ValidateId, SchoolIsExist, UserIsAdmin } = require('../../utils/common-validator.js');
 
 // *************** IMPORT VALIDATORS ***************
 const { ValidateStudentUpdateInput, ValidateStudentCreateInput } = require('./student.validators.js');
 
 // *************** IMPORT HELPERS ***************
-const { StudentIsExist, StudentEmailIsExist, GetPreviousSchoolId } = require('./student.helpers.js');
+const { StudentIsExist, StudentEmailIsExist, GetStudentCurrentSchoolId } = require('./student.helpers.js');
 
 //*************** QUERY ***************
 
@@ -168,20 +168,19 @@ async function UpdateStudent(_, { input }) {
 
     //**************** check if schoolId is provided and is exist
     if (editedStudent.school_id) {
+      //**************** check if school is exist
       const schoolIsExist = await SchoolIsExist(editedStudent.school_id);
       if (!schoolIsExist) {
         throw new ApolloError('School does not exist');
       }
 
-      //**************** remove student id from student array in previous school
-      const previousSchoolId = await GetPreviousSchoolId(editedStudent._id);
-      if (previousSchoolId) {
-        if (previousSchoolId != school_id) {
-          await SchoolModel.updateOne({ _id: previousSchoolId }, { $pull: { students: editedStudent._id } });
-        }
+      const studentCurrentSchoolId = await GetStudentCurrentSchoolId(editedStudent._id);
+      //**************** check if current school id is different from edited school id (changed school id)
+      if (String(studentCurrentSchoolId) !== editedStudent.school_id) {
+        console.log('studentCurrentSchoolId', studentCurrentSchoolId);
+        await SchoolModel.updateOne({ _id: studentCurrentSchoolId }, { $pull: { students: editedStudent._id } });
+        await SchoolModel.updateOne({ _id: editedStudent.school_id }, { $addToSet: { students: editedStudent._id } });
       }
-      //**************** add student id to student array in school document
-      await SchoolModel.updateOne({ _id: editedStudent.school_id }, { $addToSet: { students: editedStudent._id } });
     }
 
     //**************** check if date_of_birth is provided and convert validated string value to date
@@ -239,7 +238,7 @@ async function DeleteStudent(_, { _id, deleted_by }) {
       deleted_by: deleted_by,
     };
     //**************** soft delete student by updating it with composed object
-    await StudentModel.updateOne({ _id: _id }, toBeDeletedSchool);
+    await StudentModel.updateOne({ _id: toBeDeletedSchool._id }, { $set: toBeDeletedSchool });
     return 'Student deleted successfully';
   } catch (error) {
     await ErrorLogModel.create({
@@ -317,7 +316,5 @@ module.exports = {
   Student: {
     created_by,
     school_id,
-    //*************** for displayed date format
-    date_of_birth: (parent) => FormatDateToDisplayString(parent.date_of_birth),
   },
 };
