@@ -177,7 +177,6 @@ async function UpdateStudent(_, { input }) {
       const studentCurrentSchoolId = await GetStudentCurrentSchoolId(editedStudent._id);
       //**************** check if current school id is different from edited school id (changed school id)
       if (String(studentCurrentSchoolId) !== editedStudent.school_id) {
-        console.log('studentCurrentSchoolId', studentCurrentSchoolId);
         await SchoolModel.updateOne({ _id: studentCurrentSchoolId }, { $pull: { students: editedStudent._id } });
         await SchoolModel.updateOne({ _id: editedStudent.school_id }, { $addToSet: { students: editedStudent._id } });
       }
@@ -231,14 +230,8 @@ async function DeleteStudent(_, { _id, deleted_by }) {
     //**************** remove student_id from student array in school document
     await SchoolModel.updateOne({ students: _id }, { $pull: { students: _id } });
 
-    //**************** compose object with validated input for Student
-    const toBeDeletedSchool = {
-      status: 'deleted',
-      deleted_at: new Date(),
-      deleted_by: deleted_by,
-    };
     //**************** soft delete student by updating it with composed object
-    await StudentModel.updateOne({ _id: toBeDeletedSchool._id }, { $set: toBeDeletedSchool });
+    await StudentModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by, deleted_at: new Date() } });
     return 'Student deleted successfully';
   } catch (error) {
     await ErrorLogModel.create({
