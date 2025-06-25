@@ -13,7 +13,7 @@ const { SchoolIsExist } = require('../../utils/common.js');
 const { ValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
 
 // *************** IMPORT HELPER ***************
-const { SchoolLongNameIsExist, SchoolBrandNameIsExist, SchoolIsReferencedByStudent } = require('./school.helpers.js');
+const { SchoolNameIsExist, SchoolIsReferencedByStudent } = require('./school.helpers.js');
 
 //**************** QUERY ****************
 
@@ -30,7 +30,7 @@ async function GetAllSchools() {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'GetAllSchools',
-      path: '/graphql/school/school.helpers.js',
+      path: '/graphql/school/school.resolver.js',
       parameter_input: JSON.stringify({}),
     });
     throw new ApolloError(error.message);
@@ -73,9 +73,21 @@ async function GetOneSchool(_, { _id }) {
  */
 async function CreateSchool(_, { input }) {
   try {
+    //*************** compose new object from input
+    const newSchool = {
+      long_name: input.long_name,
+      brand_name: input.brand_name,
+      address: input.address,
+      country: input.country,
+      city: input.city,
+      zipcode: input.zipcode,
+      created_by: input.created_by,
+    };
+
     //*************** validation to ensure bad input is handled correctly
-    const validatedSchoolInput = ValidateSchoolCreateInput(input);
-    const { created_by, long_name, brand_name, address, country, city, zipcode } = validatedSchoolInput;
+    ValidateSchoolCreateInput(newSchool);
+
+    const { created_by, long_name, brand_name } = newSchool;
 
     //*************** check if user with id from created_by is exist and has admin role
     const userIsAdmin = await UserIsAdmin(created_by);
@@ -84,29 +96,13 @@ async function CreateSchool(_, { input }) {
     }
 
     //*************** check if school name already exists
-    const longNameIsExist = await SchoolLongNameIsExist({ longName: long_name });
-    if (longNameIsExist) {
-      throw new ApolloError("School's official name already exist");
+    const isSchoolNameExist = await SchoolNameIsExist({ longName: long_name, brandName: brand_name });
+    if (isSchoolNameExist) {
+      throw new ApolloError('School name already exist');
     }
-    const brandNameIsExist = await SchoolBrandNameIsExist({ brandName: brand_name });
-    if (brandNameIsExist) {
-      throw new ApolloError("School's brand name already exist");
-    }
-
-    //*************** compose new object with validated input for School
-    const validatedSchool = {
-      long_name,
-      brand_name,
-      address,
-      country,
-      city,
-      zipcode,
-      status: 'active',
-      created_by,
-    };
 
     //*************** create school with composed object
-    const createdSchool = await SchoolModel.create(validatedSchool);
+    const createdSchool = await SchoolModel.create(newSchool);
     return createdSchool;
   } catch (error) {
     await ErrorLogModel.create({
@@ -128,9 +124,21 @@ async function CreateSchool(_, { input }) {
  */
 async function UpdateSchool(_, { input }) {
   try {
+    //*************** compose new object from input
+    const editedSchool = {
+      _id: input._id,
+      long_name: input.long_name,
+      brand_name: input.brand_name,
+      address: input.address,
+      country: input.country,
+      city: input.city,
+      zipcode: input.zipcode,
+    };
+
     //*************** validation to ensure bad input is handled correctly
-    const validatedInput = ValidateSchoolUpdateInput(input);
-    const { _id, long_name, brand_name, address, country, city, zipcode } = validatedInput;
+    ValidateSchoolUpdateInput(editedSchool);
+
+    const { _id, long_name, brand_name } = editedSchool;
 
     //*************** check if school exists
     const schoolIsExist = await SchoolIsExist(_id);
@@ -139,42 +147,27 @@ async function UpdateSchool(_, { input }) {
     }
 
     //*************** check if school name already exist
-    if (long_name) {
-      const longNameIsExist = await SchoolLongNameIsExist({ longName: long_name, schoolId: _id });
-      if (longNameIsExist) {
-        throw new ApolloError('School official name already exists');
-      }
-    }
-    if (brand_name) {
-      const brandNameIsExist = await SchoolBrandNameIsExist({ brandName: brand_name, schoolId: _id });
-      if (brandNameIsExist) {
-        throw new ApolloError('School brand name already exists');
-      }
+    let isSchoolNameExist;
+    //*************** set the function with both long_name and brand_name are provided
+    if (long_name && brand_name) {
+      isSchoolNameExist = await SchoolNameIsExist({ longName: long_name, brandName: brand_name, schoolId: _id });
+
+      //*************** set the function with only long_name is provided
+    } else if (long_name) {
+      isSchoolNameExist = await SchoolNameIsExist({ longName: long_name, schoolId: _id });
+
+      //*************** set the function with only brand_name is provided
+    } else if (brand_name) {
+      isSchoolNameExist = await SchoolNameIsExist({ brandName: brand_name, schoolId: _id });
     }
 
-    //*************** compose object with validated input
-    const validatedSchool = {};
-    if (long_name) {
-      validatedSchool.long_name = long_name;
-    }
-    if (brand_name) {
-      validatedSchool.brand_name = brand_name;
-    }
-    if (address !== null && address !== undefined) {
-      validatedSchool.address = address;
-    }
-    if (country !== null && country !== undefined) {
-      validatedSchool.country = country;
-    }
-    if (city !== null && city !== undefined) {
-      validatedSchool.city = city;
-    }
-    if (zipcode !== null && zipcode !== undefined) {
-      validatedSchool.zipcode = zipcode;
+    //*************** throw error if school name already exist
+    if (isSchoolNameExist) {
+      throw new ApolloError('School name already exist');
     }
 
     //*************** update school with composed object
-    const updatedSchool = await SchoolModel.findOneAndUpdate({ _id: _id }, validatedSchool, { new: true }).lean();
+    const updatedSchool = await SchoolModel.findOneAndUpdate({ _id: _id }, { $set: editedSchool }, { new: true }).lean();
     return updatedSchool;
   } catch (error) {
     await ErrorLogModel.create({
@@ -304,7 +297,7 @@ module.exports = {
   Query: { GetAllSchools, GetOneSchool },
   Mutation: { CreateSchool, UpdateSchool, DeleteSchool },
   School: {
-    students: students,
-    created_by: created_by,
+    students,
+    created_by,
   },
 };

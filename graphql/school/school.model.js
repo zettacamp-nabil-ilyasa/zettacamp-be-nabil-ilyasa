@@ -10,16 +10,16 @@ const school = new mongoose.Schema(
     long_name: { type: String, required: true, trim: true },
 
     //Address
-    address: { type: String, trim: true, default: null },
+    address: { type: String, trim: true },
 
     //Country
-    country: { type: String, trim: true, default: null },
+    country: { type: String, trim: true },
 
     //City
-    city: { type: String, trim: true, default: null },
+    city: { type: String, trim: true },
 
     //Zipcode
-    zipcode: { type: String, trim: true, default: null },
+    zipcode: { type: String, trim: true },
 
     //Students associated with this school
     students: [{ type: mongoose.Schema.Types.ObjectId, ref: 'student' }],
@@ -28,7 +28,7 @@ const school = new mongoose.Schema(
     status: { type: String, enum: ['active', 'deleted', 'suspended'], default: 'active' },
 
     //Soft-delete timestamp
-    deleted_at: { type: Date, default: null },
+    deleted_at: { type: Date },
 
     //User who created this school
     created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },

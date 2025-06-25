@@ -11,81 +11,39 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 const { ValidateId } = require('../../utils/common-validator.js');
 
 /**
- * Check if school long name already exist
- * @param {string} longName - The school's long name to be checked
- * @param {string} schoolId - The id of the school to be excluded
+ * Check if school long name and or brand name already exist
+ * @param {longName} string - The school's long name to be checked
+ * @param {brandName} string - The school's brand name to be checked
+ * @param {schoolId} string - The id of the school to be excluded
  * @returns {Promise<boolean>} - True if school name already exists, false otherwise
- * @throws {Error} - If failed in validation or db operation.
  */
-async function SchoolLongNameIsExist({ longName, schoolId = null }) {
-  try {
-    //*************** validate longName input
-    if (!longName) {
-      throw new ApolloError('long name can not be empty or null');
-    }
-
-    //*************** schoolId input check
-    if (schoolId) {
-      ValidateId(schoolId);
-    }
-
-    //*************** set query for db operation
-    const query = { long_name: longName };
-    if (schoolId) {
-      query._id = { $ne: schoolId };
-    }
-
-    const isLongNameExist = Boolean(await SchoolModel.exists(query));
-    return isLongNameExist;
-  } catch (error) {
-    //*************** save error log to db
-    await ErrorLogModel.create({
-      error_stack: error.stack,
-      function_name: 'SchoolLongNameIsExist',
-      path: '/graphql/school/school.helpers.js',
-      parameter_input: JSON.stringify({ longName, schoolId }),
-    });
-    throw new ApolloError(error.message);
+async function SchoolNameIsExist({ longName, brandName, schoolId = null }) {
+  //*************** throw error if both longName and brandName are empty
+  if (!longName && !brandName) {
+    throw new ApolloError('at least one of long name or brand name is required');
   }
-}
+  //*************** set base query object
+  const query = { status: 'active' };
 
-/**
- * Check if school brand name already exist
- * @param {string} brandName - The school's brand name to be checked
- * @param {string} _id - The id of the school to be excluded
- * @returns {Promise<boolean>} - True if school name already exists, false otherwise
- * @throws {Error} - If failed in validation or db operation.
- */
-async function SchoolBrandNameIsExist({ brandName, schoolId = null }) {
-  try {
-    //*************** validate brandName input
-    if (!brandName) {
-      throw new ApolloError('brand name can not be empty or null');
-    }
+  //*************** set query with or if both longName and brandName are not empty
+  if (longName && brandName) {
+    query.$or = [{ long_name: longName }, { brand_name: brandName }];
 
-    //*************** _id input check
-    if (schoolId) {
-      ValidateId(schoolId);
-    }
+    //*************** set query with longName if only longName is not empty
+  } else if (longName) {
+    query.long_name = longName;
 
-    //*************** set query for db operation
-    const query = { brand_name: brandName };
-    if (schoolId) {
-      query._id = { $ne: schoolId };
-    }
-
-    const isBrandNameExist = Boolean(await SchoolModel.exists(query));
-    return isBrandNameExist;
-  } catch (error) {
-    //*************** log error to db
-    await ErrorLogModel.create({
-      error_stack: error.stack,
-      function_name: 'SchoolBrandNameIsExist',
-      path: '/graphql/school/school.helpers.js',
-      parameter_input: JSON.stringify({ brandName, schoolId }),
-    });
-    throw new ApolloError(error.message);
+    //*************** set query with brandName if only brandName is not empty
+  } else if (brandName) {
+    query.brand_name = brandName;
   }
+  //*************** add _id to query if schoolId is provided
+  if (schoolId) {
+    ValidateId(schoolId);
+    query._id = { $ne: schoolId };
+  }
+  const isExist = Boolean(await SchoolModel.exists(query));
+  return isExist;
 }
 
 /**
@@ -99,7 +57,7 @@ async function SchoolIsReferencedByStudent(schoolId) {
     //*************** schoolId input check
     ValidateId(schoolId);
 
-    //*************** set query for db operation
+    //*************** set query for db operation, cast string schoolId to ObjectId (mongoDB doesn't auto cast field besides _id)
     const query = { school_id: new mongoose.Types.ObjectId(schoolId), status: 'active' };
 
     //*************** store db operation result as boolean
@@ -118,7 +76,6 @@ async function SchoolIsReferencedByStudent(schoolId) {
 
 // *************** EXPORT MODULES ***************
 module.exports = {
-  SchoolLongNameIsExist,
-  SchoolBrandNameIsExist,
+  SchoolNameIsExist,
   SchoolIsReferencedByStudent,
 };

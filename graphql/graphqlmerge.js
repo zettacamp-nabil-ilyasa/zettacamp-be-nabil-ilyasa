@@ -1,6 +1,6 @@
 // *************** IMPORT LIBRARY ***************
 const { mergeTypeDefs, mergeResolvers } = require('@graphql-tools/merge');
-const { gql } = require('apollo-server');
+const { gql } = require('apollo-server-express');
 
 // *************** IMPORT MODULE ***************
 const userTypeDefs = require('./user/user.typedef.js');

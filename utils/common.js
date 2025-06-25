@@ -10,27 +10,6 @@ const ErrorLogModel = require('../graphql/errorLog/error_log.model.js');
 const { ValidateId } = require('./common-validator.js');
 
 /**
- * Converts a string to title case.
- * Used for input validation.
- * @param {string} string - The string to convert.
- * @returns {string} - The converted string in title case.
- * @throws {Error} - If failed in sanity check.
- */
-function ToTitleCase(string) {
-  //*************** input check
-  if (typeof string !== 'string') {
-    throw new ApolloError('Invalid string input');
-  }
-  const lowercase = string.trim().toLowerCase();
-  if (lowercase === '') {
-    throw new ApolloError('Invalid string input');
-  }
-  const splittedString = lowercase.split(' ');
-  const titledCase = splittedString.map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-  return titledCase;
-}
-
-/**
  * Process date object for display.
  * @param {Date} date - The date to convert.
  * @returns {string | null} - The converted date in ISO string format or null if date is invalid.
@@ -38,7 +17,7 @@ function ToTitleCase(string) {
 function FormatDateToDisplayString(date) {
   //*************** date input check
   if (!date) {
-    return null;
+    return '';
   }
 
   //*************** set Date object using date
@@ -118,15 +97,12 @@ async function HashPassword(password) {
 /**
  * Parses a string, then converts it to a Date object.
  * @param {string} dateStr - The date string to be parsed.
- * @returns {Date} - Date object from parsed date string.
+ * @returns {Date} - Date object from parsed date string, or undefined if it's an empty string
  */
 function ConvertStringToDate(dateStr) {
   //*************** date input check
   if (typeof dateStr !== 'string') {
     throw new ApolloError('Invalid date input');
-  }
-  if (dateStr.trim() === '') {
-    return null;
   }
 
   //*************** split to get day, month and year
@@ -134,12 +110,24 @@ function ConvertStringToDate(dateStr) {
   if (day < 1 || day > 31 || month < 1 || month > 12) {
     throw new ApolloError('Invalid date format');
   }
-  return new Date(year, month - 1, day);
+  const birthDate = new Date(year, month - 1, day);
+  const today = new Date();
+
+  //*************** check if date is an invalid date
+  if (isNaN(birthDate.getTime())) {
+    throw new ApolloError('Invalid date format');
+  }
+
+  //*************** check if date is in the future
+  if (birthDate > today) {
+    throw new ApolloError('Date of birth cannot be in the future');
+  }
+
+  return birthDate;
 }
 
 // *************** EXPORT MODULE ***************
 module.exports = {
-  ToTitleCase,
   SchoolIsExist,
   HashPassword,
   FormatDateToDisplayString,

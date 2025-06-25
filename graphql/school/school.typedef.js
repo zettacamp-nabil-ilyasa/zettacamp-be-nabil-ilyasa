@@ -1,9 +1,8 @@
 // *************** IMPORT LIBRARY ***************
-const { gql } = require('apollo-server');
+const { gql } = require('apollo-server-express');
 
 const schoolTypeDefs = gql`
   type School {
-    # Document id
     _id: ID!
     brand_name: String!
     long_name: String!
