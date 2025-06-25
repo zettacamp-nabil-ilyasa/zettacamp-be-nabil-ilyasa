@@ -83,23 +83,21 @@ async function CreateUser(_, { input }) {
 
     //**************** validation to ensure bad input is handled correctly
     ValidateUserCreateInput(newUser);
-    const { created_by, email, password, first_name, last_name } = newUser;
 
     //**************** check if user to delete is exist and has admin role
-    const userIsAdmin = await UserIsAdmin(created_by);
+    const userIsAdmin = await UserIsAdmin(newUser.created_by);
     if (!userIsAdmin) {
       throw new ApolloError('Unauthorized access');
     }
 
     //**************** check if email already exist
-    const emailIsExist = await UserEmailIsExist({ userEmail: email });
+    const emailIsExist = await UserEmailIsExist({ userEmail: newUser.email });
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
     }
 
     //**************** set password to hashed and assign to newUser password field
-    const hashedPassword = await HashPassword(password);
-    newUser.password = hashedPassword;
+    newUser.password = await HashPassword(newUser.password);
 
     //**************** create user with composed object
     const createdUser = await UserModel.create(newUser);
@@ -135,29 +133,27 @@ async function UpdateUser(_, { input }) {
 
     //**************** validation to ensure bad input is handled correctly
     ValidateUserUpdateInput(editedUser);
-    const { _id, email, first_name, last_name, password } = editedUser;
 
     //**************** check if user exist
-    const userIsExist = await UserIsExist(_id);
+    const userIsExist = await UserIsExist(editedUser._id);
     if (!userIsExist) {
       throw new ApolloError('User does not exist');
     }
     //**************** check if email already exist
-    if (email) {
-      const emailIsExist = await UserEmailIsExist({ userEmail: email, userId: _id });
+    if (editedUser.email) {
+      const emailIsExist = await UserEmailIsExist({ userEmail: editedUser.email, userId: editedUser._id });
       if (emailIsExist) {
         throw new ApolloError('Email already exist');
       }
     }
 
     //**************** set password to hashed and assign to editedUser password field if provided
-    if (password) {
-      const hashedPassword = await HashPassword(password);
-      editedUser.password = hashedPassword;
+    if (editedUser.password) {
+      editedUser.password = await HashPassword(editedUser.password);
     }
 
     //**************** update user with composed object
-    const updatedUser = await UserModel.findOneAndUpdate({ _id: _id }, { $set: editedUser }, { new: true });
+    const updatedUser = await UserModel.findOneAndUpdate({ _id: editedUser._id }, { $set: editedUser }, { new: true });
     return updatedUser;
   } catch (error) {
     await ErrorLogModel.create({
