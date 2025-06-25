@@ -252,7 +252,7 @@ async function DeleteRole(_, { input }) {
     }
 
     //**************** check if user has the role
-    const userHasRole = await UserHasRole({ userId: deletedRoleFromUser._id, role: deletedRole.role });
+    const userHasRole = await UserHasRole({ userId: deletedRoleFromUser._id, role: deletedRoleFromUser.role });
     if (!userHasRole) {
       throw new ApolloError('User does not have the role');
     }
@@ -311,15 +311,8 @@ async function DeleteUser(_, { _id, deleted_by }) {
       throw new ApolloError('You cannot delete yourself');
     }
 
-    //**************** compose new object for soft delete
-    const toBeDeletedUser = {
-      deleted_at: new Date(),
-      status: 'deleted',
-      deleted_by: deleted_by,
-    };
-
     //**************** soft-delete user by updating it with composed object
-    await UserModel.updateOne({ _id: toBeDeletedUser._id }, { $set: toBeDeletedUser });
+    await UserModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by, deleted_at: new Date() } });
     return 'User deleted successfully';
   } catch (error) {
     await ErrorLogModel.create({
