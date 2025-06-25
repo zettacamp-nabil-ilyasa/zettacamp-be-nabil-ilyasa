@@ -20,81 +20,6 @@ const countryRegexPattern = /^[\p{L}\s\-']{2,30}$/u;
 //*************** regex pattern to ensure zip code is at least 4 characters and at most 15
 const zipcodeRegexPattern = /^[A-Za-z0-9\s\-]{4,15}$/;
 
-//*************** joi schema for create school
-const createSchoolSchema = Joi.object({
-  brand_name: Joi.string()
-    .required()
-    .trim()
-    .pattern(schoolRegexPattern)
-    .messages({ 'string.pattern.base': 'brand name contains invalid characters', 'any.required': 'brand name is required' }),
-  long_name: Joi.string()
-    .required()
-    .trim()
-    .pattern(schoolRegexPattern)
-    .messages({ 'string.pattern.base': 'long name contains invalid characters', 'any.required': 'long name is required' }),
-  address: Joi.string()
-    .optional()
-    .trim()
-    .allow('', null)
-    .pattern(addressRegexPattern)
-    .messages({ 'string.pattern.base': 'address contains invalid characters' }),
-  country: Joi.string()
-    .optional()
-    .trim()
-    .allow('', null)
-    .pattern(countryRegexPattern)
-    .messages({ 'string.pattern.base': 'country contains invalid characters' }),
-  city: Joi.string()
-    .optional()
-    .trim()
-    .allow('', null)
-    .pattern(cityRegexPattern)
-    .messages({ 'string.pattern.base': 'city contains invalid characters' }),
-  zipcode: Joi.string()
-    .optional()
-    .allow('', null)
-    .pattern(zipcodeRegexPattern)
-    .messages({ 'string.pattern.base': 'zipcode contains invalid characters' }),
-});
-
-//*************** joi schema for update school
-const updateSchoolSchema = Joi.object({
-  brand_name: Joi.string()
-    .optional()
-    .trim()
-    .pattern(schoolRegexPattern)
-    .messages({ 'string.pattern.base': 'brand name contains invalid characters' }),
-  long_name: Joi.string()
-    .optional()
-    .trim()
-    .pattern(schoolRegexPattern)
-    .optional()
-    .messages({ 'string.pattern.base': 'long name contains invalid characters' }),
-  address: Joi.string()
-    .optional()
-    .trim()
-    .allow('')
-    .pattern(addressRegexPattern)
-    .messages({ 'string.pattern.base': 'address contains invalid characters' }),
-  country: Joi.string()
-    .optional()
-    .trim()
-    .allow('')
-    .pattern(countryRegexPattern)
-    .messages({ 'string.pattern.base': 'country contains invalid characters' }),
-  city: Joi.string()
-    .optional()
-    .trim()
-    .allow('')
-    .pattern(cityRegexPattern)
-    .messages({ 'string.pattern.base': 'city contains invalid characters' }),
-  zipcode: Joi.string()
-    .optional()
-    .allow('')
-    .pattern(zipcodeRegexPattern)
-    .messages({ 'string.pattern.base': 'zipcode contains invalid characters' }),
-});
-
 /**
  * Validates school creation input.
  * @param {object} input - The input object containing school data.
@@ -102,6 +27,43 @@ const updateSchoolSchema = Joi.object({
  * @throws {ApolloError} - If validation fails.
  */
 function ValidateSchoolCreateInput(inputObject) {
+  //*************** joi schema for create school
+  const createSchoolSchema = Joi.object({
+    brand_name: Joi.string()
+      .required()
+      .trim()
+      .pattern(schoolRegexPattern)
+      .messages({ 'string.pattern.base': 'brand name contains invalid characters', 'any.required': 'brand name is required' }),
+    long_name: Joi.string()
+      .required()
+      .trim()
+      .pattern(schoolRegexPattern)
+      .messages({ 'string.pattern.base': 'long name contains invalid characters', 'any.required': 'long name is required' }),
+    address: Joi.string()
+      .optional()
+      .trim()
+      .allow('', null)
+      .pattern(addressRegexPattern)
+      .messages({ 'string.pattern.base': 'address contains invalid characters' }),
+    country: Joi.string()
+      .optional()
+      .trim()
+      .allow('', null)
+      .pattern(countryRegexPattern)
+      .messages({ 'string.pattern.base': 'country contains invalid characters' }),
+    city: Joi.string()
+      .optional()
+      .trim()
+      .allow('', null)
+      .pattern(cityRegexPattern)
+      .messages({ 'string.pattern.base': 'city contains invalid characters' }),
+    zipcode: Joi.string()
+      .optional()
+      .allow('', null)
+      .pattern(zipcodeRegexPattern)
+      .messages({ 'string.pattern.base': 'zipcode contains invalid characters' }),
+  });
+
   let { created_by, brand_name, long_name, address, country, city, zipcode } = inputObject;
 
   //*************** validate id
@@ -126,6 +88,44 @@ function ValidateSchoolCreateInput(inputObject) {
  * @throws {ApolloError} - If validation fails.
  */
 function ValidateSchoolUpdateInput(inputObject) {
+  //*************** joi schema for update school
+  const updateSchoolSchema = Joi.object({
+    brand_name: Joi.string()
+      .optional()
+      .trim()
+      .pattern(schoolRegexPattern)
+      .messages({ 'string.pattern.base': 'brand name contains invalid characters' }),
+    long_name: Joi.string()
+      .optional()
+      .trim()
+      .pattern(schoolRegexPattern)
+      .optional()
+      .messages({ 'string.pattern.base': 'long name contains invalid characters' }),
+    address: Joi.string()
+      .optional()
+      .trim()
+      .allow('')
+      .pattern(addressRegexPattern)
+      .messages({ 'string.pattern.base': 'address contains invalid characters' }),
+    country: Joi.string()
+      .optional()
+      .trim()
+      .allow('')
+      .pattern(countryRegexPattern)
+      .messages({ 'string.pattern.base': 'country contains invalid characters' }),
+    city: Joi.string()
+      .optional()
+      .trim()
+      .allow('')
+      .pattern(cityRegexPattern)
+      .messages({ 'string.pattern.base': 'city contains invalid characters' }),
+    zipcode: Joi.string()
+      .optional()
+      .allow('')
+      .pattern(zipcodeRegexPattern)
+      .messages({ 'string.pattern.base': 'zipcode contains invalid characters' }),
+  });
+
   let { _id, brand_name, long_name, address, country, city, zipcode } = inputObject;
 
   //*************** validate id

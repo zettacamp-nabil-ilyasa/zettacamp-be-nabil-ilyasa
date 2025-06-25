@@ -205,7 +205,7 @@ async function DeleteSchool(_, { _id, deleted_by }) {
     };
 
     //**************** soft-delete school by updating it with composed object
-    await SchoolModel.updateOne({ _id: _id }, toBeDeletedSchool);
+    await SchoolModel.updateOne({ _id: toBeDeletedSchool._id }, { $set: toBeDeletedSchool });
     return 'School deleted successfully';
   } catch (error) {
     await ErrorLogModel.create({

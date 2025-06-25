@@ -17,7 +17,7 @@ const { ValidateId } = require('../../utils/common-validator.js');
  * @param {schoolId} string - The id of the school to be excluded
  * @returns {Promise<boolean>} - True if school name already exists, false otherwise
  */
-async function SchoolNameIsExist({ longName, brandName, schoolId = null }) {
+async function SchoolNameIsExist({ longName, brandName, schoolId }) {
   try {
     //*************** throw error if both longName and brandName are empty
     if (!longName && !brandName) {
