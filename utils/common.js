@@ -3,11 +3,7 @@ const { ApolloError } = require('apollo-server-express');
 const bcrypt = require('bcrypt');
 
 //*************** IMPORT MODULE ***************
-const SchoolModel = require('../graphql/school/school.model.js');
 const ErrorLogModel = require('../graphql/errorLog/error_log.model.js');
-
-//*************** IMPORT UTIL ***************
-const { ValidateId } = require('./common-validator.js');
 
 /**
  * Process date object for display.
