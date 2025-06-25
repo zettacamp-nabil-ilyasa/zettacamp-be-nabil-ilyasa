@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 
 //*************** IMPORT MODULE ***************
 const UserModel = require('../graphql/user/user.model.js');
+const SchoolModel = require('../graphql/school/school.model.js');
 const ErrorLogModel = require('../graphql/errorLog/error_log.model.js');
 
 /**
@@ -18,6 +19,33 @@ function ValidateId(id) {
   }
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new ApolloError('Invalid ID format');
+  }
+}
+
+/**
+ * Check if a School with the given ID already exists.
+ * @param {string} schoolId - The id of the user to be checked.
+ * @returns {promise<boolean>} - True if user already exist, false otherwise.
+ * @throws {Error} - If failed in sanity check or db operation.
+ */
+async function SchoolIsExist(schoolId) {
+  try {
+    //*************** validate schoolId
+    ValidateId(schoolId);
+
+    //*************** set query for db operation
+    const query = { _id: schoolId, status: 'active' };
+
+    const isSchoolExist = Boolean(await SchoolModel.exists(query));
+    return isSchoolExist;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'SchoolIsExist',
+      path: '/utils/common.js',
+      parameter_input: JSON.stringify({ schoolId }),
+    });
+    throw new ApolloError(error.message);
   }
 }
 
@@ -50,5 +78,6 @@ async function UserIsAdmin(userId) {
 //*************** EXPORT MODULE ***************
 module.exports = {
   ValidateId,
+  SchoolIsExist,
   UserIsAdmin,
 };

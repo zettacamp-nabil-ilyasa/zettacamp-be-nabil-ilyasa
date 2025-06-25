@@ -7,8 +7,8 @@ const SchoolModel = require('../school/school.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT UTILS ***************
-const { SchoolIsExist, FormatDateToDisplayString, ConvertStringToDate } = require('../../utils/common.js');
-const { ValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
+const { FormatDateToDisplayString, ConvertStringToDate } = require('../../utils/common.js');
+const { ValidateId, SchoolIsExist, UserIsAdmin } = require('../../utils/common-validator.js');
 
 // *************** IMPORT VALIDATORS ***************
 const { ValidateStudentUpdateInput, ValidateStudentCreateInput } = require('./student.validators.js');

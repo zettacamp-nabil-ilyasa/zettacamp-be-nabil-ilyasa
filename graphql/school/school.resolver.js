@@ -9,8 +9,7 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 const { ValidateSchoolCreateInput, ValidateSchoolUpdateInput } = require('./school.validators.js');
 
 // *************** IMPORT UTILS ***************
-const { SchoolIsExist } = require('../../utils/common.js');
-const { ValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
+const { ValidateId, SchoolIsExist, UserIsAdmin } = require('../../utils/common-validator.js');
 
 // *************** IMPORT HELPER ***************
 const { SchoolNameIsExist, SchoolIsReferencedByStudent } = require('./school.helpers.js');

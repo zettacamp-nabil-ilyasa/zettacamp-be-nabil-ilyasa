@@ -36,33 +36,6 @@ function FormatDateToDisplayString(date) {
 }
 
 /**
- * Check if a School with the given ID already exists.
- * @param {string} schoolId - The id of the user to be checked.
- * @returns {promise<boolean>} - True if user already exist, false otherwise.
- * @throws {Error} - If failed in sanity check or db operation.
- */
-async function SchoolIsExist(schoolId) {
-  try {
-    //*************** validate schoolId
-    ValidateId(schoolId);
-
-    //*************** set query for db operation
-    const query = { _id: schoolId, status: 'active' };
-
-    const isSchoolExist = Boolean(await SchoolModel.exists(query));
-    return isSchoolExist;
-  } catch (error) {
-    await ErrorLogModel.create({
-      error_stack: error.stack,
-      function_name: 'SchoolIsExist',
-      path: '/utils/common.js',
-      parameter_input: JSON.stringify({ schoolId }),
-    });
-    throw new ApolloError(error.message);
-  }
-}
-
-/**
  * Hashes a plaintext password using bcrypt.
  * @param {string} password - Plaintext to be hashed.
  * @returns string - Hashed password.
@@ -128,7 +101,6 @@ function ConvertStringToDate(dateStr) {
 
 // *************** EXPORT MODULE ***************
 module.exports = {
-  SchoolIsExist,
   HashPassword,
   FormatDateToDisplayString,
   ConvertStringToDate,
