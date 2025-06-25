@@ -70,8 +70,8 @@ async function HashPassword(password) {
  */
 function ConvertStringToDate(dateStr) {
   //*************** date input check
-  if (typeof dateStr !== 'string') {
-    throw new ApolloError('Invalid date input');
+  if (!dateStr) {
+    return undefined;
   }
 
   //*************** split to get day, month and year
