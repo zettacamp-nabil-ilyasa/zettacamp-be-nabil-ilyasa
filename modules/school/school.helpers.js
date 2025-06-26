@@ -8,7 +8,7 @@ const StudentModel = require('../student/student.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT UTIL ***************
-const { ValidateId } = require('../../utils/common-validator.js');
+const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
 
 /**
  * Check if a school's long name and/or brand name already exists in the database
@@ -52,7 +52,7 @@ async function SchoolNameIsExist({ longName, brandName, schoolId }) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'SchoolNameIsExist',
-      path: '/graphql/school/school.helpers.js',
+      path: '/modules/school/school.helpers.js',
       parameter_input: JSON.stringify({ longName, brandName, schoolId }),
     });
     throw new ApolloError(error.message);
@@ -81,7 +81,7 @@ async function SchoolIsReferencedByStudent(schoolId) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'SchoolIsReferencedByStudent',
-      path: '/graphql/school/school.helpers.js',
+      path: '/modules/school/school.helpers.js',
       parameter_input: JSON.stringify({ schoolId }),
     });
     throw new ApolloError(error.message);

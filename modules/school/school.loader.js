@@ -29,7 +29,7 @@ async function BatchSchools(schoolIds) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'BatchSchools',
-      path: '/graphql/school/school.loader.js',
+      path: '/modules/school/school.loader.js',
       parameter_input: JSON.stringify({ schoolIds }),
     });
     throw new ApolloError(error.message);

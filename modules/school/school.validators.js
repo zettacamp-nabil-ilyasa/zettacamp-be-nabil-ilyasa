@@ -3,7 +3,7 @@ const { ApolloError } = require('apollo-server-express');
 const Joi = require('joi');
 
 // *************** IMPORT UTIL ***************
-const { ValidateId } = require('../../utils/common-validator.js');
+const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
 
 // *************** regex pattern to ensure school name only contains letters, numbers, spaces, hyphens, and apostrophes
 const schoolNameRegexPattern = /^[\p{L}\d\s'-]{2,50}$/u;
@@ -29,22 +29,14 @@ const zipcodeRegexPattern = /^[A-Za-z0-9\s\-]{4,15}$/;
 function ValidateSchoolCreateInput(inputObject) {
   // *************** joi schema for create school
   const createSchoolSchema = Joi.object({
-    brand_name: Joi.string()
-      .required()
-      .trim()
-      .pattern(schoolNameRegexPattern)
-      .messages({
-        'string.pattern.base': 'brand name must be at least 2 characters and cannot contain invalid characters',
-        'any.required': 'brand name is required',
-      }),
-    long_name: Joi.string()
-      .required()
-      .trim()
-      .pattern(schoolNameRegexPattern)
-      .messages({
-        'string.pattern.base': 'long name must be at least 2 characters and cannot contain invalid characters',
-        'any.required': 'long name is required',
-      }),
+    brand_name: Joi.string().required().trim().pattern(schoolNameRegexPattern).messages({
+      'string.pattern.base': 'brand name must be at least 2 characters and cannot contain invalid characters',
+      'any.required': 'brand name is required',
+    }),
+    long_name: Joi.string().required().trim().pattern(schoolNameRegexPattern).messages({
+      'string.pattern.base': 'long name must be at least 2 characters and cannot contain invalid characters',
+      'any.required': 'long name is required',
+    }),
     address: Joi.string()
       .optional()
       .trim()
