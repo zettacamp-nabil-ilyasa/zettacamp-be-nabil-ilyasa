@@ -7,8 +7,9 @@ const SchoolModel = require('../school/school.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT UTILS ***************
-const { ConvertStringToDate, SchoolIsExist, UserIsAdmin } = require('../../utils/common.js');
-const { ValidateId } = require('../../utils/common-validator.js');
+const { UserIsAdmin } = require('../../shared/utils/user.js');
+const { SchoolIsExist } = require('../../shared/utils/school.js');
+const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
 
 // *************** IMPORT VALIDATORS ***************
 const { ValidateStudentUpdateInput, ValidateStudentCreateInput } = require('./student.validators.js');
@@ -19,6 +20,7 @@ const {
   StudentEmailIsExist,
   GetStudentCurrentSchoolId,
   GenerateBulkQueryForSchoolIdChange,
+  ConvertStringToDate,
 } = require('./student.helpers.js');
 
 // *************** QUERY ***************
@@ -37,7 +39,7 @@ async function GetAllStudents() {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'GetAllStudents',
-      path: '/graphql/student/student.resolver.js',
+      path: '/modules/student/student.resolver.js',
       parameter_input: JSON.stringify({}),
     });
     throw new ApolloError(error.message);
@@ -65,7 +67,7 @@ async function GetOneStudent(parent, { _id }) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'GetOneStudent',
-      path: '/graphql/student/student.resolver.js',
+      path: '/modules/student/student.resolver.js',
       parameter_input: JSON.stringify({ _id }),
     });
     throw new ApolloError(error.message);
@@ -139,7 +141,7 @@ async function CreateStudent(parent, { input }) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'CreateStudent',
-      path: '/graphql/student/student.resolver.js',
+      path: '/modules/student/student.resolver.js',
       parameter_input: JSON.stringify({ input }),
     });
     throw new ApolloError(error.message);
@@ -226,7 +228,7 @@ async function UpdateStudent(parent, { input }) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'UpdateStudent',
-      path: '/graphql/student/student.resolver.js',
+      path: '/modules/student/student.resolver.js',
       parameter_input: JSON.stringify({ input }),
     });
     throw new ApolloError(error.message);
@@ -271,7 +273,7 @@ async function DeleteStudent(parent, { _id, deleted_by }) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'DeleteStudent',
-      path: '/graphql/student/student.resolver.js',
+      path: '/modules/student/student.resolver.js',
       parameter_input: JSON.stringify({ _id, deleted_by }),
     });
     throw new ApolloError(error.message);
@@ -302,7 +304,7 @@ async function school_id(parent, args, context) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'school_id',
-      path: '/graphql/student/student.resolver.js',
+      path: '/modules/student/student.resolver.js',
       parameter_input: JSON.stringify({}),
     });
     throw new ApolloError(error.message);
@@ -332,7 +334,7 @@ async function created_by(parent, args, context) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'created_by',
-      path: '/graphql/student/student.resolver.js',
+      path: '/modules/student/student.resolver.js',
       parameter_input: JSON.stringify({}),
     });
     throw new ApolloError(error.message);
