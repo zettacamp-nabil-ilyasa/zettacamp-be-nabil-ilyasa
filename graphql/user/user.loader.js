@@ -15,7 +15,7 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 async function BatchUsers(userIds) {
   try {
     //**************** get all active users with id within userIds and status is not deleted
-    const users = await UserModel.find({ _id: { $in: userIds }, status: { $ne: 'deleted' } }).lean();
+    const users = await UserModel.find({ _id: { $in: userIds }, status: 'active' }).lean();
 
     //**************** set users data to dataMap
     const dataMap = new Map();

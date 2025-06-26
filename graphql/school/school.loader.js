@@ -16,7 +16,7 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 async function BatchSchools(schoolIds) {
   try {
     //**************** get all active schools with id within schoolIds and status is not deleted
-    const schools = await SchoolModel.find({ _id: { $in: schoolIds }, status: { $ne: 'deleted' } }).lean();
+    const schools = await SchoolModel.find({ _id: { $in: schoolIds }, status: 'active' }).lean();
 
     //**************** set schools data to dataMap
     const dataMap = new Map();

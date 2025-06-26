@@ -15,7 +15,7 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 async function BatchStudents(studentIds) {
   try {
     //**************** get all active students with id within studentIds and status is not deleted
-    const students = await StudentModel.find({ _id: { $in: studentIds }, status: { $ne: 'deleted' } }).lean();
+    const students = await StudentModel.find({ _id: { $in: studentIds }, status: 'active' }).lean();
 
     //**************** set students data to dataMap
     const dataMap = new Map();
