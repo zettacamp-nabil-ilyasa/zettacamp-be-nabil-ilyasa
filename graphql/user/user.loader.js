@@ -20,11 +20,11 @@ async function BatchUsers(userIds) {
     //**************** set users data to dataMap
     const dataMap = new Map();
     users.forEach((user) => {
-      dataMap.set(user._id.toString(), user);
+      dataMap.set(String(user._id), user);
     });
 
     //**************** return array of user objects with order of userIds
-    return userIds.map((userId) => dataMap.get(userId.toString()));
+    return userIds.map((userId) => dataMap.get(String(userId)));
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
