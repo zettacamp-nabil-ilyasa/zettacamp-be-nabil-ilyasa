@@ -8,7 +8,7 @@ const { ValidateId } = require('../../utils/common-validator.js');
 // *************** regex pattern to ensure school name only contains letters, numbers, spaces, hyphens, and apostrophes
 const schoolNameRegexPattern = /^[\p{L}\d\s'-]{2,50}$/u;
 
-// *************** regex pattern to ensure address is at least 5 characters and at most 50
+// *************** regex pattern to ensure address is at least 10 characters and at most 50
 const addressRegexPattern = /^[\p{L}0-9\s,'./\-#()]{10,50}$/u;
 
 // *************** regex pattern to ensure city name is at least 2 characters and at most 30
@@ -33,35 +33,41 @@ function ValidateSchoolCreateInput(inputObject) {
       .required()
       .trim()
       .pattern(schoolNameRegexPattern)
-      .messages({ 'string.pattern.base': 'brand name contains invalid characters', 'any.required': 'brand name is required' }),
+      .messages({
+        'string.pattern.base': 'brand name must be at least 2 characters and cannot contain invalid characters',
+        'any.required': 'brand name is required',
+      }),
     long_name: Joi.string()
       .required()
       .trim()
       .pattern(schoolNameRegexPattern)
-      .messages({ 'string.pattern.base': 'long name contains invalid characters', 'any.required': 'long name is required' }),
+      .messages({
+        'string.pattern.base': 'long name must be at least 2 characters and cannot contain invalid characters',
+        'any.required': 'long name is required',
+      }),
     address: Joi.string()
       .optional()
       .trim()
       .allow('', null)
       .pattern(addressRegexPattern)
-      .messages({ 'string.pattern.base': 'address contains invalid characters' }),
+      .messages({ 'string.pattern.base': 'address must be at least 10 characters and cannot contain invalid characters' }),
     country: Joi.string()
       .optional()
       .trim()
       .allow('', null)
       .pattern(countryRegexPattern)
-      .messages({ 'string.pattern.base': 'country contains invalid characters' }),
+      .messages({ 'string.pattern.base': 'country must be at least 2 characters and cannot contain invalid characters' }),
     city: Joi.string()
       .optional()
       .trim()
       .allow('', null)
       .pattern(cityRegexPattern)
-      .messages({ 'string.pattern.base': 'city contains invalid characters' }),
+      .messages({ 'string.pattern.base': 'city must be at least 2 characters and cannot contain invalid characters' }),
     zipcode: Joi.string()
       .optional()
       .allow('', null)
       .pattern(zipcodeRegexPattern)
-      .messages({ 'string.pattern.base': 'zipcode contains invalid characters' }),
+      .messages({ 'string.pattern.base': 'zipcode must be at least 4 characters' }),
   });
 
   let { created_by, brand_name, long_name, address, country, city, zipcode } = inputObject;
@@ -94,36 +100,36 @@ function ValidateSchoolUpdateInput(inputObject) {
       .optional()
       .trim()
       .pattern(schoolNameRegexPattern)
-      .messages({ 'string.pattern.base': 'brand name contains invalid characters' }),
+      .messages({ 'string.pattern.base': 'brand name must be at least 2 characters and cannot contain invalid characters' }),
     long_name: Joi.string()
       .optional()
       .trim()
       .pattern(schoolNameRegexPattern)
-      .messages({ 'string.pattern.base': 'long name contains invalid characters' }),
+      .messages({ 'string.pattern.base': 'long name must be at least 2 characters and cannot contain invalid characters' }),
     address: Joi.string()
       .optional()
       .trim()
       .allow('')
       .pattern(addressRegexPattern)
-      .messages({ 'string.pattern.base': 'address contains invalid characters' }),
+      .messages({ 'string.pattern.base': 'address must be at least 10 characters and cannot contain invalid characters' }),
     country: Joi.string()
       .optional()
       .trim()
       .allow('')
       .pattern(countryRegexPattern)
-      .messages({ 'string.pattern.base': 'country contains invalid characters' }),
+      .messages({ 'string.pattern.base': 'country must be at least 2 characters and cannot contain invalid characters' }),
     city: Joi.string()
       .optional()
       .trim()
       .allow('')
       .pattern(cityRegexPattern)
-      .messages({ 'string.pattern.base': 'city contains invalid characters' }),
+      .messages({ 'string.pattern.base': 'city must be at least 2 characters and cannot contains invalid characters' }),
     zipcode: Joi.string()
       .optional()
       .trim()
       .allow('')
       .pattern(zipcodeRegexPattern)
-      .messages({ 'string.pattern.base': 'zipcode contains invalid characters' }),
+      .messages({ 'string.pattern.base': 'zipcode must be at least 4 characters and cannot contain invalid characters' }),
   });
 
   let { _id, brand_name, long_name, address, country, city, zipcode } = inputObject;
