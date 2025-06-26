@@ -1,57 +1,40 @@
 // *************** IMPORT LIBRARY ***************
-const express = require('express');
-const { ApolloServer } = require('apollo-server-express');
+const { PORT } = require('./core/config');
 
-// *************** IMPORT MODULE ***************
-const ConnectDb = require('./utils/mongoose');
-const { TypeDefs, Resolvers } = require('./graphql/index.js');
-
-// *************** IMPORT DATALOADERS ***************
-const { UserLoader } = require('./graphql/user/user.loader');
-const { SchoolLoader } = require('./graphql/school/school.loader');
-const { StudentLoader } = require('./graphql/student/student.loader');
+// *************** IMPORT UTILS ***************
+const ConnectDb = require('./core/database');
+const InitializeApolloServer = require('./core/apollo');
+const InitializeExpressApp = require('./core/express');
 
 /**
- * Initializes and starts the Express and Apollo Server.
- * Sets up the GraphQL middleware and sets up DataLoaders to context.
- * Logs the server URL on successful startup.
- * Catches and logs any error during server setup.
+ * Initializes and starts the Express server along with Apollo Server.
+ * @async
+ * @function InitializeServer
+ * @returns {Promise<void>} - Resolves when the server is successfully running.
+ * @throws {Error} - Throws error if any step during initialization fails.
  */
-async function StartServer() {
+async function InitializeServer() {
   try {
-    // *************** START: Set up Express ***************
-    const app = express();
-    app.use(express.json());
-    // *************** END: Set up Express ***************
+    // *************** initialize express app
+    const app = InitializeExpressApp();
 
-    // *************** START: Set up Apollo Server ***************
-    const server = new ApolloServer({
-      typeDefs: TypeDefs,
-      resolvers: Resolvers,
-      context: () => ({ loaders: { user: UserLoader(), school: SchoolLoader(), student: StudentLoader() } }),
-    });
-    // *************** END: Set up Apollo Server ***************
+    // *************** initialize apollo server
+    const server = InitializeApolloServer();
 
-    // *************** apply GraphQL middleware
+    // *************** establish MongoDB connection
+    await ConnectDb();
+
+    // *************** start apollo server and apply GraphQL middleware
     await server.start();
     server.applyMiddleware({ app });
+    console.log(`Apollo Server ready at http://localhost:${PORT}${server.graphqlPath}`);
 
-    const Port = process.env.PORT || 3000;
-    app.listen({ port: Port }, () => {
-      console.log(`Server ready at http://localhost:${Port}${server.graphqlPath}`);
-    });
+    // *************** start express server
+    app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
   } catch (error) {
-    console.error('Error starting server:', error);
+    console.error('Failed to start server', error);
     process.exit(1);
   }
 }
 
-// *************** connect to mongodb and start server
-ConnectDb()
-  .then(() => {
-    console.log('Mongodb connected succesfully!');
-
-    // *************** start server
-    StartServer();
-  })
-  .catch((err) => console.error('Error connecting to mongodb', err));
+InitializeServer();
