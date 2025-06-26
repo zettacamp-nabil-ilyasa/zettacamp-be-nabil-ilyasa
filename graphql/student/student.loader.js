@@ -20,11 +20,11 @@ async function BatchStudents(studentIds) {
     //**************** set students data to dataMap
     const dataMap = new Map();
     students.forEach((student) => {
-      dataMap.set(student._id.toString(), student);
+      dataMap.set(String(student._id), student);
     });
 
     //**************** return array of student objects with order of studentIds
-    return studentIds.map((studentId) => dataMap.get(studentId.toString()));
+    return studentIds.map((studentId) => dataMap.get(String(studentId)));
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
