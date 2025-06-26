@@ -6,21 +6,22 @@ const UserModel = require('./user.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT UTILS ***************
-const { HashPassword } = require('../../utils/common.js');
-const { ValidateId, UserIsAdmin } = require('../../utils/common-validator.js');
+const { UserIsAdmin } = require('../../utils/common.js');
+const { ValidateId } = require('../../utils/common-validator.js');
 
 // *************** IMPORT VALIDATORS ***************
 const { ValidateUserCreateInput, ValidateUserUpdateInput, ValidateEditRoleInput } = require('./user.validators.js');
 
 // *************** IMPORT HELPERS ***************
-const { UserIsExist, UserEmailIsExist, UserHasRole, RoleIsValid, IsRemovableRole } = require('./user.helpers.js');
+const { UserIsExist, UserEmailIsExist, UserHasRole, IsRemovableRole } = require('./user.helpers.js');
 
-//*************** QUERY ***************
+// *************** QUERY ***************
 
 /**
  * Get all active users from the database.
- * @returns {Promise<Array<Object>>} - Array of user documents or null.
- * @throws {Error} - Throws error if query fails.
+ * @async
+ * @returns {Promise<Array<Object>>} - Array of user documents with status 'active'.
+ * @throws {ApolloError} - Throws error if database query fails.
  */
 async function GetAllUsers() {
   try {
@@ -39,10 +40,12 @@ async function GetAllUsers() {
 
 /**
  * Get one active user by ID.
+ * @async
+ * @param {object} _ - Unused resolver argument.
  * @param {object} args - Resolver arguments.
  * @param {string} args._id - ID of the user to retrieve.
- * @returns {Promise<Object|null>} - The user document or null.
- * @throws {Error} - Throws error if query fails.
+ * @returns {Promise<Object|null>} - The user document or null if not found.
+ * @throws {ApolloError} - Throws error if validation fails or query error occurs.
  */
 async function GetOneUser(_, { _id }) {
   try {
@@ -62,20 +65,24 @@ async function GetOneUser(_, { _id }) {
 }
 
 //************** MUTATION ***************
-
 /**
- * Create a new user after validating input and checking email existence.
+ * Create a new user after validating input and checking constraints.
+ * @async
+ * @param {object} _ - Unused resolver argument.
  * @param {object} args - Resolver arguments.
  * @param {object} args.input - User input fields.
+ * @param {string} args.input.email - Email address of the new user.
+ * @param {string} args.input.first_name - First name of the new user.
+ * @param {string} args.input.last_name - Last name of the new user.
+ * @param {string} args.input.created_by - ID of the admin who creates this user.
  * @returns {Promise<Object>} - Created user document.
- * @throws {Error} - Throws error if validation or db operation fails.
+ * @throws {ApolloError} - Throws error if validation fails, user unauthorized, or email already exists.
  */
 async function CreateUser(_, { input }) {
   try {
     //**************** compose new object from input
-    let newUser = {
+    const newUser = {
       email: input.email,
-      password: input.password,
       first_name: input.first_name,
       last_name: input.last_name,
       created_by: input.created_by,
@@ -96,9 +103,6 @@ async function CreateUser(_, { input }) {
       throw new ApolloError('Email already exist');
     }
 
-    //**************** set password to hashed and assign to newUser password field
-    newUser.password = await HashPassword(newUser.password);
-
     //**************** create user with composed object
     const createdUser = await UserModel.create(newUser);
     return createdUser;
@@ -114,11 +118,17 @@ async function CreateUser(_, { input }) {
 }
 
 /**
- * Update a user after cleaning input, validating input, and checking existence.
+ * Update a user document after validating input and checking user existence.
+ * @async
+ * @param {object} _ - Unused resolver argument.
  * @param {object} args - Resolver arguments.
- * @param {object} args.input - User update fields.
+ * @param {object} args.input - Fields to update in the user document.
+ * @param {string} args.input._id - ID of the user to update.
+ * @param {string} [args.input.email] - Updated email (optional).
+ * @param {string} [args.input.first_name] - Updated first name (optional).
+ * @param {string} [args.input.last_name] - Updated last name (optional).
  * @returns {Promise<Object>} - Updated user document.
- * @throws {Error} - Throws error if validation or db operation fails.
+ * @throws {ApolloError} - Throws error if validation fails, user not found, or email already exists.
  */
 async function UpdateUser(_, { input }) {
   try {
@@ -128,7 +138,6 @@ async function UpdateUser(_, { input }) {
       email: input.email,
       first_name: input.first_name,
       last_name: input.last_name,
-      password: input.password,
     };
 
     //**************** validation to ensure bad input is handled correctly
@@ -147,11 +156,6 @@ async function UpdateUser(_, { input }) {
       }
     }
 
-    //**************** set password to hashed and assign to editedUser password field if provided
-    if (editedUser.password) {
-      editedUser.password = await HashPassword(editedUser.password);
-    }
-
     //**************** update user with composed object
     const updatedUser = await UserModel.findOneAndUpdate({ _id: editedUser._id }, { $set: editedUser }, { new: true });
     return updatedUser;
@@ -168,10 +172,15 @@ async function UpdateUser(_, { input }) {
 
 /**
  * Add a new role to a user.
+ * @async
+ * @param {object} _ - Unused resolver argument.
  * @param {object} args - Resolver arguments.
- * @param {object} args.input - User update fields.
+ * @param {object} args.input - Fields to modify user roles.
+ * @param {string} args.input._id - ID of the user to assign the role to.
+ * @param {string} args.input.updater_id - ID of the admin who assigns the role.
+ * @param {string} args.input.role - Role to be added (e.g. "admin", "editor").
  * @returns {Promise<Object>} - Updated user document.
- * @throws {Error} - Throws error if validation fails.
+ * @throws {ApolloError} - Throws error if validation fails, unauthorized, or user already has the role.
  */
 async function AddRole(_, { input }) {
   try {
@@ -221,11 +230,16 @@ async function AddRole(_, { input }) {
 }
 
 /**
- * Delete a role from a user.
- * @param {object} args - Resolver arguments
- * @param {object} args.input - User update fields.
+ * Remove a role from a user.
+ * @async
+ * @param {object} _ - Unused resolver argument.
+ * @param {object} args - Resolver arguments.
+ * @param {object} args.input - Fields to modify user roles.
+ * @param {string} args.input._id - ID of the user to remove the role from.
+ * @param {string} args.input.updater_id - ID of the admin who removes the role.
+ * @param {string} args.input.role - Role to be removed.
  * @returns {Promise<Object>} - Updated user document.
- * @throws {Error} - Throws error if validation fails.
+ * @throws {ApolloError} - Throws error if validation fails, unauthorized, role not found, or role is not removable.
  */
 async function DeleteRole(_, { input }) {
   try {
@@ -281,12 +295,14 @@ async function DeleteRole(_, { input }) {
 }
 
 /**
- * Soft delete a user by marking their status as 'deleted'.
+ * Soft delete a user by updating their status to 'deleted'.
+ * @async
+ * @param {object} _ - Unused resolver argument.
  * @param {object} args - Resolver arguments.
  * @param {string} args._id - ID of the user to delete.
- * @param {string} args.deletedBy - ID of the admin performing the deletion.
+ * @param {string} args.deleted_by - ID of the admin performing the deletion.
  * @returns {Promise<string>} - Deletion success message.
- * @throws {Error} - Throws error if unauthorized or user not found.
+ * @throws {ApolloError} - Throws error if unauthorized, user not found, or attempt to self-delete.
  */
 async function DeleteUser(_, { _id, deleted_by }) {
   try {
@@ -326,22 +342,23 @@ async function DeleteUser(_, { _id, deleted_by }) {
 }
 
 // *************** LOADERS ***************
-
 /**
- * Resolve the user field for by using DataLoader.
- * @param {object} parent - Parent, user object.
- * @param {object} context - Resolver context.
- * @returns {Promise<Object|null>} - The user document or null.
- * @throws {Error} - Throws error if loading fails.
+ * Resolve the created_by field in a user object using DataLoader to prevent N+1 queries.
+ * @async
+ * @param {object} parent - Parent user object.
+ * @param {object} _ - Unused resolver argument.
+ * @param {object} context - Resolver context that contains DataLoaders.
+ * @returns {Promise<Object|null>} - The user document of the creator, or null if not available.
+ * @throws {ApolloError} - Throws error if DataLoader fails.
  */
 async function created_by(parent, _, context) {
   try {
-    //*************** check if user has any created_by
+    // *************** check if user has any created_by
     if (!parent?.created_by) {
       return null;
     }
 
-    //*************** load user
+    // *************** load user
     const loadedUser = await context.loaders.user.load(parent.created_by);
     return loadedUser;
   } catch (error) {

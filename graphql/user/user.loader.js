@@ -1,15 +1,16 @@
-//*************** IMPORT LIBRARY ***************
+// *************** IMPORT LIBRARY ***************
 const DataLoader = require('dataloader');
 const { ApolloError } = require('apollo-server-express');
 
-//*************** IMPORT MODULES ***************
+// *************** IMPORT MODULES ***************
 const UserModel = require('./user.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 /**
- * Batch function to load users by array of user IDs
- * @param {Array<string>} userIds - Array of user IDs
- * @returns
+ * Batch function to load multiple users by their IDs.
+ * @param {Array<string>} userIds - Array of user IDs to fetch.
+ * @returns {Promise<Array<Object>>} - Array of user objects aligned with input IDs.
+ * @throws {ApolloError} - If database query fails.
  */
 async function BatchUsers(userIds) {
   try {
@@ -23,7 +24,7 @@ async function BatchUsers(userIds) {
     });
 
     //**************** return array of user objects with order of userIds
-    return userIds.map((userId) => dataMap.get(userId.toString() || null));
+    return userIds.map((userId) => dataMap.get(userId.toString()));
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
@@ -37,13 +38,13 @@ async function BatchUsers(userIds) {
 
 /**
  * Create a new DataLoader instance for batching users by user IDs
- * @returns {DataLoader<string, Object|null>} A DataLoader instance that loads users by user ID
+ * @returns {DataLoader<string, Object} A DataLoader instance that loads users by user ID
  */
 function UserLoader() {
   return new DataLoader(BatchUsers);
 }
 
-//*************** EXPORT MODULE ***************
+// *************** EXPORT MODULE ***************
 module.exports = {
   UserLoader,
 };

@@ -1,18 +1,32 @@
-//*************** IMPORT LIBRARY ***************
+// *************** IMPORT LIBRARY ***************
 const { ApolloError } = require('apollo-server-express');
 const Joi = require('joi');
 
-//*************** IMPORT UTIL ***************
+// *************** IMPORT UTIL ***************
 const { ValidateId } = require('../../utils/common-validator');
 
-//*************** IMPORT HELPER ***************
-const { RoleIsValid } = require('./user.helpers.js');
-
-//*************** regex pattern to ensure password is at least 8 characters and contain at least one uppercase letter, one lowercase letter, and one number
-const passwordRegexPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-
-//*************** regex pattern to ensure first and last name contains only letters
+// *************** regex pattern to ensure first and last name contains only letters
 const userNameRegexPattern = /^[\p{L}\s'-]+$/u;
+
+/**
+ * Check if role is valid
+ * @param {string} role - The role to be checked.
+ * @throws {Error} - If failed validation.
+ */
+function ValidateRole(role) {
+  // *************** role input check
+  if (!role) {
+    throw new ApolloError('Invalid role input');
+  }
+
+  const validRoles = ['admin', 'user'];
+
+  // *************** check if role is a valid role
+  const isValidRole = validRoles.includes(role);
+  if (!isValidRole) {
+    throw new ApolloError('Invalid role');
+  }
+}
 
 /**
  * Validates user creation input.
@@ -21,7 +35,7 @@ const userNameRegexPattern = /^[\p{L}\s'-]+$/u;
  * @throws {Error} - If validation fails.
  */
 function ValidateUserCreateInput(inputObject) {
-  //*************** joi schema for create user
+  // *************** joi schema for create user
   const createUserSchema = Joi.object({
     first_name: Joi.string()
       .required()
@@ -39,27 +53,21 @@ function ValidateUserCreateInput(inputObject) {
       .email()
       .lowercase()
       .messages({ 'string.email': 'email format is invalid', 'any.required': 'email is required' }),
-    password: Joi.string()
-      .required()
-      .trim()
-      .pattern(passwordRegexPattern)
-      .messages({ 'string.min': 'password must be at least 8 characters', 'any.required': 'password is required' }),
   });
 
-  let { created_by, first_name, last_name, email, password } = inputObject;
-  //*************** validate user id stored in created_by
+  let { created_by, first_name, last_name, email } = inputObject;
+  // *************** validate user id stored in created_by
   ValidateId(created_by);
 
-  //*************** check if first_name, last_name and email are provided
+  // *************** check if first_name, last_name and email are provided
   if (!email) throw new ApolloError('email is required');
-  if (!password) throw new ApolloError('password is required');
   if (!first_name) throw new ApolloError('first name is required');
   if (!last_name) throw new ApolloError('last name is required');
 
-  //*************** validate input using joi schema
-  const { error } = createUserSchema.validate({ first_name, last_name, email, password }, { abortEarly: true });
+  // *************** validate input using joi schema
+  const { error } = createUserSchema.validate({ first_name, last_name, email }, { abortEarly: true });
 
-  //*************** throw error if joi validation fails
+  // *************** throw error if joi validation fails
   if (error) {
     throw new ApolloError(error.message);
   }
@@ -72,7 +80,7 @@ function ValidateUserCreateInput(inputObject) {
  * @throws {Error} - If validation fails.
  */
 function ValidateUserUpdateInput(inputObject) {
-  //*************** joi schema for update user
+  // *************** joi schema for update user
   const updateUserSchema = Joi.object({
     first_name: Joi.string()
       .optional()
@@ -85,22 +93,17 @@ function ValidateUserUpdateInput(inputObject) {
       .pattern(userNameRegexPattern)
       .messages({ 'string.pattern.base': 'last name contains invalid characters' }),
     email: Joi.string().optional().trim().lowercase().email().messages({ 'string.email': 'email format is invalid' }),
-    password: Joi.string()
-      .optional()
-      .trim()
-      .pattern(passwordRegexPattern)
-      .messages({ 'string.min': 'password must be at least 8 characters' }),
   });
 
-  let { _id, first_name, last_name, email, password } = inputObject;
+  let { _id, first_name, last_name, email } = inputObject;
 
-  //*************** _id input check
+  // *************** _id input check
   ValidateId(_id);
 
-  //*************** validate input using joi schema
-  const { error } = updateUserSchema.validate({ first_name, last_name, email, password }, { abortEarly: true });
+  // *************** validate input using joi schema
+  const { error } = updateUserSchema.validate({ first_name, last_name, email }, { abortEarly: true });
 
-  //*************** throw error if joi validation fails
+  // *************** throw error if joi validation fails
   if (error) {
     throw new ApolloError(error.message);
   }
@@ -113,14 +116,13 @@ function ValidateUserUpdateInput(inputObject) {
  */
 function ValidateEditRoleInput(inputObject) {
   let { _id, updater_id, role } = inputObject;
-  //*************** _id input check
+  // *************** validate ids
   ValidateId(_id);
   ValidateId(updater_id);
-  if (!role) {
-    throw new ApolloError('Role is required');
-  }
-  RoleIsValid(role);
+
+  // *************** validate role
+  ValidateRole(role);
 }
 
-//*************** EXPORT MODULES ***************
-module.exports = { ValidateUserCreateInput, ValidateUserUpdateInput, ValidateEditRoleInput };
+// *************** EXPORT MODULES ***************
+module.exports = { ValidateUserCreateInput, ValidateUserUpdateInput, ValidateEditRoleInput, ValidateRole };
