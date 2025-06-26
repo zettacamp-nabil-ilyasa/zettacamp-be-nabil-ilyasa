@@ -19,7 +19,7 @@ const student = new mongoose.Schema(
     school_id: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'school' },
 
     //Student status
-    status: { type: String, enum: ['active', 'deleted', 'suspended'], default: 'active' },
+    status: { type: String, enum: ['active', 'deleted'], default: 'active' },
 
     //Soft-delete timestamp
     deleted_at: { type: Date },

@@ -19,7 +19,7 @@ const user = new mongoose.Schema(
     roles: { type: [String], enum: ['admin', 'user'], default: ['user'], required: true },
 
     //Account status
-    status: { type: String, enum: ['active', 'deleted', 'suspended'], default: 'active' },
+    status: { type: String, enum: ['active', 'deleted'], default: 'active' },
 
     //Reference to user who created this user
     created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },

@@ -16,7 +16,6 @@ const baseTypeDefs = gql`
   enum Status {
     active
     deleted
-    suspended
   }
 
   enum Role {
