@@ -157,7 +157,7 @@ async function UpdateUser(_, { input }) {
     }
 
     //**************** update user with composed object
-    const updatedUser = await UserModel.findOneAndUpdate({ _id: editedUser._id }, { $set: editedUser }, { new: true });
+    const updatedUser = await UserModel.findOneAndUpdate({ _id: editedUser._id }, { $set: editedUser }, { new: true }).lean();
     return updatedUser;
   } catch (error) {
     await ErrorLogModel.create({
@@ -216,7 +216,7 @@ async function AddRole(_, { input }) {
       { _id: addedRoleForUser._id },
       { $addToSet: { roles: addedRoleForUser.role } },
       { new: true }
-    );
+    ).lean();
     return updatedUser;
   } catch (error) {
     await ErrorLogModel.create({

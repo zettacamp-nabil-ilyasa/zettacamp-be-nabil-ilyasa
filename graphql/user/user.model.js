@@ -10,7 +10,7 @@ const user = new mongoose.Schema(
     last_name: { type: String, required: true, trim: true },
 
     //Email
-    email: { type: String, required: true, lowercase: true, trim: true },
+    email: { type: String, required: true, lowercase: true, trim: true, unique: true },
 
     //Password
     password_hash: { type: String, required: true },
