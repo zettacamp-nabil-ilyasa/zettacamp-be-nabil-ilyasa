@@ -29,7 +29,7 @@ async function BatchUsers(userIds) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'BatchUsers',
-      path: '/graphql/user/user.loader.js',
+      path: '/modules/user/user.loader.js',
       parameter_input: JSON.stringify({ userIds }),
     });
     throw new ApolloError(error.message);

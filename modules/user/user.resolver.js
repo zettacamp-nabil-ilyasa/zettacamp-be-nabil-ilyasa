@@ -6,8 +6,8 @@ const UserModel = require('./user.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT UTILS ***************
-const { UserIsAdmin } = require('../../utils/common.js');
-const { ValidateId } = require('../../utils/common-validator.js');
+const { UserIsAdmin } = require('../../shared/utils/user.js');
+const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
 
 // *************** IMPORT VALIDATORS ***************
 const { ValidateUserCreateInput, ValidateUserUpdateInput, ValidateEditRoleInput } = require('./user.validators.js');
@@ -31,7 +31,7 @@ async function GetAllUsers() {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'GetAllUsers',
-      path: '/graphql/user/user.resolver.js',
+      path: '/modules/user/user.resolver.js',
       parameter_input: JSON.stringify({}),
     });
     throw new ApolloError(error.message);
@@ -57,7 +57,7 @@ async function GetOneUser(parent, { _id }) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'GetOneUser',
-      path: '/graphql/user/user.resolver.js',
+      path: '/modules/user/user.resolver.js',
       parameter_input: JSON.stringify({ _id }),
     });
     throw new ApolloError(error.message);
@@ -110,7 +110,7 @@ async function CreateUser(parent, { input }) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'CreateUser',
-      path: '/graphql/user/user.resolver.js',
+      path: '/modules/user/user.resolver.js',
       parameter_input: JSON.stringify({ input }),
     });
     throw new ApolloError(error.message);
@@ -163,7 +163,7 @@ async function UpdateUser(parent, { input }) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'UpdateUser',
-      path: '/graphql/user/user.resolver.js',
+      path: '/modules/user/user.resolver.js',
       parameter_input: JSON.stringify({ input }),
     });
     throw new ApolloError(error.message);
@@ -222,7 +222,7 @@ async function AddRole(parent, { input }) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'AddRole',
-      path: '/graphql/user/user.resolver.js',
+      path: '/modules/user/user.resolver.js',
       parameter_input: JSON.stringify({ input }),
     });
     throw new ApolloError(error.message);
@@ -287,7 +287,7 @@ async function DeleteRole(parent, { input }) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'DeleteRole',
-      path: '/graphql/user/user.resolver.js',
+      path: '/modules/user/user.resolver.js',
       parameter_input: JSON.stringify({ input }),
     });
     throw new ApolloError(error.message);
@@ -334,7 +334,7 @@ async function DeleteUser(parent, { _id, deleted_by }) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'DeleteUser',
-      path: '/graphql/user/user.resolver.js',
+      path: '/modules/user/user.resolver.js',
       parameter_input: JSON.stringify({ _id, deleted_by }),
     });
     throw new ApolloError(error.message);
@@ -365,7 +365,7 @@ async function created_by(parent, args, context) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'created_by',
-      path: '/graphql/user/user.resolver.js',
+      path: '/modules/user/user.resolver.js',
       parameter_input: JSON.stringify({}),
     });
     throw new ApolloError(error.message);

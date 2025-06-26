@@ -3,7 +3,7 @@ const { ApolloError } = require('apollo-server-express');
 const Joi = require('joi');
 
 // *************** IMPORT UTIL ***************
-const { ValidateId } = require('../../utils/common-validator');
+const { ValidateId } = require('../../utilities/common-validator/mongo-validator');
 
 // *************** regex pattern to ensure first and last name contains only letters
 const userNameRegexPattern = /^[\p{L}\s'-]+$/u;

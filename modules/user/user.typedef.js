@@ -3,6 +3,11 @@ const { gql } = require('apollo-server-express');
 
 // ***************
 const userTypeDefs = gql`
+  enum Role {
+    admin
+    user
+  }
+
   type User {
     _id: ID!
     first_name: String!

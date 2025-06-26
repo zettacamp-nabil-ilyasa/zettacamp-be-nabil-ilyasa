@@ -6,7 +6,7 @@ const UserModel = require('./user.model');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT UTILS ***************
-const { ValidateId } = require('../../utils/common-validator.js');
+const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
 
 // *************** IMPORT VALIDATORS ***************
 const { ValidateRole } = require('./user.validators.js');
@@ -36,7 +36,7 @@ async function UserIsExist(userId) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'UserIsExist',
-      path: '/graphql/user/user.helpers.js',
+      path: '/modules/user/user.helpers.js',
       parameter_input: JSON.stringify({ userId }),
     });
     throw new ApolloError(error.message);
@@ -76,7 +76,7 @@ async function UserEmailIsExist({ userEmail, userId }) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'UserEmailIsExist',
-      path: '/graphql/user/user.helpers.js',
+      path: '/modules/user/user.helpers.js',
       parameter_input: JSON.stringify({ userEmail, userId }),
     });
     throw new ApolloError(error.message);
@@ -125,7 +125,7 @@ async function UserHasRole({ userId, role }) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'UserHasRole',
-      path: '/graphql/user/user.helpers.js',
+      path: '/modules/user/user.helpers.js',
       parameter_input: JSON.stringify({ userId, role }),
     });
     throw new ApolloError(error.message);
