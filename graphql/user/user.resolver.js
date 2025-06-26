@@ -41,13 +41,13 @@ async function GetAllUsers() {
 /**
  * Get one active user by ID.
  * @async
- * @param {object} _ - Unused resolver argument.
+ * @param {object} parent - Not
  * @param {object} args - Resolver arguments.
  * @param {string} args._id - ID of the user to retrieve.
  * @returns {Promise<Object|null>} - The user document or null if not found.
  * @throws {ApolloError} - Throws error if validation fails or query error occurs.
  */
-async function GetOneUser(_, { _id }) {
+async function GetOneUser(parent, { _id }) {
   try {
     //**************** validate id
     ValidateId(_id);
@@ -68,7 +68,7 @@ async function GetOneUser(_, { _id }) {
 /**
  * Create a new user after validating input and checking constraints.
  * @async
- * @param {object} _ - Unused resolver argument.
+ * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {object} args - Resolver arguments.
  * @param {object} args.input - User input fields.
  * @param {string} args.input.email - Email address of the new user.
@@ -120,7 +120,7 @@ async function CreateUser(_, { input }) {
 /**
  * Update a user document after validating input and checking user existence.
  * @async
- * @param {object} _ - Unused resolver argument.
+ * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {object} args - Resolver arguments.
  * @param {object} args.input - Fields to update in the user document.
  * @param {string} args.input._id - ID of the user to update.
@@ -130,7 +130,7 @@ async function CreateUser(_, { input }) {
  * @returns {Promise<Object>} - Updated user document.
  * @throws {ApolloError} - Throws error if validation fails, user not found, or email already exists.
  */
-async function UpdateUser(_, { input }) {
+async function UpdateUser(parent, { input }) {
   try {
     //**************** compose new object from input
     let editedUser = {
@@ -173,7 +173,7 @@ async function UpdateUser(_, { input }) {
 /**
  * Add a new role to a user.
  * @async
- * @param {object} _ - Unused resolver argument.
+ * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {object} args - Resolver arguments.
  * @param {object} args.input - Fields to modify user roles.
  * @param {string} args.input._id - ID of the user to assign the role to.
@@ -182,7 +182,7 @@ async function UpdateUser(_, { input }) {
  * @returns {Promise<Object>} - Updated user document.
  * @throws {ApolloError} - Throws error if validation fails, unauthorized, or user already has the role.
  */
-async function AddRole(_, { input }) {
+async function AddRole(parent, { input }) {
   try {
     //**************** validate input
     const addedRoleForUser = {
@@ -232,7 +232,7 @@ async function AddRole(_, { input }) {
 /**
  * Remove a role from a user.
  * @async
- * @param {object} _ - Unused resolver argument.
+ * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {object} args - Resolver arguments.
  * @param {object} args.input - Fields to modify user roles.
  * @param {string} args.input._id - ID of the user to remove the role from.
@@ -297,14 +297,14 @@ async function DeleteRole(_, { input }) {
 /**
  * Soft delete a user by updating their status to 'deleted'.
  * @async
- * @param {object} _ - Unused resolver argument.
+ * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {object} args - Resolver arguments.
  * @param {string} args._id - ID of the user to delete.
  * @param {string} args.deleted_by - ID of the admin performing the deletion.
  * @returns {Promise<string>} - Deletion success message.
  * @throws {ApolloError} - Throws error if unauthorized, user not found, or attempt to self-delete.
  */
-async function DeleteUser(_, { _id, deleted_by }) {
+async function DeleteUser(parent, { _id, deleted_by }) {
   try {
     //**************** valdiate id
     ValidateId(_id);
@@ -346,12 +346,12 @@ async function DeleteUser(_, { _id, deleted_by }) {
  * Resolve the created_by field in a user object using DataLoader to prevent N+1 queries.
  * @async
  * @param {object} parent - Parent user object.
- * @param {object} _ - Unused resolver argument.
+ * @param {object} args - Not used (GraphQL resolver convention).
  * @param {object} context - Resolver context that contains DataLoaders.
  * @returns {Promise<Object|null>} - The user document of the creator, or null if not available.
  * @throws {ApolloError} - Throws error if DataLoader fails.
  */
-async function created_by(parent, _, context) {
+async function created_by(parent, args, context) {
   try {
     // *************** check if user has any created_by
     if (!parent?.created_by) {
