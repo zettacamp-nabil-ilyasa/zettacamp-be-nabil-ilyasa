@@ -47,14 +47,14 @@ async function GetAllStudents() {
 /**
  * Get one active student by ID.
  * @async
- * @param {object} _ - Unused resolver argument.
+ * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {object} args - Resolver arguments.
  * @param {string} args._id - ID of the student to retrieve.
  * @returns {Promise<Object|null>} - The student document or null if not found.
  * @throws {ApolloError} - Throws error if validation fails or student not found.
  */
 
-async function GetOneStudent(_, { _id }) {
+async function GetOneStudent(parent, { _id }) {
   try {
     //**************** validate _id
     ValidateId(_id);
@@ -77,7 +77,7 @@ async function GetOneStudent(_, { _id }) {
 /**
  * Create a new student after validating input and checking constraints.
  * @async
- * @param {object} _ - Unused resolver argument.
+ * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {object} args - Resolver arguments.
  * @param {object} args.input - Input object to create a new student.
  * @param {string} args.input.email - Student's email address.
@@ -89,7 +89,7 @@ async function GetOneStudent(_, { _id }) {
  * @returns {Promise<Object>} - The newly created student document.
  * @throws {ApolloError} - Throws error if validation fails or email/school is invalid.
  */
-async function CreateStudent(_, { input }) {
+async function CreateStudent(parent, { input }) {
   try {
     // *************** compose new object from input
     let newStudent = {
@@ -149,7 +149,7 @@ async function CreateStudent(_, { input }) {
 /**
  * Update a student's information after validating input and checking existence.
  * @async
- * @param {object} _ - Unused resolver argument.
+ * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {object} args - Resolver arguments.
  * @param {object} args.input - Student update fields.
  * @param {string} args.input._id - ID of the student to update.
@@ -161,7 +161,7 @@ async function CreateStudent(_, { input }) {
  * @returns {Promise<Object>} - Updated student document.
  * @throws {ApolloError} - Throws error if student does not exist, email already used, or school not found.
  */
-async function UpdateStudent(_, { input }) {
+async function UpdateStudent(parent, { input }) {
   try {
     //**************** compose new object from input
     let editedStudent = {
@@ -236,14 +236,14 @@ async function UpdateStudent(_, { input }) {
 /**
  * Soft delete a student by marking their status as 'deleted' and removing them from associated school.
  * @async
- * @param {object} _ - Unused resolver argument.
+ * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {object} args - Resolver arguments.
  * @param {string} args._id - ID of the student to delete.
  * @param {string} args.deleted_by - ID of the admin who deletes the student.
  * @returns {Promise<string>} - Success message upon deletion.
  * @throws {ApolloError} - Throws error if unauthorized or student not found.
  */
-async function DeleteStudent(_, { _id, deleted_by }) {
+async function DeleteStudent(parent, { _id, deleted_by }) {
   try {
     //**************** validate id and deleted_by
     ValidateId(_id);
@@ -283,12 +283,12 @@ async function DeleteStudent(_, { _id, deleted_by }) {
  * Resolve the school_id field in a Student by using DataLoader to prevent N+1 queries.
  * @async
  * @param {object} parent - The parent student document.
- * @param {object} _ - Unused resolver argument.
+ * @param {object} args - Not used (GraphQL resolver convention).
  * @param {object} context - GraphQL context containing DataLoaders.
  * @returns {Promise<Object|null>} - The related school document or null if not found.
  * @throws {ApolloError} - Throws error if DataLoader fails.
  */
-async function school_id(parent, _, context) {
+async function school_id(parent, args, context) {
   try {
     // *************** check if student has any school_id
     if (!parent?.school_id) {
@@ -313,12 +313,12 @@ async function school_id(parent, _, context) {
  * Resolve the created_by field in a Student by using DataLoader to prevent N+1 queries.
  * @async
  * @param {object} parent - The parent student document.
- * @param {object} _ - Unused resolver argument.
+ * @param {object} args - Not used (GraphQL resolver convention).
  * @param {object} context - GraphQL context containing DataLoaders.
  * @returns {Promise<Object|null>} - The related user document or null if not found.
  * @throws {ApolloError} - Throws error if DataLoader fails.
  */
-async function created_by(parent, _, context) {
+async function created_by(parent, args, context) {
   try {
     // *************** check if student has any created_by
     if (!parent?.created_by) {
