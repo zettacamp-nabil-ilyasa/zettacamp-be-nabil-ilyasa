@@ -1,16 +1,16 @@
-//*************** IMPORT LIBRARY ***************
+// *************** IMPORT LIBRARY ***************
 const DataLoader = require('dataloader');
 const { ApolloError } = require('apollo-server-express');
 
-//*************** IMPORT MODULES ***************
+// *************** IMPORT MODULES ***************
 const StudentModel = require('./student.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 /**
- * Batch function to load students by array of student IDs
- * @param {Array<string>} studentIds - Array of student IDs
- * @returns {Promise<Array<Object|null>>} - Array of student objects or null if there's no student or student is deleted
- * @throws {Error} - Throws error if the database query fails
+ * Batch function to load multiple students by their IDs.
+ * @param {Array<string>} studentIds - Array of student IDs to fetch.
+ * @returns {Promise<Array<Object>>} - Array of student objects aligned with input IDs.
+ * @throws {ApolloError} - If database query fails.
  */
 async function BatchStudents(studentIds) {
   try {
@@ -24,7 +24,7 @@ async function BatchStudents(studentIds) {
     });
 
     //**************** return array of student objects with order of studentIds
-    return studentIds.map((studentId) => dataMap.get(studentId.toString()) || null);
+    return studentIds.map((studentId) => dataMap.get(studentId.toString()));
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
@@ -37,14 +37,14 @@ async function BatchStudents(studentIds) {
 }
 
 /**
- * create a new DataLoader instance for batching students by student IDs
- * @returns {DataLoader<string, Object|null>} A DataLoader instance that loads students by student ID
+ * create a new DataLoader instance for batching students by student IDs.
+ * @returns {DataLoader<string, Object} A DataLoader instance that loads students by student ID.
  */
 function StudentLoader() {
   return new DataLoader(BatchStudents);
 }
 
-//*************** EXPORT MODULE ***************
+// *************** EXPORT MODULE ***************
 module.exports = {
   StudentLoader,
 };

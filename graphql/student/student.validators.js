@@ -1,14 +1,14 @@
-//*************** IMPORT LIBRARY ***************
+// *************** IMPORT LIBRARY ***************
 const { ApolloError } = require('apollo-server-express');
 const Joi = require('joi');
 
-//*************** IMPORT UTILS ***************
+// *************** IMPORT UTILS ***************
 const { ValidateId } = require('../../utils/common-validator');
 
-//*************** regex pattern to ensure first and last name contains only letters
+// *************** regex pattern to ensure first and last name contains only letters
 const studentNameRegexPattern = /^[\p{L}\s'-]+$/u;
 
-//*************** regex pattern to ensure date is in DD-MM-YYYY format
+// *************** regex pattern to ensure date is in DD-MM-YYYY format
 const dateRegexPattern = /^\d{2}-\d{2}-\d{4}$/;
 
 /**
@@ -18,7 +18,7 @@ const dateRegexPattern = /^\d{2}-\d{2}-\d{4}$/;
  * @throws {Error} - If validation fails.
  */
 function ValidateStudentCreateInput(inputObject) {
-  //*************** joi schema for student create
+  // *************** joi schema for student create
   const createStudentSchema = Joi.object({
     first_name: Joi.string()
       .required()
@@ -46,19 +46,19 @@ function ValidateStudentCreateInput(inputObject) {
 
   let { created_by, first_name, last_name, email, date_of_birth, school_id } = inputObject;
 
-  //*************** validate id
+  // *************** validate id
   ValidateId(created_by);
   ValidateId(school_id);
 
-  //*************** check if first_name, last_name and email are provided
+  // *************** check if first_name, last_name and email are provided
   if (!first_name) throw new ApolloError('first name is required');
   if (!last_name) throw new ApolloError('last name is required');
   if (!email) throw new ApolloError('email is required');
 
-  //*************** validate input using joi schema
+  // *************** validate input using joi schema
   const { error } = createStudentSchema.validate({ first_name, last_name, email, date_of_birth }, { abortEarly: true });
 
-  //*************** throw error if joi validation fails
+  // *************** throw error if joi validation fails
   if (error) {
     throw new ApolloError(error.message);
   }
@@ -71,7 +71,7 @@ function ValidateStudentCreateInput(inputObject) {
  * @throws {Error} - If validation fails.
  */
 function ValidateStudentUpdateInput(inputObject) {
-  //*************** joi schema for student update
+  // *************** joi schema for student update
   const updateStudentSchema = Joi.object({
     first_name: Joi.string()
       .optional()
@@ -99,20 +99,20 @@ function ValidateStudentUpdateInput(inputObject) {
 
   let { _id, first_name, last_name, email, date_of_birth, school_id } = inputObject;
 
-  //*************** validate _id
+  // *************** validate _id
   ValidateId(_id);
   if (school_id) {
     ValidateId(school_id);
   }
 
-  //*************** validate input using joi schema
+  // *************** validate input using joi schema
   const { error } = updateStudentSchema.validate({ first_name, last_name, email, date_of_birth }, { abortEarly: true });
 
-  //*************** throw error if joi validation fails
+  // *************** throw error if joi validation fails
   if (error) {
     throw new ApolloError(error.message);
   }
 }
 
-//*************** MODULE EXPORTS ***************
+// *************** MODULE EXPORTS ***************
 module.exports = { ValidateStudentCreateInput, ValidateStudentUpdateInput };

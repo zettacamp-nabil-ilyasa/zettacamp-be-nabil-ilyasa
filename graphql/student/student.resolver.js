@@ -7,21 +7,27 @@ const SchoolModel = require('../school/school.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT UTILS ***************
-const { ConvertStringToDate } = require('../../utils/common.js');
-const { ValidateId, SchoolIsExist, UserIsAdmin } = require('../../utils/common-validator.js');
+const { ConvertStringToDate, SchoolIsExist, UserIsAdmin } = require('../../utils/common.js');
+const { ValidateId } = require('../../utils/common-validator.js');
 
 // *************** IMPORT VALIDATORS ***************
 const { ValidateStudentUpdateInput, ValidateStudentCreateInput } = require('./student.validators.js');
 
 // *************** IMPORT HELPERS ***************
-const { StudentIsExist, StudentEmailIsExist, GetStudentCurrentSchoolId } = require('./student.helpers.js');
+const {
+  StudentIsExist,
+  StudentEmailIsExist,
+  GetStudentCurrentSchoolId,
+  GenerateBulkQueryForSchoolIdChange,
+} = require('./student.helpers.js');
 
-//*************** QUERY ***************
+// *************** QUERY ***************
 
 /**
  * Get all active students from the database.
- * @returns {Promise<Array<Object>>} - Array of student documents.
- * @throws {Error} - Throws error if query fails.
+ * @async
+ * @returns {Promise<Array<Object>>} - Array of student documents with status 'active'.
+ * @throws {ApolloError} - Throws error if query fails or database operation encounters issues.
  */
 async function GetAllStudents() {
   try {
@@ -40,11 +46,14 @@ async function GetAllStudents() {
 
 /**
  * Get one active student by ID.
+ * @async
+ * @param {object} _ - Unused resolver argument.
  * @param {object} args - Resolver arguments.
  * @param {string} args._id - ID of the student to retrieve.
- * @returns {Promise<Object|null>} - The student document or null.
- * @throws {Error} - Throws error if validation or db operation fails.
+ * @returns {Promise<Object|null>} - The student document or null if not found.
+ * @throws {ApolloError} - Throws error if validation fails or student not found.
  */
+
 async function GetOneStudent(_, { _id }) {
   try {
     //**************** validate _id
@@ -63,58 +72,66 @@ async function GetOneStudent(_, { _id }) {
   }
 }
 
-//*************** MUTATION ***************
+// *************** MUTATION ***************
 
 /**
- * Create a new student after validating input and checking email.
+ * Create a new student after validating input and checking constraints.
+ * @async
+ * @param {object} _ - Unused resolver argument.
  * @param {object} args - Resolver arguments.
- * @param {object} args.input - Student input fields.
- * @returns {Promise<Object>} - Created student document.
- * @throws {Error} - Throws error if validation or db operation fails.
+ * @param {object} args.input - Input object to create a new student.
+ * @param {string} args.input.email - Student's email address.
+ * @param {string} args.input.first_name - Student's first name.
+ * @param {string} args.input.last_name - Student's last name.
+ * @param {string} args.input.school_id - ID of the school the student belongs to.
+ * @param {string} [args.input.date_of_birth] - Student's date of birth as a string (optional, can be empty string).
+ * @param {string} args.input.created_by - User ID of the admin who creates the student.
+ * @returns {Promise<Object>} - The newly created student document.
+ * @throws {ApolloError} - Throws error if validation fails or email/school is invalid.
  */
 async function CreateStudent(_, { input }) {
   try {
-    //*************** compose new object from input
+    // *************** compose new object from input
     let newStudent = {
       email: input.email,
       first_name: input.first_name,
       last_name: input.last_name,
       school_id: input.school_id,
-      //*************** set date_of_birth to undefined if it's an empty string
+      // *************** set date_of_birth to undefined if it's an empty string
       date_of_birth: typeof input.date_of_birth === 'string' && input.date_of_birth.trim() === '' ? undefined : input.date_of_birth,
       created_by: input.created_by,
     };
 
-    //*************** validation to ensure bad input is handled correctly
+    // *************** validation to ensure bad input is handled correctly
     ValidateStudentCreateInput(newStudent);
 
-    //*************** check if deleter user is exist and has admin role
+    // *************** check if deleter user is exist and has admin role
     const userIsAdmin = await UserIsAdmin(newStudent.created_by);
     if (!userIsAdmin) {
       throw new ApolloError('Unauthorized access');
     }
 
-    //*************** check if email already exists
+    // *************** check if email already exists
     const emailIsExist = await StudentEmailIsExist({ studentEmail: newStudent.email });
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
     }
 
-    //*************** check if school to delete is exist
+    // *************** check if school to delete is exist
     const schoolIsExist = await SchoolIsExist(newStudent.school_id);
     if (!schoolIsExist) {
       throw new ApolloError('School does not exist');
     }
 
-    //*************** convert string value to Date and assign to date_of_birth
+    // *************** convert string value to Date and assign to date_of_birth
     if (newStudent.date_of_birth) {
       newStudent.date_of_birth = ConvertStringToDate(newStudent.date_of_birth);
     }
 
-    //*************** create student with composed object
+    // *************** create student with composed object
     const createdStudent = await StudentModel.create(newStudent);
 
-    //*************** add created student id to student array in school document
+    // *************** add created student id to student array in school document
     await SchoolModel.updateOne({ _id: newStudent.school_id }, { $addToSet: { students: createdStudent._id } });
 
     return createdStudent;
@@ -130,11 +147,19 @@ async function CreateStudent(_, { input }) {
 }
 
 /**
- * Update a student after validating input and checking existence
+ * Update a student's information after validating input and checking existence.
+ * @async
+ * @param {object} _ - Unused resolver argument.
  * @param {object} args - Resolver arguments.
  * @param {object} args.input - Student update fields.
+ * @param {string} args.input._id - ID of the student to update.
+ * @param {string} [args.input.email] - New email address (optional).
+ * @param {string} [args.input.first_name] - Updated first name (optional).
+ * @param {string} [args.input.last_name] - Updated last name (optional).
+ * @param {string} [args.input.date_of_birth] - Updated date of birth in string format (optional).
+ * @param {string} [args.input.school_id] - New school ID (optional).
  * @returns {Promise<Object>} - Updated student document.
- * @throws {Error} - Throws error if validation or db operation fails.
+ * @throws {ApolloError} - Throws error if student does not exist, email already used, or school not found.
  */
 async function UpdateStudent(_, { input }) {
   try {
@@ -177,8 +202,15 @@ async function UpdateStudent(_, { input }) {
       const studentCurrentSchoolId = await GetStudentCurrentSchoolId(editedStudent._id);
       //**************** check if current school id is different from edited school id (changed school id)
       if (String(studentCurrentSchoolId) !== editedStudent.school_id) {
-        await SchoolModel.updateOne({ _id: studentCurrentSchoolId }, { $pull: { students: editedStudent._id } });
-        await SchoolModel.updateOne({ _id: editedStudent.school_id }, { $addToSet: { students: editedStudent._id } });
+        const bulkQuery = GenerateBulkQueryForSchoolIdChange({
+          studentId: editedStudent._id,
+          newSchoolId: editedStudent.school_id,
+          oldSchoolId: studentCurrentSchoolId,
+        });
+        if (!bulkQuery.length) {
+          throw new ApolloError('Failed to generate bulk query');
+        }
+        await SchoolModel.bulkWrite(bulkQuery);
       }
     }
 
@@ -202,12 +234,14 @@ async function UpdateStudent(_, { input }) {
 }
 
 /**
- * Soft delete a student by marking their status as 'deleted'.
+ * Soft delete a student by marking their status as 'deleted' and removing them from associated school.
+ * @async
+ * @param {object} _ - Unused resolver argument.
  * @param {object} args - Resolver arguments.
  * @param {string} args._id - ID of the student to delete.
- * @param {string} args.deleted_by - ID of the admin performing the deletion.
- * @returns {Promise<string>} - Deletion success message.
- * @throws {Error} - Throws error if unauthorized or student not found.
+ * @param {string} args.deleted_by - ID of the admin who deletes the student.
+ * @returns {Promise<string>} - Success message upon deletion.
+ * @throws {ApolloError} - Throws error if unauthorized or student not found.
  */
 async function DeleteStudent(_, { _id, deleted_by }) {
   try {
@@ -245,22 +279,23 @@ async function DeleteStudent(_, { _id, deleted_by }) {
 }
 
 // *************** LOADERS ***************
-
 /**
- * Resolve the school_id field in a Student by using DataLoader.
- * @param {object} parent - Parent, student object.
- * @param {object} context - Resolver context.
- * @returns {Promise<Object|null>} - The school document or null.
- * @throws {Error} - Throws error if loading fails.
+ * Resolve the school_id field in a Student by using DataLoader to prevent N+1 queries.
+ * @async
+ * @param {object} parent - The parent student document.
+ * @param {object} _ - Unused resolver argument.
+ * @param {object} context - GraphQL context containing DataLoaders.
+ * @returns {Promise<Object|null>} - The related school document or null if not found.
+ * @throws {ApolloError} - Throws error if DataLoader fails.
  */
 async function school_id(parent, _, context) {
   try {
-    //*************** check if student has any school_id
+    // *************** check if student has any school_id
     if (!parent?.school_id) {
       return null;
     }
 
-    //*************** load school
+    // *************** load school
     const loadedSchool = await context.loaders.school.load(parent.school_id);
     return loadedSchool;
   } catch (error) {
@@ -275,20 +310,22 @@ async function school_id(parent, _, context) {
 }
 
 /**
- * Resolve the created_by field in a Student by using DataLoader.
- * @param {object} parent  - Parent, student object
- * @param {object} context - Resolver context
- * @returns {Promise<Object|null>} - The user document or null
- * @throws {Error} - Throws error if loading fails
+ * Resolve the created_by field in a Student by using DataLoader to prevent N+1 queries.
+ * @async
+ * @param {object} parent - The parent student document.
+ * @param {object} _ - Unused resolver argument.
+ * @param {object} context - GraphQL context containing DataLoaders.
+ * @returns {Promise<Object|null>} - The related user document or null if not found.
+ * @throws {ApolloError} - Throws error if DataLoader fails.
  */
 async function created_by(parent, _, context) {
   try {
-    //*************** check if student has any created_by
+    // *************** check if student has any created_by
     if (!parent?.created_by) {
       return null;
     }
 
-    //*************** load user
+    // *************** load user
     const loadedUser = await context.loaders.user.load(parent.created_by);
     return loadedUser;
   } catch (error) {
