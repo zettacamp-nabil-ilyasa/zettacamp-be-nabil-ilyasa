@@ -41,7 +41,7 @@ async function GetAllUsers() {
 /**
  * Get one active user by ID.
  * @async
- * @param {object} parent - Not
+ * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {object} args - Resolver arguments.
  * @param {string} args._id - ID of the user to retrieve.
  * @returns {Promise<Object|null>} - The user document or null if not found.
@@ -78,7 +78,7 @@ async function GetOneUser(parent, { _id }) {
  * @returns {Promise<Object>} - Created user document.
  * @throws {ApolloError} - Throws error if validation fails, user unauthorized, or email already exists.
  */
-async function CreateUser(_, { input }) {
+async function CreateUser(parent, { input }) {
   try {
     //**************** compose new object from input
     const newUser = {
@@ -241,7 +241,7 @@ async function AddRole(parent, { input }) {
  * @returns {Promise<Object>} - Updated user document.
  * @throws {ApolloError} - Throws error if validation fails, unauthorized, role not found, or role is not removable.
  */
-async function DeleteRole(_, { input }) {
+async function DeleteRole(parent, { input }) {
   try {
     //**************** compose new object from input
     const deletedRoleFromUser = {
