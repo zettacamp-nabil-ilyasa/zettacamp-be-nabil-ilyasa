@@ -21,10 +21,10 @@ async function BatchSchools(schoolIds) {
     //**************** set schools data to dataMap
     const dataMap = new Map();
     schools.forEach((school) => {
-      dataMap.set(school._id.toString(), school);
+      dataMap.set(String(school._id), school);
     });
     //**************** return array of school objects with order of schoolIds
-    return schoolIds.map((schoolId) => dataMap.get(schoolId.toString()));
+    return schoolIds.map((schoolId) => dataMap.get(String(schoolId)));
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,

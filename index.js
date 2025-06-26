@@ -4,7 +4,7 @@ const { ApolloServer } = require('apollo-server-express');
 
 // *************** IMPORT MODULE ***************
 const ConnectDb = require('./utils/mongoose');
-const { TypeDefs, Resolvers } = require('./graphql/graphqlmerge');
+const { TypeDefs, Resolvers } = require('./graphql/index.js');
 
 // *************** IMPORT DATALOADERS ***************
 const { UserLoader } = require('./graphql/user/user.loader');
