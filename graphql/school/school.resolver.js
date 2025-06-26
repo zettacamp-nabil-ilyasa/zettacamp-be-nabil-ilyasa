@@ -42,7 +42,7 @@ async function GetAllSchools() {
 /**
  * Get one active school by its ID.
  * @async
- * @param {object} _ - Unused resolver argument.
+ * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {object} args - Resolver arguments.
  * @param {string} args._id - ID of the school to retrieve.
  * @returns {Promise<Object|null>} - School document or null if not found.
@@ -70,7 +70,7 @@ async function GetOneSchool(_, { _id }) {
 /**
  * Create a new school after validating input and checking for duplicates.
  * @async
- * @param {object} _ - Unused resolver argument.
+ * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {object} args - Resolver arguments.
  * @param {object} args.input - School input fields.
  * @param {string} args.input.long_name - Official name of the school.
@@ -83,7 +83,7 @@ async function GetOneSchool(_, { _id }) {
  * @returns {Promise<Object>} - Created school document.
  * @throws {ApolloError} - Throws error if validation fails, user unauthorized, or name conflict occurs.
  */
-async function CreateSchool(_, { input }) {
+async function CreateSchool(parent, { input }) {
   try {
     // *************** compose new object from input
     const newSchool = {
@@ -128,7 +128,7 @@ async function CreateSchool(_, { input }) {
 /**
  * Update a school document after validating input and checking constraints.
  * @async
- * @param {object} _ - Unused resolver argument.
+ * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {object} args - Resolver arguments.
  * @param {object} args.input - School input fields.
  * @param {string} args.input._id - ID of the school to update.
@@ -141,7 +141,7 @@ async function CreateSchool(_, { input }) {
  * @returns {Promise<Object>} - Updated school document.
  * @throws {ApolloError} - Throws error if validation fails or name conflict exists.
  */
-async function UpdateSchool(_, { input }) {
+async function UpdateSchool(parent, { input }) {
   try {
     // *************** compose new object from input
     const editedSchool = {
@@ -190,7 +190,7 @@ async function UpdateSchool(_, { input }) {
 /**
  * Soft delete a school by marking its status as 'deleted', prevents deletion if school is referenced by any student.
  * @async
- * @param {object} _ - Unused resolver argument.
+ * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {object} args - Resolver arguments.
  * @param {string} args._id - ID of the school to delete.
  * @param {string} args.deleted_by - ID of the admin who deletes the school.
@@ -241,13 +241,13 @@ async function DeleteSchool(_, { _id, deleted_by }) {
  * Resolve the students field in a School document using DataLoader.
  * @async
  * @param {object} parent - The school object containing student IDs.
- * @param {object} _ - Unused resolver argument.
+ * @param {object} args - Not used (GraphQL resolver convention).
  * @param {object} context - Resolver context containing DataLoaders.
  * @param {object} context.loaders.student - DataLoader instance for students.
  * @returns {Promise<Array<Object>>} - Array of student documents.
  * @throws {ApolloError} - Throws error if loading fails.
  */
-async function students(parent, _, context) {
+async function students(parent, args, context) {
   try {
     // *************** check if school has any student
     if (!parent?.students.length) {
@@ -272,13 +272,13 @@ async function students(parent, _, context) {
  * Resolve the created_by field in a School document using DataLoader.
  * @async
  * @param {object} parent - The school object containing created_by field.
- * @param {object} _ - Unused resolver argument.
+ * @param {object} args - Not used (GraphQL resolver convention).
  * @param {object} context - Resolver context containing DataLoaders.
  * @param {object} context.loaders.user - DataLoader instance for users.
  * @returns {Promise<Object|null>} - The user document or null if not available.
  * @throws {ApolloError} - Throws error if loading fails.
  */
-async function created_by(parent, _, context) {
+async function created_by(parent, args, context) {
   try {
     // *************** check if school has any created_by
     if (!parent?.created_by) {
