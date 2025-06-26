@@ -32,7 +32,7 @@ async function StartServer() {
     });
     // *************** END: Set up Apollo Server ***************
 
-    // *************** start server
+    // *************** apply GraphQL middleware
     await server.start();
     server.applyMiddleware({ app });
 
@@ -41,7 +41,8 @@ async function StartServer() {
       console.log(`Server ready at http://localhost:${Port}${server.graphqlPath}`);
     });
   } catch (error) {
-    throw new Error(error.message);
+    console.error('Error starting server:', error);
+    process.exit(1);
   }
 }
 

@@ -250,7 +250,7 @@ async function DeleteSchool(_, { _id, deleted_by }) {
 async function students(parent, _, context) {
   try {
     // *************** check if school has any student
-    if (!parent?.students) {
+    if (!parent?.students.length) {
       return [];
     }
 

@@ -12,11 +12,10 @@ require('dotenv').config();
 
 async function ConnectDb() {
   try {
-    const mongoUri = process.env.MONGODB_URI;
-    if (!mongoUri) {
+    if (!process.env.MONGODB_URI) {
       throw new Error('MONGODB_URI is not found in .env file');
     }
-    await mongoose.connect(mongoUri);
+    await mongoose.connect(process.env.MONGODB_URI);
   } catch (error) {
     console.error(error);
     process.exit(1);

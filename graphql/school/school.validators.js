@@ -99,7 +99,6 @@ function ValidateSchoolUpdateInput(inputObject) {
       .optional()
       .trim()
       .pattern(schoolNameRegexPattern)
-      .optional()
       .messages({ 'string.pattern.base': 'long name contains invalid characters' }),
     address: Joi.string()
       .optional()
@@ -121,6 +120,7 @@ function ValidateSchoolUpdateInput(inputObject) {
       .messages({ 'string.pattern.base': 'city contains invalid characters' }),
     zipcode: Joi.string()
       .optional()
+      .trim()
       .allow('')
       .pattern(zipcodeRegexPattern)
       .messages({ 'string.pattern.base': 'zipcode contains invalid characters' }),

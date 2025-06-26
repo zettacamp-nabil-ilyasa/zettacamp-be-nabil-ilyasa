@@ -2,7 +2,12 @@
 const { ApolloError } = require('apollo-server-express');
 
 // *************** IMPORT MODULE ***************
+const SchoolModel = require('../graphql/school/school.model.js');
 const ErrorLogModel = require('../graphql/errorLog/error_log.model.js');
+const UserModel = require('../graphql/user/user.model.js');
+
+// *************** IMPORT UTIL ***************
+const { ValidateId } = require('./common-validator.js');
 
 /**
  * Convert a date string in "DD-MM-YYYY" format to a JavaScript Date object.
@@ -76,7 +81,7 @@ async function UserIsAdmin(userId) {
     ValidateId(userId);
 
     // *************** set query for db operation
-    const query = { _id: userId, roles: 'admin' };
+    const query = { _id: userId, roles: 'admin', status: 'active' };
     const isUserAdmin = Boolean(await UserModel.exists(query));
     return isUserAdmin;
   } catch (error) {
