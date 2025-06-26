@@ -48,7 +48,7 @@ async function GetAllSchools() {
  * @returns {Promise<Object|null>} - School document or null if not found.
  * @throws {ApolloError} - Throws error if validation fails or database query fails.
  */
-async function GetOneSchool(_, { _id }) {
+async function GetOneSchool(parent, { _id }) {
   try {
     //**************** validate id
     ValidateId(_id);
@@ -197,7 +197,7 @@ async function UpdateSchool(parent, { input }) {
  * @returns {Promise<string>} - Deletion success message.
  * @throws {ApolloError} - Throws error if unauthorized, school not found, or school is referenced.
  */
-async function DeleteSchool(_, { _id, deleted_by }) {
+async function DeleteSchool(parent, { _id, deleted_by }) {
   try {
     //**************** validate _id and deleted_by
     ValidateId(_id);
