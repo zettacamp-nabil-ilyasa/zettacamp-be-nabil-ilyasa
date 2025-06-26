@@ -77,12 +77,12 @@ function ValidateStudentUpdateInput(inputObject) {
       .optional()
       .trim()
       .pattern(studentNameRegexPattern)
-      .messages({ 'string.pattern.base': 'first name contains invalid characters', 'any.required': 'first name is required' }),
+      .messages({ 'string.pattern.base': 'first name contains invalid characters' }),
     last_name: Joi.string()
       .optional()
       .trim()
       .pattern(studentNameRegexPattern)
-      .messages({ 'string.pattern.base': 'last name contains invalid characters', 'any.required': 'last name is required' }),
+      .messages({ 'string.pattern.base': 'last name contains invalid characters' }),
     email: Joi.string()
       .optional()
       .trim()

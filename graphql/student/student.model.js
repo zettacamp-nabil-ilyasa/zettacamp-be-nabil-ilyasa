@@ -25,7 +25,7 @@ const student = new mongoose.Schema(
     deleted_at: { type: Date },
 
     //reference to user who created this student
-    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
+    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'user', required: true },
 
     //reference to user who deleted this student
     deleted_by: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },

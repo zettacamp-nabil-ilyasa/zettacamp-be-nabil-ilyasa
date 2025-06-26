@@ -98,7 +98,7 @@ async function GetStudentCurrentSchoolId(studentId) {
       error_stack: error.stack,
       function_name: 'GetStudentCurrentSchoolId',
       path: '/graphql/student/student.helpers.js',
-      parameter_input: JSON.stringify(studentId),
+      parameter_input: JSON.stringify({ studentId }),
     });
     throw new ApolloError(error.message);
   }
