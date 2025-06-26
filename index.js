@@ -32,7 +32,7 @@ async function StartServer() {
     });
     // *************** END: Set up Apollo Server ***************
 
-    //*************** start server
+    // *************** start server
     await server.start();
     server.applyMiddleware({ app });
 
@@ -45,12 +45,12 @@ async function StartServer() {
   }
 }
 
-//*************** connect to mongodb and start server
+// *************** connect to mongodb and start server
 ConnectDb()
   .then(() => {
     console.log('Mongodb connected succesfully!');
 
-    //*************** start server
+    // *************** start server
     StartServer();
   })
   .catch((err) => console.error('Error connecting to mongodb', err));

@@ -3,10 +3,13 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 
 /**
- * Connects to MongoDB using the MONGODB_URI defined in the environment variables.
- * @returns {Promise<void>}
- * @throws {Error} Throws an error if MONGODB_URI is missing or if connection fails
+ * Connects to MongoDB using the URI specified in the `.env` file under `MONGODB_URI`.
+ * @async
+ * @function ConnectDb
+ * @returns {Promise<void>} - Resolves when connection is successful.
+ * @throws {Error} - Throws error if the environment variable is missing or connection fails.
  */
+
 async function ConnectDb() {
   try {
     const mongoUri = process.env.MONGODB_URI;

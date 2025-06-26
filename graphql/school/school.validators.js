@@ -1,23 +1,23 @@
-//*************** IMPORT LIBRARY ***************
+// *************** IMPORT LIBRARY ***************
 const { ApolloError } = require('apollo-server-express');
 const Joi = require('joi');
 
-//*************** IMPORT UTIL ***************
+// *************** IMPORT UTIL ***************
 const { ValidateId } = require('../../utils/common-validator.js');
 
-//*************** regex pattern to ensure school name only contains letters, numbers, spaces, hyphens, and apostrophes
-const schoolRegexPattern = /^[\p{L}\d\s'-]+$/u;
+// *************** regex pattern to ensure school name only contains letters, numbers, spaces, hyphens, and apostrophes
+const schoolNameRegexPattern = /^[\p{L}\d\s'-]{2,50}$/u;
 
-//*************** regex pattern to ensure address is at least 5 characters and at most 50
+// *************** regex pattern to ensure address is at least 5 characters and at most 50
 const addressRegexPattern = /^[\p{L}0-9\s,'./\-#()]{10,50}$/u;
 
-//*************** regex pattern to ensure city name is at least 2 characters and at most 30
+// *************** regex pattern to ensure city name is at least 2 characters and at most 30
 const cityRegexPattern = /^[\p{L}\s\-']{2,30}$/u;
 
-//*************** regex pattern to ensure country name is at least 2 characters and at most 30
+// *************** regex pattern to ensure country name is at least 2 characters and at most 30
 const countryRegexPattern = /^[\p{L}\s\-']{2,30}$/u;
 
-//*************** regex pattern to ensure zip code is at least 4 characters and at most 15
+// *************** regex pattern to ensure zip code is at least 4 characters and at most 15
 const zipcodeRegexPattern = /^[A-Za-z0-9\s\-]{4,15}$/;
 
 /**
@@ -27,17 +27,17 @@ const zipcodeRegexPattern = /^[A-Za-z0-9\s\-]{4,15}$/;
  * @throws {ApolloError} - If validation fails.
  */
 function ValidateSchoolCreateInput(inputObject) {
-  //*************** joi schema for create school
+  // *************** joi schema for create school
   const createSchoolSchema = Joi.object({
     brand_name: Joi.string()
       .required()
       .trim()
-      .pattern(schoolRegexPattern)
+      .pattern(schoolNameRegexPattern)
       .messages({ 'string.pattern.base': 'brand name contains invalid characters', 'any.required': 'brand name is required' }),
     long_name: Joi.string()
       .required()
       .trim()
-      .pattern(schoolRegexPattern)
+      .pattern(schoolNameRegexPattern)
       .messages({ 'string.pattern.base': 'long name contains invalid characters', 'any.required': 'long name is required' }),
     address: Joi.string()
       .optional()
@@ -66,16 +66,16 @@ function ValidateSchoolCreateInput(inputObject) {
 
   let { created_by, brand_name, long_name, address, country, city, zipcode } = inputObject;
 
-  //*************** validate id
+  // *************** validate id
   ValidateId(created_by);
-  //*************** check if brand_name and long_name are provided
+  // *************** check if brand_name and long_name are provided
   if (!brand_name) throw new ApolloError('brand_name is required');
   if (!long_name) throw new ApolloError('long_name is required');
 
-  //*************** validate input using joi schema
+  // *************** validate input using joi schema
   const { error } = createSchoolSchema.validate({ brand_name, long_name, address, country, city, zipcode }, { abortEarly: true });
 
-  //*************** throw error if joi validation fails
+  // *************** throw error if joi validation fails
   if (error) {
     throw new ApolloError(error.message);
   }
@@ -88,17 +88,17 @@ function ValidateSchoolCreateInput(inputObject) {
  * @throws {ApolloError} - If validation fails.
  */
 function ValidateSchoolUpdateInput(inputObject) {
-  //*************** joi schema for update school
+  // *************** joi schema for update school
   const updateSchoolSchema = Joi.object({
     brand_name: Joi.string()
       .optional()
       .trim()
-      .pattern(schoolRegexPattern)
+      .pattern(schoolNameRegexPattern)
       .messages({ 'string.pattern.base': 'brand name contains invalid characters' }),
     long_name: Joi.string()
       .optional()
       .trim()
-      .pattern(schoolRegexPattern)
+      .pattern(schoolNameRegexPattern)
       .optional()
       .messages({ 'string.pattern.base': 'long name contains invalid characters' }),
     address: Joi.string()
@@ -128,17 +128,17 @@ function ValidateSchoolUpdateInput(inputObject) {
 
   let { _id, brand_name, long_name, address, country, city, zipcode } = inputObject;
 
-  //*************** validate id
+  // *************** validate id
   ValidateId(_id);
 
-  //*************** validate input using joi schema
+  // *************** validate input using joi schema
   const { error } = updateSchoolSchema.validate({ brand_name, long_name, address, country, city, zipcode }, { abortEarly: true });
 
-  //*************** throw error if joi validation fails
+  // *************** throw error if joi validation fails
   if (error) {
     throw new ApolloError(error.message);
   }
 }
 
-//*************** EXPORT MODULES ***************
+// *************** EXPORT MODULES ***************
 module.exports = { ValidateSchoolCreateInput, ValidateSchoolUpdateInput };

@@ -1,16 +1,18 @@
-//*************** IMPORT LIBRARY ***************
+// *************** IMPORT LIBRARY ***************
 const DataLoader = require('dataloader');
 const { ApolloError } = require('apollo-server-express');
 
-//*************** IMPORT MODULE ***************
+// *************** IMPORT MODULE ***************
 const SchoolModel = require('./school.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 /**
- * Batch function to load schools by array of school IDs
- * @param {Array<string>} schoolIds - Array of school IDs
- * @returns {Promise<Array<Object|null>>} - Array of school objects or null if there's no school or school is deleted
+ * Batch function to load multiple schools by their IDs.
+ * @param {Array<string>} schoolIds - Array of school IDs to fetch.
+ * @returns {Promise<Array<Object>>} - Array of school objects aligned with input IDs.
+ * @throws {ApolloError} - If database query or processing fails.
  */
+
 async function BatchSchools(schoolIds) {
   try {
     //**************** get all active schools with id within schoolIds and status is not deleted
@@ -36,13 +38,13 @@ async function BatchSchools(schoolIds) {
 
 /**
  * Create a new DataLoader instance for batching schools by school IDs
- * @returns {DataLoader<string, Object|null>} - A DataLoader instance that loads schools by school ID
+ * @returns {DataLoader<string, Object} - A DataLoader instance that loads schools by school ID
  */
 function SchoolLoader() {
   return new DataLoader(BatchSchools);
 }
 
-//*************** EXPORT MODULE ***************
+// *************** EXPORT MODULE ***************
 module.exports = {
   SchoolLoader,
 };
