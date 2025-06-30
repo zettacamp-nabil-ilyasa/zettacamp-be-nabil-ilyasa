@@ -6,7 +6,7 @@ const SchoolModel = require('./school.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATORS ***********************
-const { ValidateSchoolCreateInput, ValidateSchoolUpdateInput } = require('./school.validators.js');
+const { ValidateSchoolInput } = require('./school.validators.js');
 
 // *************** IMPORT UTILS ***************
 const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
@@ -96,12 +96,8 @@ async function CreateSchool(parent, { input }) {
       created_by: '6862150331861f37e4e3d209',
     };
 
-    // *************** mandatory fields fail-fast
-    if (!newSchool.long_name) throw new ApolloError('long_name is required');
-    if (!newSchool.brand_name) throw new ApolloError('brand_name is required');
-
     // *************** validation to ensure bad input is handled correctly
-    ValidateSchoolCreateInput(newSchool);
+    ValidateSchoolInput(newSchool);
 
     // *************** check if school name already exists
     const isSchoolNameExist = await SchoolNameIsExist({ longName: newSchool.long_name, brandName: newSchool.brand_name });
@@ -117,7 +113,7 @@ async function CreateSchool(parent, { input }) {
       error_stack: error.stack,
       function_name: 'CreateSchool',
       path: '/modules/school/school.resolver.js',
-      parameter_input: JSON.stringify(input),
+      parameter_input: JSON.stringify({ input }),
     });
     throw new ApolloError(error.message);
   }
@@ -139,11 +135,11 @@ async function CreateSchool(parent, { input }) {
  * @returns {Promise<Object>} - Updated school document.
  * @throws {ApolloError} - Throws error if validation fails or name conflict exists.
  */
-async function UpdateSchool(parent, { input }) {
+async function UpdateSchool(parent, { _id, input }) {
   try {
     // *************** compose new object from input
     const editedSchool = {
-      _id: input._id,
+      _id,
       long_name: input.long_name,
       brand_name: input.brand_name,
       address: input.address,
@@ -152,11 +148,11 @@ async function UpdateSchool(parent, { input }) {
       zipcode: input.zipcode,
     };
 
-    // *************** mandatory fields fail-fast
+    // *************** validate id
     ValidateId(editedSchool._id);
 
-    // *************** validation to ensure bad input is handled correctly
-    ValidateSchoolUpdateInput(editedSchool);
+    // *************** validation to ensure fail-fast and bad input is handled correctly
+    ValidateSchoolInput(editedSchool);
 
     // *************** check if school exists
     const schoolIsExist = await SchoolIsExist(editedSchool._id);
@@ -182,7 +178,7 @@ async function UpdateSchool(parent, { input }) {
       error_stack: error.stack,
       function_name: 'UpdateSchool',
       path: '/modules/school/school.resolver.js',
-      parameter_input: JSON.stringify(input),
+      parameter_input: JSON.stringify({ _id, input }),
     });
     throw new ApolloError(error.message);
   }
