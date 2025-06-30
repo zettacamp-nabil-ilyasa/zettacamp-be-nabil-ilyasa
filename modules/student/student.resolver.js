@@ -11,7 +11,7 @@ const { SchoolIsExist } = require('../../shared/utils/school.js');
 const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
 
 // *************** IMPORT VALIDATORS ***************
-const { ValidateStudentUpdateInput, ValidateStudentCreateInput } = require('./student.validators.js');
+const { ValidateStudentInput } = require('./student.validators.js');
 
 // *************** IMPORT HELPERS ***************
 const {
@@ -103,14 +103,11 @@ async function CreateStudent(parent, { input }) {
       created_by: '6862150331861f37e4e3d209',
     };
 
-    // **************** mandatory fields fail-fast
-    if (!newStudent.email) throw new ApolloError('email is required');
-    if (!newStudent.first_name) throw new ApolloError('first_name is required');
-    if (!newStudent.last_name) throw new ApolloError('last_name is required');
+    // **************** validate school_id
     ValidateId(newStudent.school_id);
 
-    // *************** validation to ensure bad input is handled correctly
-    ValidateStudentCreateInput(newStudent);
+    // *************** validation to ensure fail-fast and bad input is handled correctly
+    ValidateStudentInput(newStudent);
 
     // *************** check if email already exists
     const emailIsExist = await StudentEmailIsExist({ studentEmail: newStudent.email });
@@ -162,11 +159,11 @@ async function CreateStudent(parent, { input }) {
  * @returns {Promise<Object>} - Updated student document.
  * @throws {ApolloError} - Throws error if student does not exist, email already used, or school not found.
  */
-async function UpdateStudent(parent, { input }) {
+async function UpdateStudent(parent, { _id, input }) {
   try {
     // **************** compose new object from input
     let editedStudent = {
-      _id: input._id,
+      _id,
       email: input.email,
       first_name: input.first_name,
       last_name: input.last_name,
@@ -175,14 +172,12 @@ async function UpdateStudent(parent, { input }) {
       school_id: input.school_id,
     };
 
-    // **************** mandatory fields fail-fast
+    // **************** validate ids
     ValidateId(editedStudent._id);
-    if (editedStudent.school_id) {
-      ValidateId(editedStudent.school_id);
-    }
+    ValidateId(editedStudent.school_id);
 
     // **************** validation to ensure bad input is handled correctly
-    ValidateStudentUpdateInput(editedStudent);
+    ValidateStudentInput(editedStudent);
 
     // **************** check if student is exist
     const studentIsExist = await StudentIsExist(editedStudent._id);
@@ -198,27 +193,21 @@ async function UpdateStudent(parent, { input }) {
       }
     }
 
-    // **************** check if schoolId is provided and is exist
-    if (editedStudent.school_id) {
-      // **************** check if school is exist
-      const schoolIsExist = await SchoolIsExist(editedStudent.school_id);
-      if (!schoolIsExist) {
-        throw new ApolloError('School does not exist');
-      }
+    // **************** check if school is exist
+    const schoolIsExist = await SchoolIsExist(editedStudent.school_id);
+    if (!schoolIsExist) {
+      throw new ApolloError('School does not exist');
+    }
 
-      const studentCurrentSchoolId = await GetStudentCurrentSchoolId(editedStudent._id);
-      // **************** check if current school id is different from edited school id (changed school id)
-      if (String(studentCurrentSchoolId) !== editedStudent.school_id) {
-        const bulkQuery = GenerateBulkQueryForSchoolIdChange({
-          studentId: editedStudent._id,
-          newSchoolId: editedStudent.school_id,
-          oldSchoolId: studentCurrentSchoolId,
-        });
-        if (!bulkQuery.length) {
-          throw new ApolloError('Failed to generate bulk query');
-        }
-        await SchoolModel.bulkWrite(bulkQuery);
-      }
+    const studentCurrentSchoolId = await GetStudentCurrentSchoolId(editedStudent._id);
+    // **************** check if current school id is different from edited school id (changed school id)
+    if (String(studentCurrentSchoolId) !== editedStudent.school_id) {
+      const bulkQuery = GenerateBulkQueryForSchoolIdChange({
+        studentId: editedStudent._id,
+        newSchoolId: editedStudent.school_id,
+        oldSchoolId: studentCurrentSchoolId,
+      });
+      await SchoolModel.bulkWrite(bulkQuery);
     }
 
     // **************** check if date_of_birth is provided and convert validated string value to date
@@ -234,7 +223,7 @@ async function UpdateStudent(parent, { input }) {
       error_stack: error.stack,
       function_name: 'UpdateStudent',
       path: '/modules/student/student.resolver.js',
-      parameter_input: JSON.stringify({ input }),
+      parameter_input: JSON.stringify({ _id, input }),
     });
     throw new ApolloError(error.message);
   }

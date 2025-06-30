@@ -14,9 +14,9 @@ const dateRegexPattern = /^\d{2}-\d{2}-\d{4}$/;
  * @returns {object} - The validated and formatted input.
  * @throws {Error} - If validation fails.
  */
-function ValidateStudentCreateInput(inputObject) {
+function ValidateStudentInput(inputObject) {
   // *************** joi schema for student create
-  const createStudentSchema = Joi.object({
+  const studentSchema = Joi.object({
     first_name: Joi.string()
       .required()
       .trim()
@@ -44,8 +44,13 @@ function ValidateStudentCreateInput(inputObject) {
   // *************** destructured input object
   let { first_name, last_name, email, date_of_birth } = inputObject;
 
+  // *************** mandatory fields fail-fast
+  if (!email) throw new ApolloError('email is required');
+  if (!first_name) throw new ApolloError('first_name is required');
+  if (!last_name) throw new ApolloError('last_name is required');
+
   // *************** validate input using joi schema
-  const { error } = createStudentSchema.validate({ first_name, last_name, email, date_of_birth }, { abortEarly: true });
+  const { error } = studentSchema.validate({ first_name, last_name, email, date_of_birth }, { abortEarly: true });
 
   // *************** throw error if joi validation fails
   if (error) {
@@ -99,4 +104,4 @@ function ValidateStudentUpdateInput(inputObject) {
 }
 
 // *************** MODULE EXPORTS ***************
-module.exports = { ValidateStudentCreateInput, ValidateStudentUpdateInput };
+module.exports = { ValidateStudentInput };

@@ -31,7 +31,7 @@ const studentTypeDefs = gql`
 
   extend type Mutation {
     CreateStudent(input: StudentInput): Student
-    UpdateStudent(input: _id: ID!, StudentInput): Student
+    UpdateStudent(_id: ID!, input: StudentInput): Student
     DeleteStudent(_id: ID!): String
   }
 `;
