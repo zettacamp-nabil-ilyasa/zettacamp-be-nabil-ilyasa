@@ -9,7 +9,7 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
 
 // *************** IMPORT VALIDATORS ***************
-const { ValidateUserCreateInput, ValidateUserUpdateInput, ValidateEditRoleInput } = require('./user.validators.js');
+const { ValidateUserCreateInput, ValidateUserUpdateInput, ValidateRole } = require('./user.validators.js');
 
 // *************** IMPORT HELPERS ***************
 const { UserIsExist, UserEmailIsExist, UserHasRole, IsRemovableRole } = require('./user.helpers.js');
@@ -48,7 +48,7 @@ async function GetAllUsers() {
  */
 async function GetOneUser(parent, { _id }) {
   try {
-    //**************** validate id
+    // **************** validate id
     ValidateId(_id);
     const user = await UserModel.findOne({ _id: _id, status: 'active' }).lean();
     return user;
@@ -79,7 +79,7 @@ async function GetOneUser(parent, { _id }) {
  */
 async function CreateUser(parent, { input }) {
   try {
-    //**************** compose new object from input, sets static created_by
+    // **************** compose new object from input, sets static created_by
     const newUser = {
       email: input.email,
       first_name: input.first_name,
@@ -87,16 +87,21 @@ async function CreateUser(parent, { input }) {
       created_by: '6862150331861f37e4e3d209',
     };
 
-    //**************** validation to ensure bad input is handled correctly
+    // **************** mandatory fields fail-fast
+    if (!newUser.email) throw new ApolloError('email is required');
+    if (!newUser.first_name) throw new ApolloError('first_name is required');
+    if (!newUser.last_name) throw new ApolloError('last_name is required');
+
+    // **************** validation to ensure bad input is handled correctly
     ValidateUserCreateInput(newUser);
 
-    //**************** check if email already exist
+    // **************** check if email already exist
     const emailIsExist = await UserEmailIsExist({ userEmail: newUser.email });
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
     }
 
-    //**************** create user with composed object
+    // **************** create user with composed object
     const createdUser = await UserModel.create(newUser);
     return createdUser;
   } catch (error) {
@@ -125,7 +130,7 @@ async function CreateUser(parent, { input }) {
  */
 async function UpdateUser(parent, { input }) {
   try {
-    //**************** compose new object from input
+    // **************** compose new object from input
     let editedUser = {
       _id: input._id,
       email: input.email,
@@ -133,15 +138,21 @@ async function UpdateUser(parent, { input }) {
       last_name: input.last_name,
     };
 
-    //**************** validation to ensure bad input is handled correctly
+    // **************** mandatory fields fail-fast
+    if (!editedUser._id) throw new ApolloError('_id is required');
+
+    // **************** validate _id
+    ValidateId(editedUser._id);
+
+    // **************** validation to ensure bad input is handled correctly
     ValidateUserUpdateInput(editedUser);
 
-    //**************** check if user exist
+    // **************** check if user exist
     const userIsExist = await UserIsExist(editedUser._id);
     if (!userIsExist) {
       throw new ApolloError('User does not exist');
     }
-    //**************** check if email already exist
+    // **************** check if email already exist
     if (editedUser.email) {
       const emailIsExist = await UserEmailIsExist({ userEmail: editedUser.email, userId: editedUser._id });
       if (emailIsExist) {
@@ -149,7 +160,7 @@ async function UpdateUser(parent, { input }) {
       }
     }
 
-    //**************** update user with composed object
+    // **************** update user with composed object
     const updatedUser = await UserModel.findOneAndUpdate({ _id: editedUser._id }, { $set: editedUser }, { new: true }).lean();
     return updatedUser;
   } catch (error) {
@@ -177,23 +188,23 @@ async function UpdateUser(parent, { input }) {
  */
 async function AddRole(parent, { input }) {
   try {
-    //**************** validate input
+    // **************** validate input
     const addedRoleForUser = {
       _id: input._id,
-      updater_id: input.updater_id,
       role: typeof input.role === 'string' ? input.role.trim().toLowerCase() : input.role,
     };
 
-    //**************** validation to ensure bad input is handled correctly
-    ValidateEditRoleInput(addedRoleForUser);
+    // **************** mandatory fields fail-fast
+    ValidateId(addedRoleForUser._id);
+    ValidateRole(addedRoleForUser.role);
 
-    //**************** check if user whose role is to be added exist
+    // **************** check if user whose role is to be added exist
     const userIsExist = await UserIsExist(addedRoleForUser._id);
     if (!userIsExist) {
       throw new ApolloError('User does not exist');
     }
 
-    //**************** check if user already has the role
+    // **************** check if user already has the role
     const userHasRole = await UserHasRole({ userId: addedRoleForUser._id, role: addedRoleForUser.role });
     if (userHasRole) {
       throw new ApolloError('User already has the role');
@@ -230,28 +241,29 @@ async function AddRole(parent, { input }) {
  */
 async function DeleteRole(parent, { input }) {
   try {
-    //**************** compose new object from input
+    // **************** compose new object from input
     const deletedRoleFromUser = {
       _id: input._id,
       role: typeof input.role === 'string' ? input.role.trim().toLowerCase() : input.role,
     };
 
-    //**************** validation to ensure bad input is handled correctly
-    ValidateEditRoleInput(deletedRoleFromUser);
+    // **************** mandatory fields fail-fast
+    ValidateId(deletedRoleFromUser._id);
+    ValidateRole(deletedRoleFromUser.role);
 
-    //**************** check if user whose role is to be added exist
+    // **************** check if user whose role is to be added exist
     const userIsExist = await UserIsExist(deletedRoleFromUser._id);
     if (!userIsExist) {
       throw new ApolloError('User does not exist');
     }
 
-    //**************** check if user has the role
+    // **************** check if user has the role
     const userHasRole = await UserHasRole({ userId: deletedRoleFromUser._id, role: deletedRoleFromUser.role });
     if (!userHasRole) {
       throw new ApolloError('User does not have the role');
     }
 
-    //**************** check if role can be removed
+    // **************** check if role can be removed
     const isRemovableRole = IsRemovableRole(deletedRoleFromUser.role);
     if (!isRemovableRole) {
       throw new ApolloError('Role cannot be removed');
@@ -286,24 +298,24 @@ async function DeleteRole(parent, { input }) {
  */
 async function DeleteUser(parent, { _id }) {
   try {
-    //**************** valdiate id
+    // **************** validate id
     ValidateId(_id);
 
-    //**************** sets static deleted_by
+    // **************** sets static deleted_by
     const deletedBy = '6862150331861f37e4e3d209';
 
-    //**************** check if user to be deleted is exist
+    // **************** check if user to be deleted is exist
     const userIsExist = await UserIsExist(_id);
     if (!userIsExist) {
       throw new ApolloError('User does not exist');
     }
 
-    //**************** check if user is trying to delete themselves
+    // **************** check if user is trying to delete themselves
     if (_id === deletedBy) {
       throw new ApolloError('You cannot delete yourself');
     }
 
-    //**************** soft-delete user by updating it's status
+    // **************** soft-delete user by updating it's status
     await UserModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: deletedBy, deleted_at: new Date() } });
     return 'User deleted successfully';
   } catch (error) {
