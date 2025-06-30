@@ -7,20 +7,13 @@ const SchoolModel = require('../school/school.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT UTILS ***************
-const { SchoolIsExist } = require('../../shared/utils/school.js');
 const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
 
 // *************** IMPORT VALIDATORS ***************
 const { ValidateStudentUpdateInput, ValidateStudentCreateInput } = require('./student.validators.js');
 
 // *************** IMPORT HELPERS ***************
-const {
-  StudentIsExist,
-  StudentEmailIsExist,
-  GetStudentCurrentSchoolId,
-  GenerateBulkQueryForSchoolIdChange,
-  ConvertStringToDate,
-} = require('./student.helpers.js');
+const { StudentIsExist, StudentEmailIsExist, ConvertStringToDate } = require('./student.helpers.js');
 
 // *************** QUERY ***************
 
@@ -97,7 +90,6 @@ async function CreateStudent(parent, { input }) {
       email: input.email,
       first_name: input.first_name,
       last_name: input.last_name,
-      school_id: input.school_id,
       // *************** set date_of_birth to undefined if it's an empty string
       date_of_birth: typeof input.date_of_birth === 'string' && input.date_of_birth.trim() === '' ? undefined : input.date_of_birth,
       created_by: '6862150331861f37e4e3d209',
@@ -110,12 +102,6 @@ async function CreateStudent(parent, { input }) {
     const emailIsExist = await StudentEmailIsExist({ studentEmail: newStudent.email });
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
-    }
-
-    // *************** check if school is exist
-    const schoolIsExist = await SchoolIsExist(newStudent.school_id);
-    if (!schoolIsExist) {
-      throw new ApolloError('School does not exist');
     }
 
     // *************** convert string value to Date and assign to date_of_birth
@@ -166,7 +152,6 @@ async function UpdateStudent(parent, { input }) {
       last_name: input.last_name,
       //**************** set date_of_birth to undefined if it's an empty string
       date_of_birth: typeof input.date_of_birth === 'string' && input.date_of_birth.trim() === '' ? undefined : input.date_of_birth,
-      school_id: input.school_id,
     };
 
     //**************** validation to ensure bad input is handled correctly
@@ -183,29 +168,6 @@ async function UpdateStudent(parent, { input }) {
       const emailIsExist = await StudentEmailIsExist({ studentEmail: editedStudent.email, studentId: editedStudent._id });
       if (emailIsExist) {
         throw new ApolloError('Email already exist');
-      }
-    }
-
-    //**************** check if schoolId is provided and is exist
-    if (editedStudent.school_id) {
-      //**************** check if school is exist
-      const schoolIsExist = await SchoolIsExist(editedStudent.school_id);
-      if (!schoolIsExist) {
-        throw new ApolloError('School does not exist');
-      }
-
-      const studentCurrentSchoolId = await GetStudentCurrentSchoolId(editedStudent._id);
-      //**************** check if current school id is different from edited school id (changed school id)
-      if (String(studentCurrentSchoolId) !== editedStudent.school_id) {
-        const bulkQuery = GenerateBulkQueryForSchoolIdChange({
-          studentId: editedStudent._id,
-          newSchoolId: editedStudent.school_id,
-          oldSchoolId: studentCurrentSchoolId,
-        });
-        if (!bulkQuery.length) {
-          throw new ApolloError('Failed to generate bulk query');
-        }
-        await SchoolModel.bulkWrite(bulkQuery);
       }
     }
 
@@ -242,6 +204,7 @@ async function DeleteStudent(parent, { _id }) {
   try {
     //**************** validate id and deleted_by
     ValidateId(_id);
+
     // **************** sets static deleted_by
     const deletedBy = '6862150331861f37e4e3d209';
 
@@ -250,9 +213,6 @@ async function DeleteStudent(parent, { _id }) {
     if (!studentIsExist) {
       throw new ApolloError('Student does not exist');
     }
-
-    //**************** remove student_id from student array in school document
-    await SchoolModel.updateOne({ students: _id }, { $pull: { students: _id } });
 
     //**************** soft delete student by updating it with composed object
     await StudentModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: deletedBy, deleted_at: new Date() } });

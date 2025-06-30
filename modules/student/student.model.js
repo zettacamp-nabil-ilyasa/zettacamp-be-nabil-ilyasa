@@ -16,7 +16,7 @@ const student = new mongoose.Schema(
     date_of_birth: { type: Date },
 
     //reference to school
-    school_id: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'school' },
+    school_id: { type: mongoose.Schema.Types.ObjectId, ref: 'school' },
 
     //Student status
     status: { type: String, enum: ['active', 'deleted'], default: 'active' },
