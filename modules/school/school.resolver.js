@@ -256,11 +256,43 @@ async function students(parent, args, context) {
   }
 }
 
+/**
+ * Resolve the created_by field in a School document using DataLoader.
+ * @async
+ * @param {object} parent - The school object containing created_by field.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context containing DataLoaders.
+ * @param {object} context.loaders.user - DataLoader instance for users.
+ * @returns {Promise<Object|null>} - The user document or null if not available.
+ * @throws {ApolloError} - Throws error if loading fails.
+ */
+async function created_by(parent, args, context) {
+  try {
+    // *************** check if school has any created_by
+    if (!parent?.created_by) {
+      return null;
+    }
+
+    // *************** load user
+    const loadedUser = await context.loaders.user.load(parent.created_by);
+    return loadedUser;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'created_by',
+      path: '/modules/school/school.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
 // *************** EXPORT MODULES ***************
 module.exports = {
   Query: { GetAllSchools, GetOneSchool },
   Mutation: { CreateSchool, UpdateSchool, DeleteSchool },
   School: {
     students,
+    created_by,
   },
 };
