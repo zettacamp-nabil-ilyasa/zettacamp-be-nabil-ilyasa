@@ -21,14 +21,8 @@ const user = new mongoose.Schema(
     //Account status
     status: { type: String, enum: ['active', 'deleted'], default: 'active' },
 
-    //Reference to user who created this user
-    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
-
     //Soft-delete timestamp
     deleted_at: { type: Date },
-
-    //Reference to user who deleted this user
-    deleted_by: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
   },
   {
     // Timestamp set-up for createdAt and updatedAt

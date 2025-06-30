@@ -16,14 +16,11 @@ const userTypeDefs = gql`
     roles: [Role!]
     status: Status!
     deleted_at: Date
-    deleted_by: ID
     createdAt: Date
-    created_by: User
     updatedAt: Date
   }
 
   input CreateUserInput {
-    created_by: ID!
     first_name: String!
     last_name: String!
     email: String!
@@ -38,7 +35,6 @@ const userTypeDefs = gql`
 
   input EditRoleInput {
     _id: ID!
-    updater_id: ID!
     role: String!
   }
 
@@ -50,7 +46,7 @@ const userTypeDefs = gql`
   extend type Mutation {
     CreateUser(input: CreateUserInput): User
     UpdateUser(input: UpdateUserInput!): User
-    DeleteUser(_id: ID!, deleted_by: ID!): String
+    DeleteUser(_id: ID!): String
     AddRole(input: EditRoleInput): User
     DeleteRole(input: EditRoleInput): User
   }
