@@ -77,6 +77,7 @@ async function GetOneStudent(parent, { _id }) {
  * @param {string} args.input.email - Student's email address.
  * @param {string} args.input.first_name - Student's first name.
  * @param {string} args.input.last_name - Student's last name.
+ * @param {string} args.input.school_id - ID of the school the student belongs to.
  * @param {string} [args.input.date_of_birth] - Student's date of birth as a string (optional, can be empty string).
  * @param {string} args.input.created_by - User ID of the admin who creates the student.
  * @returns {Promise<Object>} - The newly created student document.
@@ -111,6 +112,9 @@ async function CreateStudent(parent, { input }) {
     // *************** create student with composed object
     const createdStudent = await StudentModel.create(newStudent);
 
+    // *************** add created student id to student array in school document
+    await SchoolModel.updateOne({ _id: newStudent.school_id }, { $addToSet: { students: createdStudent._id } });
+
     return createdStudent;
   } catch (error) {
     await ErrorLogModel.create({
@@ -134,6 +138,7 @@ async function CreateStudent(parent, { input }) {
  * @param {string} [args.input.first_name] - Updated first name (optional).
  * @param {string} [args.input.last_name] - Updated last name (optional).
  * @param {string} [args.input.date_of_birth] - Updated date of birth in string format (optional).
+ * @param {string} [args.input.school_id] - New school ID (optional).
  * @returns {Promise<Object>} - Updated student document.
  * @throws {ApolloError} - Throws error if student does not exist, email already used, or school not found.
  */
