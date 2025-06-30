@@ -123,11 +123,11 @@ async function CreateUser(parent, { input }) {
  * @returns {Promise<Object>} - Updated user document.
  * @throws {ApolloError} - Throws error if validation fails, user not found, or email already exists.
  */
-async function UpdateUser(parent, { input }) {
+async function UpdateUser(parent, { _id, input }) {
   try {
     // **************** compose new object from input
     let editedUser = {
-      _id: input._id,
+      _id,
       email: input.email,
       first_name: input.first_name,
       last_name: input.last_name,
@@ -160,7 +160,7 @@ async function UpdateUser(parent, { input }) {
       error_stack: error.stack,
       function_name: 'UpdateUser',
       path: '/modules/user/user.resolver.js',
-      parameter_input: JSON.stringify({ input }),
+      parameter_input: JSON.stringify({ _id, input }),
     });
     throw new ApolloError(error.message);
   }

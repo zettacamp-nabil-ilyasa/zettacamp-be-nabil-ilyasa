@@ -39,8 +39,8 @@ const userTypeDefs = gql`
   }
 
   extend type Mutation {
-    CreateUser(input: eUserInput): User
-    UpdateUser(input: _id: ID!, UserInput!): User
+    CreateUser(input: UserInput): User
+    UpdateUser(_id: ID!, input: UserInput!): User
     DeleteUser(_id: ID!): String
     AddRole(input: EditRoleInput): User
     DeleteRole(input: EditRoleInput): User

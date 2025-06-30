@@ -31,9 +31,9 @@ function ValidateRole(role) {
  * @returns {object} - The validated and formatted input.
  * @throws {Error} - If validation fails.
  */
-function ValidateUserCreateInput(inputObject) {
+function ValidateUserInput(inputObject) {
   // *************** joi schema for create user
-  const createUserSchema = Joi.object({
+  const userSchema = Joi.object({
     first_name: Joi.string()
       .required()
       .trim()
@@ -55,42 +55,13 @@ function ValidateUserCreateInput(inputObject) {
   // *************** destructured input object
   let { first_name, last_name, email } = inputObject;
 
-  // *************** validate input using joi schema
-  const { error } = createUserSchema.validate({ first_name, last_name, email }, { abortEarly: true });
-
-  // *************** throw error if joi validation fails
-  if (error) {
-    throw new ApolloError(error.message);
-  }
-}
-
-/**
- * Validates user update input.
- * @param {object} input - The input object containing updated user data.
- * @returns {object} - The validated and formatted input.
- * @throws {Error} - If validation fails.
- */
-function ValidateUserUpdateInput(inputObject) {
-  // *************** joi schema for update user
-  const updateUserSchema = Joi.object({
-    first_name: Joi.string()
-      .optional()
-      .trim()
-      .pattern(userNameRegexPattern)
-      .messages({ 'string.pattern.base': 'first name contains invalid characters' }),
-    last_name: Joi.string()
-      .optional()
-      .trim()
-      .pattern(userNameRegexPattern)
-      .messages({ 'string.pattern.base': 'last name contains invalid characters' }),
-    email: Joi.string().optional().trim().lowercase().email().messages({ 'string.email': 'email format is invalid' }),
-  });
-
-  // *************** destructured input object
-  let { first_name, last_name, email } = inputObject;
+  // *************** mandatory fields fail-fast
+  if (!email) throw new ApolloError('email is required');
+  if (!first_name) throw new ApolloError('first_name is required');
+  if (!last_name) throw new ApolloError('last_name is required');
 
   // *************** validate input using joi schema
-  const { error } = updateUserSchema.validate({ first_name, last_name, email }, { abortEarly: true });
+  const { error } = userSchema.validate({ first_name, last_name, email }, { abortEarly: true });
 
   // *************** throw error if joi validation fails
   if (error) {
@@ -99,4 +70,4 @@ function ValidateUserUpdateInput(inputObject) {
 }
 
 // *************** EXPORT MODULES ***************
-module.exports = { ValidateUserCreateInput, ValidateUserUpdateInput, ValidateRole };
+module.exports = { ValidateUserInput, ValidateRole };
