@@ -45,7 +45,10 @@ function ValidateStudentCreateInput(inputObject) {
   });
 
   // *************** destructured input object
-  let { first_name, last_name, email, date_of_birth } = inputObject;
+  let { first_name, last_name, email, date_of_birth, school_id } = inputObject;
+
+  // *************** validate id
+  ValidateId(school_id);
 
   // *************** check if first_name, last_name and email are provided
   if (!first_name) throw new ApolloError('first name is required');
@@ -95,10 +98,13 @@ function ValidateStudentUpdateInput(inputObject) {
   });
 
   // *************** destructured input object
-  let { _id, first_name, last_name, email, date_of_birth } = inputObject;
+  let { _id, first_name, last_name, email, date_of_birth, school_id } = inputObject;
 
   // *************** validate _id
   ValidateId(_id);
+  if (school_id) {
+    ValidateId(school_id);
+  }
 
   // *************** validate input using joi schema
   const { error } = updateStudentSchema.validate({ first_name, last_name, email, date_of_birth }, { abortEarly: true });

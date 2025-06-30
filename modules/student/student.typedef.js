@@ -21,6 +21,7 @@ const studentTypeDefs = gql`
     last_name: String!
     email: String!
     date_of_birth: Date
+    school_id: String!
   }
 
   input UpdateStudentInput {
@@ -29,6 +30,7 @@ const studentTypeDefs = gql`
     last_name: String
     email: String
     date_of_birth: Date
+    school_id: String
   }
 
   extend type Query {
