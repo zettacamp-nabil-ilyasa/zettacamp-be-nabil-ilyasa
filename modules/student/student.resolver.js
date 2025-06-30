@@ -92,7 +92,7 @@ async function GetOneStudent(parent, { _id }) {
  */
 async function CreateStudent(parent, { input }) {
   try {
-    // *************** compose new object from input
+    // *************** compose new object from input, sets static created_by
     let newStudent = {
       email: input.email,
       first_name: input.first_name,
@@ -100,7 +100,7 @@ async function CreateStudent(parent, { input }) {
       school_id: input.school_id,
       // *************** set date_of_birth to undefined if it's an empty string
       date_of_birth: typeof input.date_of_birth === 'string' && input.date_of_birth.trim() === '' ? undefined : input.date_of_birth,
-      created_by: input.created_by,
+      created_by: '6862150331861f37e4e3d209',
     };
 
     // *************** validation to ensure bad input is handled correctly
@@ -112,7 +112,7 @@ async function CreateStudent(parent, { input }) {
       throw new ApolloError('Email already exist');
     }
 
-    // *************** check if school to delete is exist
+    // *************** check if school is exist
     const schoolIsExist = await SchoolIsExist(newStudent.school_id);
     if (!schoolIsExist) {
       throw new ApolloError('School does not exist');
@@ -238,11 +238,12 @@ async function UpdateStudent(parent, { input }) {
  * @returns {Promise<string>} - Success message upon deletion.
  * @throws {ApolloError} - Throws error if unauthorized or student not found.
  */
-async function DeleteStudent(parent, { _id, deleted_by }) {
+async function DeleteStudent(parent, { _id }) {
   try {
     //**************** validate id and deleted_by
     ValidateId(_id);
-    ValidateId(deleted_by);
+    // **************** sets static deleted_by
+    const deletedBy = '6862150331861f37e4e3d209';
 
     //**************** check if student to be deleted is exist
     const studentIsExist = await StudentIsExist(_id);
@@ -254,14 +255,14 @@ async function DeleteStudent(parent, { _id, deleted_by }) {
     await SchoolModel.updateOne({ students: _id }, { $pull: { students: _id } });
 
     //**************** soft delete student by updating it with composed object
-    await StudentModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by, deleted_at: new Date() } });
+    await StudentModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: deletedBy, deleted_at: new Date() } });
     return 'Student deleted successfully';
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'DeleteStudent',
       path: '/modules/student/student.resolver.js',
-      parameter_input: JSON.stringify({ _id, deleted_by }),
+      parameter_input: JSON.stringify({ _id }),
     });
     throw new ApolloError(error.message);
   }

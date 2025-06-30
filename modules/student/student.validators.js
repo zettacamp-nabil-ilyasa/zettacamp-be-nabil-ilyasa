@@ -44,10 +44,10 @@ function ValidateStudentCreateInput(inputObject) {
       .messages({ 'string.pattern.base': 'date of birth should be in DD-MM-YYYY format' }),
   });
 
-  let { created_by, first_name, last_name, email, date_of_birth, school_id } = inputObject;
+  // *************** destructured input object
+  let { first_name, last_name, email, date_of_birth, school_id } = inputObject;
 
   // *************** validate id
-  ValidateId(created_by);
   ValidateId(school_id);
 
   // *************** check if first_name, last_name and email are provided
@@ -97,6 +97,7 @@ function ValidateStudentUpdateInput(inputObject) {
       .messages({ 'string.pattern.base': 'date of birth should be in DD-MM-YYYY format' }),
   });
 
+  // *************** destructured input object
   let { _id, first_name, last_name, email, date_of_birth, school_id } = inputObject;
 
   // *************** validate _id
