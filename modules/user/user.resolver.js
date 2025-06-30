@@ -363,7 +363,7 @@ async function created_by(parent, args, context) {
 // *************** EXPORT MODULES ***************
 module.exports = {
   Query: { GetAllUsers, GetOneUser },
-  Mutation: { CreateUser, UpdateUser, AddRole, DeleteRole, DeleteUser },
+  Mutation: { CreateUser, UpdateUser, DeleteUser },
   User: {
     created_by,
   },
