@@ -9,7 +9,7 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
 
 // *************** IMPORT VALIDATORS ***************
-const { ValidateUserCreateInput, ValidateUserUpdateInput, ValidateRole } = require('./user.validators.js');
+const { ValidateUserInput, ValidateRole } = require('./user.validators.js');
 
 // *************** IMPORT HELPERS ***************
 const { UserIsExist, UserEmailIsExist, UserHasRole, IsRemovableRole } = require('./user.helpers.js');
@@ -87,13 +87,8 @@ async function CreateUser(parent, { input }) {
       created_by: '6862150331861f37e4e3d209',
     };
 
-    // **************** mandatory fields fail-fast
-    if (!newUser.email) throw new ApolloError('email is required');
-    if (!newUser.first_name) throw new ApolloError('first_name is required');
-    if (!newUser.last_name) throw new ApolloError('last_name is required');
-
-    // **************** validation to ensure bad input is handled correctly
-    ValidateUserCreateInput(newUser);
+    // **************** validation to ensure fail-fast and bad input is handled correctly
+    ValidateUserInput(newUser);
 
     // **************** check if email already exist
     const emailIsExist = await UserEmailIsExist({ userEmail: newUser.email });
@@ -138,14 +133,11 @@ async function UpdateUser(parent, { input }) {
       last_name: input.last_name,
     };
 
-    // **************** mandatory fields fail-fast
-    if (!editedUser._id) throw new ApolloError('_id is required');
-
     // **************** validate _id
     ValidateId(editedUser._id);
 
-    // **************** validation to ensure bad input is handled correctly
-    ValidateUserUpdateInput(editedUser);
+    // **************** validation to ensure fail-fast and bad input is handled correctly
+    ValidateUserInput(editedUser);
 
     // **************** check if user exist
     const userIsExist = await UserIsExist(editedUser._id);
@@ -363,7 +355,7 @@ async function created_by(parent, args, context) {
 // *************** EXPORT MODULES ***************
 module.exports = {
   Query: { GetAllUsers, GetOneUser },
-  Mutation: { CreateUser, UpdateUser, DeleteUser },
+  Mutation: { CreateUser, UpdateUser, DeleteUser, AddRole, DeleteRole },
   User: {
     created_by,
   },

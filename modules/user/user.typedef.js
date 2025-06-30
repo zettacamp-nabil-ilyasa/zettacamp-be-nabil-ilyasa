@@ -28,11 +28,9 @@ const userTypeDefs = gql`
     email: String!
   }
 
-  input UpdateUserInput {
+  input EditRoleInput {
     _id: ID!
-    first_name: String
-    last_name: String
-    email: String
+    role: String!
   }
 
   extend type Query {
@@ -41,9 +39,11 @@ const userTypeDefs = gql`
   }
 
   extend type Mutation {
-    CreateUser(input: UserInput): User
+    CreateUser(input: eUserInput): User
     UpdateUser(input: _id: ID!, UserInput!): User
     DeleteUser(_id: ID!): String
+    AddRole(input: EditRoleInput): User
+    DeleteRole(input: EditRoleInput): User
   }
 `;
 
