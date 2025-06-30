@@ -55,8 +55,9 @@ function ValidateUserCreateInput(inputObject) {
       .messages({ 'string.email': 'email format is invalid', 'any.required': 'email is required' }),
   });
 
-  // ***************  destructured input object
-  let { first_name, last_name, email } = inputObject;
+  let { created_by, first_name, last_name, email } = inputObject;
+  // *************** validate user id stored in created_by
+  ValidateId(created_by);
 
   // *************** check if first_name, last_name and email are provided
   if (!email) throw new ApolloError('email is required');
@@ -94,10 +95,9 @@ function ValidateUserUpdateInput(inputObject) {
     email: Joi.string().optional().trim().lowercase().email().messages({ 'string.email': 'email format is invalid' }),
   });
 
-  // *************** destructured input object
   let { _id, first_name, last_name, email } = inputObject;
 
-  // *************** validate id
+  // *************** _id input check
   ValidateId(_id);
 
   // *************** validate input using joi schema
@@ -115,9 +115,10 @@ function ValidateUserUpdateInput(inputObject) {
  * @returns {object} - The validated and formatted input.
  */
 function ValidateEditRoleInput(inputObject) {
-  let { _id, role } = inputObject;
+  let { _id, updater_id, role } = inputObject;
   // *************** validate ids
   ValidateId(_id);
+  ValidateId(updater_id);
 
   // *************** validate role
   ValidateRole(role);
