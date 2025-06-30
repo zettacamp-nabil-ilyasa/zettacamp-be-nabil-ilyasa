@@ -93,7 +93,6 @@ async function CreateSchool(parent, { input }) {
       country: input.country,
       city: input.city,
       zipcode: input.zipcode,
-      created_by: input.created_by,
     };
 
     // *************** validation to ensure bad input is handled correctly
@@ -187,15 +186,13 @@ async function UpdateSchool(parent, { input }) {
  * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {object} args - Resolver arguments.
  * @param {string} args._id - ID of the school to delete.
- * @param {string} args.deleted_by - ID of the admin who deletes the school.
  * @returns {Promise<string>} - Deletion success message.
  * @throws {ApolloError} - Throws error if unauthorized, school not found, or school is referenced.
  */
-async function DeleteSchool(parent, { _id, deleted_by }) {
+async function DeleteSchool(parent, { _id }) {
   try {
-    //**************** validate _id and deleted_by
+    //**************** validate _id
     ValidateId(_id);
-    ValidateId(deleted_by);
 
     //**************** check if school to be deleted is exist
     const schoolIsExist = await SchoolIsExist(_id);
@@ -210,14 +207,14 @@ async function DeleteSchool(parent, { _id, deleted_by }) {
     }
 
     //**************** soft-delete school by updating it with composed object
-    await SchoolModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by, deleted_at: new Date() } });
+    await SchoolModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_at: new Date() } });
     return 'School deleted successfully';
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'DeleteSchool',
       path: '/modules/school/school.resolver.js',
-      parameter_input: JSON.stringify({ _id, deleted_by }),
+      parameter_input: JSON.stringify({ _id }),
     });
     throw new ApolloError(error.message);
   }
