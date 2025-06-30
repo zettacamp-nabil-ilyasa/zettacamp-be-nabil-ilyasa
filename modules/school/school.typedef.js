@@ -19,7 +19,6 @@ const schoolTypeDefs = gql`
   }
 
   input CreateSchoolInput {
-    created_by: ID
     brand_name: String!
     long_name: String!
     address: String
@@ -46,7 +45,7 @@ const schoolTypeDefs = gql`
   extend type Mutation {
     CreateSchool(input: CreateSchoolInput): School
     UpdateSchool(input: UpdateSchoolInput): School
-    DeleteSchool(_id: ID!, deleted_by: ID): String
+    DeleteSchool(_id: ID!): String
   }
 `;
 

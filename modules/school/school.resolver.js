@@ -85,7 +85,7 @@ async function GetOneSchool(parent, { _id }) {
  */
 async function CreateSchool(parent, { input }) {
   try {
-    // *************** compose new object from input
+    // *************** compose new object from input, sets static created_by
     const newSchool = {
       long_name: input.long_name,
       brand_name: input.brand_name,
@@ -93,7 +93,7 @@ async function CreateSchool(parent, { input }) {
       country: input.country,
       city: input.city,
       zipcode: input.zipcode,
-      created_by: input.created_by,
+      created_by: '6862150331861f37e4e3d209',
     };
 
     // *************** validation to ensure bad input is handled correctly
@@ -191,11 +191,13 @@ async function UpdateSchool(parent, { input }) {
  * @returns {Promise<string>} - Deletion success message.
  * @throws {ApolloError} - Throws error if unauthorized, school not found, or school is referenced.
  */
-async function DeleteSchool(parent, { _id, deleted_by }) {
+async function DeleteSchool(parent, { _id }) {
   try {
-    //**************** validate _id and deleted_by
+    //**************** validate _id
     ValidateId(_id);
-    ValidateId(deleted_by);
+
+    // **************** sets static deleted_by
+    const deletedBy = '6862150331861f37e4e3d209';
 
     //**************** check if school to be deleted is exist
     const schoolIsExist = await SchoolIsExist(_id);
@@ -210,14 +212,14 @@ async function DeleteSchool(parent, { _id, deleted_by }) {
     }
 
     //**************** soft-delete school by updating it with composed object
-    await SchoolModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by, deleted_at: new Date() } });
+    await SchoolModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: deletedBy, deleted_at: new Date() } });
     return 'School deleted successfully';
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'DeleteSchool',
       path: '/modules/school/school.resolver.js',
-      parameter_input: JSON.stringify({ _id, deleted_by }),
+      parameter_input: JSON.stringify({ _id }),
     });
     throw new ApolloError(error.message);
   }
