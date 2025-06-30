@@ -295,42 +295,11 @@ async function school_id(parent, args, context) {
   }
 }
 
-/**
- * Resolve the created_by field in a Student by using DataLoader to prevent N+1 queries.
- * @async
- * @param {object} parent - The parent student document.
- * @param {object} args - Not used (GraphQL resolver convention).
- * @param {object} context - GraphQL context containing DataLoaders.
- * @returns {Promise<Object|null>} - The related user document or null if not found.
- * @throws {ApolloError} - Throws error if DataLoader fails.
- */
-async function created_by(parent, args, context) {
-  try {
-    // *************** check if student has any created_by
-    if (!parent?.created_by) {
-      return null;
-    }
-
-    // *************** load user
-    const loadedUser = await context.loaders.user.load(parent.created_by);
-    return loadedUser;
-  } catch (error) {
-    await ErrorLogModel.create({
-      error_stack: error.stack,
-      function_name: 'created_by',
-      path: '/modules/student/student.resolver.js',
-      parameter_input: JSON.stringify({}),
-    });
-    throw new ApolloError(error.message);
-  }
-}
-
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllStudents, GetOneStudent },
   Mutation: { CreateStudent, UpdateStudent, DeleteStudent },
   Student: {
-    created_by,
     school_id,
   },
 };
