@@ -10,7 +10,6 @@ const { ValidateSchoolCreateInput, ValidateSchoolUpdateInput } = require('./scho
 
 // *************** IMPORT UTILS ***************
 const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
-const { UserIsAdmin } = require('../../shared/utils/user.js');
 const { SchoolIsExist } = require('../../shared/utils/school.js');
 
 // *************** IMPORT HELPER ***************
@@ -99,12 +98,6 @@ async function CreateSchool(parent, { input }) {
 
     // *************** validation to ensure bad input is handled correctly
     ValidateSchoolCreateInput(newSchool);
-
-    // *************** check if user with id from created_by is exist and has admin role
-    const userIsAdmin = await UserIsAdmin(newSchool.created_by);
-    if (!userIsAdmin) {
-      throw new ApolloError('User is not admin');
-    }
 
     // *************** check if school name already exists
     const isSchoolNameExist = await SchoolNameIsExist({ longName: newSchool.long_name, brandName: newSchool.brand_name });
@@ -203,12 +196,6 @@ async function DeleteSchool(parent, { _id, deleted_by }) {
     //**************** validate _id and deleted_by
     ValidateId(_id);
     ValidateId(deleted_by);
-
-    //**************** check if deleter user is exist and has admin role
-    const userIsAdmin = await UserIsAdmin(deleted_by);
-    if (!userIsAdmin) {
-      throw new ApolloError('Unauthorized access');
-    }
 
     //**************** check if school to be deleted is exist
     const schoolIsExist = await SchoolIsExist(_id);
