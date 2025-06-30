@@ -100,6 +100,7 @@ async function CreateStudent(parent, { input }) {
       school_id: input.school_id,
       // *************** set date_of_birth to undefined if it's an empty string
       date_of_birth: typeof input.date_of_birth === 'string' && input.date_of_birth.trim() === '' ? undefined : input.date_of_birth,
+      created_by: input.created_by,
     };
 
     // *************** validation to ensure bad input is handled correctly
@@ -233,13 +234,15 @@ async function UpdateStudent(parent, { input }) {
  * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {object} args - Resolver arguments.
  * @param {string} args._id - ID of the student to delete.
+ * @param {string} args.deleted_by - ID of the admin who deletes the student.
  * @returns {Promise<string>} - Success message upon deletion.
  * @throws {ApolloError} - Throws error if unauthorized or student not found.
  */
-async function DeleteStudent(parent, { _id }) {
+async function DeleteStudent(parent, { _id, deleted_by }) {
   try {
-    //**************** validate id
+    //**************** validate id and deleted_by
     ValidateId(_id);
+    ValidateId(deleted_by);
 
     //**************** check if student to be deleted is exist
     const studentIsExist = await StudentIsExist(_id);
@@ -251,14 +254,14 @@ async function DeleteStudent(parent, { _id }) {
     await SchoolModel.updateOne({ students: _id }, { $pull: { students: _id } });
 
     //**************** soft delete student by updating it with composed object
-    await StudentModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_at: new Date() } });
+    await StudentModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by, deleted_at: new Date() } });
     return 'Student deleted successfully';
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'DeleteStudent',
       path: '/modules/student/student.resolver.js',
-      parameter_input: JSON.stringify({ _id }),
+      parameter_input: JSON.stringify({ _id, deleted_by }),
     });
     throw new ApolloError(error.message);
   }
