@@ -107,9 +107,6 @@ async function CreateStudent(parent, { input }) {
     if (!newStudent.email) throw new ApolloError('email is required');
     if (!newStudent.first_name) throw new ApolloError('first_name is required');
     if (!newStudent.last_name) throw new ApolloError('last_name is required');
-    if (!newStudent.school_id) throw new ApolloError('school_id is required');
-
-    // **************** validate school_id
     ValidateId(newStudent.school_id);
 
     // *************** validation to ensure bad input is handled correctly
@@ -179,9 +176,6 @@ async function UpdateStudent(parent, { input }) {
     };
 
     // **************** mandatory fields fail-fast
-    if (!editedStudent._id) throw new ApolloError('_id is required');
-
-    // **************** validate _id
     ValidateId(editedStudent._id);
     if (editedStudent.school_id) {
       ValidateId(editedStudent.school_id);

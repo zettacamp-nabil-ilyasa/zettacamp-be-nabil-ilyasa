@@ -2,9 +2,6 @@
 const { ApolloError } = require('apollo-server-express');
 const Joi = require('joi');
 
-// *************** IMPORT UTILS ***************
-const { ValidateId } = require('../../utilities/common-validator/mongo-validator');
-
 // *************** regex pattern to ensure first and last name contains only letters
 const studentNameRegexPattern = /^[\p{L}\s'-]+$/u;
 
