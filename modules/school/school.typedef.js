@@ -18,19 +18,9 @@ const schoolTypeDefs = gql`
     deleted_at: Date
   }
 
-  input CreateSchoolInput {
+  input SchoolInput {
     brand_name: String!
     long_name: String!
-    address: String
-    country: String
-    city: String
-    zipcode: String
-  }
-
-  input UpdateSchoolInput {
-    _id: ID!
-    brand_name: String
-    long_name: String
     address: String
     country: String
     city: String
@@ -43,8 +33,8 @@ const schoolTypeDefs = gql`
   }
 
   extend type Mutation {
-    CreateSchool(input: CreateSchoolInput): School
-    UpdateSchool(input: UpdateSchoolInput): School
+    CreateSchool(input: SchoolInput): School
+    UpdateSchool(input: SchoolInput): School
     DeleteSchool(_id: ID!): String
   }
 `;
