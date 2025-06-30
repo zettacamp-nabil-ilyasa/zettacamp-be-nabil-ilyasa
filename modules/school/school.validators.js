@@ -62,9 +62,10 @@ function ValidateSchoolCreateInput(inputObject) {
       .messages({ 'string.pattern.base': 'zipcode must be at least 4 characters' }),
   });
 
-  // *************** destructured input object
-  let { brand_name, long_name, address, country, city, zipcode } = inputObject;
+  let { created_by, brand_name, long_name, address, country, city, zipcode } = inputObject;
 
+  // *************** validate id
+  ValidateId(created_by);
   // *************** check if brand_name and long_name are provided
   if (!brand_name) throw new ApolloError('brand_name is required');
   if (!long_name) throw new ApolloError('long_name is required');
@@ -123,7 +124,6 @@ function ValidateSchoolUpdateInput(inputObject) {
       .messages({ 'string.pattern.base': 'zipcode must be at least 4 characters and cannot contain invalid characters' }),
   });
 
-  // *************** destructured input object
   let { _id, brand_name, long_name, address, country, city, zipcode } = inputObject;
 
   // *************** validate id

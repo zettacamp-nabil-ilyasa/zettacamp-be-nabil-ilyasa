@@ -29,6 +29,12 @@ const school = new mongoose.Schema(
 
     //Soft-delete timestamp
     deleted_at: { type: Date },
+
+    //User who created this school
+    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
+
+    //User who deleted this school
+    deleted_by: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
   },
   {
     // Timestamp set-up for createdAt and updatedAt
