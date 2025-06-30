@@ -57,7 +57,7 @@ async function GetAllStudents() {
 
 async function GetOneStudent(parent, { _id }) {
   try {
-    //**************** validate _id
+    // **************** validate _id
     ValidateId(_id);
 
     const student = await StudentModel.findOne({ _id: _id, status: 'active' }).lean();
@@ -102,6 +102,15 @@ async function CreateStudent(parent, { input }) {
       date_of_birth: typeof input.date_of_birth === 'string' && input.date_of_birth.trim() === '' ? undefined : input.date_of_birth,
       created_by: '6862150331861f37e4e3d209',
     };
+
+    // **************** mandatory fields fail-fast
+    if (!newStudent.email) throw new ApolloError('email is required');
+    if (!newStudent.first_name) throw new ApolloError('first_name is required');
+    if (!newStudent.last_name) throw new ApolloError('last_name is required');
+    if (!newStudent.school_id) throw new ApolloError('school_id is required');
+
+    // **************** validate school_id
+    ValidateId(newStudent.school_id);
 
     // *************** validation to ensure bad input is handled correctly
     ValidateStudentCreateInput(newStudent);
@@ -158,27 +167,36 @@ async function CreateStudent(parent, { input }) {
  */
 async function UpdateStudent(parent, { input }) {
   try {
-    //**************** compose new object from input
+    // **************** compose new object from input
     let editedStudent = {
       _id: input._id,
       email: input.email,
       first_name: input.first_name,
       last_name: input.last_name,
-      //**************** set date_of_birth to undefined if it's an empty string
+      // **************** set date_of_birth to undefined if it's an empty string
       date_of_birth: typeof input.date_of_birth === 'string' && input.date_of_birth.trim() === '' ? undefined : input.date_of_birth,
       school_id: input.school_id,
     };
 
-    //**************** validation to ensure bad input is handled correctly
+    // **************** mandatory fields fail-fast
+    if (!editedStudent._id) throw new ApolloError('_id is required');
+
+    // **************** validate _id
+    ValidateId(editedStudent._id);
+    if (editedStudent.school_id) {
+      ValidateId(editedStudent.school_id);
+    }
+
+    // **************** validation to ensure bad input is handled correctly
     ValidateStudentUpdateInput(editedStudent);
 
-    //**************** check if student is exist
+    // **************** check if student is exist
     const studentIsExist = await StudentIsExist(editedStudent._id);
     if (!studentIsExist) {
       throw new ApolloError('Student does not exist');
     }
 
-    //**************** check if email already exists
+    // **************** check if email already exists
     if (editedStudent.email) {
       const emailIsExist = await StudentEmailIsExist({ studentEmail: editedStudent.email, studentId: editedStudent._id });
       if (emailIsExist) {
@@ -186,16 +204,16 @@ async function UpdateStudent(parent, { input }) {
       }
     }
 
-    //**************** check if schoolId is provided and is exist
+    // **************** check if schoolId is provided and is exist
     if (editedStudent.school_id) {
-      //**************** check if school is exist
+      // **************** check if school is exist
       const schoolIsExist = await SchoolIsExist(editedStudent.school_id);
       if (!schoolIsExist) {
         throw new ApolloError('School does not exist');
       }
 
       const studentCurrentSchoolId = await GetStudentCurrentSchoolId(editedStudent._id);
-      //**************** check if current school id is different from edited school id (changed school id)
+      // **************** check if current school id is different from edited school id (changed school id)
       if (String(studentCurrentSchoolId) !== editedStudent.school_id) {
         const bulkQuery = GenerateBulkQueryForSchoolIdChange({
           studentId: editedStudent._id,
@@ -209,12 +227,12 @@ async function UpdateStudent(parent, { input }) {
       }
     }
 
-    //**************** check if date_of_birth is provided and convert validated string value to date
+    // **************** check if date_of_birth is provided and convert validated string value to date
     if (editedStudent.date_of_birth) {
       editedStudent.date_of_birth = ConvertStringToDate(editedStudent.date_of_birth);
     }
 
-    //**************** update student with composed object
+    // **************** update student with composed object
     const updatedStudent = await StudentModel.findOneAndUpdate({ _id: editedStudent._id }, { $set: editedStudent }, { new: true }).lean();
     return updatedStudent;
   } catch (error) {
@@ -240,21 +258,21 @@ async function UpdateStudent(parent, { input }) {
  */
 async function DeleteStudent(parent, { _id }) {
   try {
-    //**************** validate id and deleted_by
+    // **************** validate id and deleted_by
     ValidateId(_id);
     // **************** sets static deleted_by
     const deletedBy = '6862150331861f37e4e3d209';
 
-    //**************** check if student to be deleted is exist
+    // **************** check if student to be deleted is exist
     const studentIsExist = await StudentIsExist(_id);
     if (!studentIsExist) {
       throw new ApolloError('Student does not exist');
     }
 
-    //**************** remove student_id from student array in school document
+    // **************** remove student_id from student array in school document
     await SchoolModel.updateOne({ students: _id }, { $pull: { students: _id } });
 
-    //**************** soft delete student by updating it with composed object
+    // **************** soft delete student by updating it with composed object
     await StudentModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: deletedBy, deleted_at: new Date() } });
     return 'Student deleted successfully';
   } catch (error) {
