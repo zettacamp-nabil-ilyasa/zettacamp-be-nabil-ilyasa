@@ -5,8 +5,7 @@ const { ApolloError } = require('apollo-server-express');
 const UserModel = require('./user.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
-// *************** IMPORT UTILS ***************
-const { UserIsAdmin } = require('../../shared/utils/user.js');
+// *************** IMPORT UTIL ***************
 const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
 
 // *************** IMPORT VALIDATORS ***************
@@ -90,12 +89,6 @@ async function CreateUser(parent, { input }) {
 
     //**************** validation to ensure bad input is handled correctly
     ValidateUserCreateInput(newUser);
-
-    //**************** check if user to delete is exist and has admin role
-    const userIsAdmin = await UserIsAdmin(newUser.created_by);
-    if (!userIsAdmin) {
-      throw new ApolloError('Unauthorized access');
-    }
 
     //**************** check if email already exist
     const emailIsExist = await UserEmailIsExist({ userEmail: newUser.email });
@@ -194,12 +187,6 @@ async function AddRole(parent, { input }) {
     //**************** validation to ensure bad input is handled correctly
     ValidateEditRoleInput(addedRoleForUser);
 
-    //**************** check if user has admin role
-    const isAdmin = await UserIsAdmin(addedRoleForUser.updater_id);
-    if (!isAdmin) {
-      throw new ApolloError('Unauthorized access');
-    }
-
     //**************** check if user whose role is to be added exist
     const userIsExist = await UserIsExist(addedRoleForUser._id);
     if (!userIsExist) {
@@ -253,12 +240,6 @@ async function DeleteRole(parent, { input }) {
     //**************** validation to ensure bad input is handled correctly
     ValidateEditRoleInput(deletedRoleFromUser);
 
-    //**************** check if user has admin role
-    const isAdmin = await UserIsAdmin(deletedRoleFromUser.updater_id);
-    if (!isAdmin) {
-      throw new ApolloError('Unauthorized access');
-    }
-
     //**************** check if user whose role is to be added exist
     const userIsExist = await UserIsExist(deletedRoleFromUser._id);
     if (!userIsExist) {
@@ -309,12 +290,6 @@ async function DeleteUser(parent, { _id, deleted_by }) {
     //**************** valdiate id
     ValidateId(_id);
     ValidateId(deleted_by);
-
-    //**************** check if deleter user is exist and has admin role
-    const userIsAdmin = await UserIsAdmin(deleted_by);
-    if (!userIsAdmin) {
-      throw new ApolloError('Unauthorized access');
-    }
 
     //**************** check if user to be deleted is exist
     const userIsExist = await UserIsExist(_id);
