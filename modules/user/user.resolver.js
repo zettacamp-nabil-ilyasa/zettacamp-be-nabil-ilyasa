@@ -79,12 +79,12 @@ async function GetOneUser(parent, { _id }) {
  */
 async function CreateUser(parent, { input }) {
   try {
-    //**************** compose new object from input
+    //**************** compose new object from input, sets static created_by
     const newUser = {
       email: input.email,
       first_name: input.first_name,
       last_name: input.last_name,
-      created_by: input.created_by,
+      created_by: '6862150331861f37e4e3d209',
     };
 
     //**************** validation to ensure bad input is handled correctly
@@ -233,7 +233,6 @@ async function DeleteRole(parent, { input }) {
     //**************** compose new object from input
     const deletedRoleFromUser = {
       _id: input._id,
-      updater_id: input.updater_id,
       role: typeof input.role === 'string' ? input.role.trim().toLowerCase() : input.role,
     };
 
@@ -285,11 +284,13 @@ async function DeleteRole(parent, { input }) {
  * @returns {Promise<string>} - Deletion success message.
  * @throws {ApolloError} - Throws error if unauthorized, user not found, or attempt to self-delete.
  */
-async function DeleteUser(parent, { _id, deleted_by }) {
+async function DeleteUser(parent, { _id }) {
   try {
     //**************** valdiate id
     ValidateId(_id);
-    ValidateId(deleted_by);
+
+    //**************** sets static deleted_by
+    const deletedBy = '6862150331861f37e4e3d209';
 
     //**************** check if user to be deleted is exist
     const userIsExist = await UserIsExist(_id);
@@ -298,12 +299,12 @@ async function DeleteUser(parent, { _id, deleted_by }) {
     }
 
     //**************** check if user is trying to delete themselves
-    if (_id === deleted_by) {
+    if (_id === deletedBy) {
       throw new ApolloError('You cannot delete yourself');
     }
 
-    //**************** soft-delete user by updating it with composed object
-    await UserModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by, deleted_at: new Date() } });
+    //**************** soft-delete user by updating it's status
+    await UserModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: deletedBy, deleted_at: new Date() } });
     return 'User deleted successfully';
   } catch (error) {
     await ErrorLogModel.create({
