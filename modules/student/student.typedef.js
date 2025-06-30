@@ -16,21 +16,12 @@ const studentTypeDefs = gql`
     updatedAt: Date
   }
 
-  input CreateStudentInput {
+  input StudentInput {
     first_name: String!
     last_name: String!
     email: String!
     date_of_birth: Date
     school_id: String!
-  }
-
-  input UpdateStudentInput {
-    _id: ID!
-    first_name: String
-    last_name: String
-    email: String
-    date_of_birth: Date
-    school_id: String
   }
 
   extend type Query {
@@ -39,8 +30,8 @@ const studentTypeDefs = gql`
   }
 
   extend type Mutation {
-    CreateStudent(input: CreateStudentInput): Student
-    UpdateStudent(input: UpdateStudentInput): Student
+    CreateStudent(input: StudentInput): Student
+    UpdateStudent(input: StudentInput): Student
     DeleteStudent(_id: ID!): String
   }
 `;
