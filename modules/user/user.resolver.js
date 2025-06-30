@@ -316,8 +316,42 @@ async function DeleteUser(parent, { _id, deleted_by }) {
   }
 }
 
+// *************** LOADERS ***************
+/**
+ * Resolve the created_by field in a user object using DataLoader to prevent N+1 queries.
+ * @async
+ * @param {object} parent - Parent user object.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context that contains DataLoaders.
+ * @returns {Promise<Object|null>} - The user document of the creator, or null if not available.
+ * @throws {ApolloError} - Throws error if DataLoader fails.
+ */
+async function created_by(parent, args, context) {
+  try {
+    // *************** check if user has any created_by
+    if (!parent?.created_by) {
+      return null;
+    }
+
+    // *************** load user
+    const loadedUser = await context.loaders.user.load(parent.created_by);
+    return loadedUser;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'created_by',
+      path: '/modules/user/user.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
 // *************** EXPORT MODULES ***************
 module.exports = {
   Query: { GetAllUsers, GetOneUser },
   Mutation: { CreateUser, UpdateUser, AddRole, DeleteRole, DeleteUser },
+  User: {
+    created_by,
+  },
 };
