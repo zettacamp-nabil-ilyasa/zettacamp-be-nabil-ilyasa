@@ -2,9 +2,6 @@
 const { ApolloError } = require('apollo-server-express');
 const Joi = require('joi');
 
-// *************** IMPORT UTIL ***************
-const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
-
 // *************** regex pattern to ensure school name only contains letters, numbers, spaces, hyphens, and apostrophes
 const schoolNameRegexPattern = /^[\p{L}\d\s'-]{2,50}$/u;
 
@@ -65,10 +62,6 @@ function ValidateSchoolCreateInput(inputObject) {
   // *************** destructured input object
   let { brand_name, long_name, address, country, city, zipcode } = inputObject;
 
-  // *************** check if brand_name and long_name are provided
-  if (!brand_name) throw new ApolloError('brand_name is required');
-  if (!long_name) throw new ApolloError('long_name is required');
-
   // *************** validate input using joi schema
   const { error } = createSchoolSchema.validate({ brand_name, long_name, address, country, city, zipcode }, { abortEarly: true });
 
@@ -124,10 +117,7 @@ function ValidateSchoolUpdateInput(inputObject) {
   });
 
   // *************** destructured input object
-  let { _id, brand_name, long_name, address, country, city, zipcode } = inputObject;
-
-  // *************** validate id
-  ValidateId(_id);
+  let { brand_name, long_name, address, country, city, zipcode } = inputObject;
 
   // *************** validate input using joi schema
   const { error } = updateSchoolSchema.validate({ brand_name, long_name, address, country, city, zipcode }, { abortEarly: true });

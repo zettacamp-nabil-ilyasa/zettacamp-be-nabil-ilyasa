@@ -96,6 +96,10 @@ async function CreateSchool(parent, { input }) {
       created_by: '6862150331861f37e4e3d209',
     };
 
+    // *************** mandatory fields fail-fast
+    if (!newSchool.long_name) throw new ApolloError('long_name is required');
+    if (!newSchool.brand_name) throw new ApolloError('brand_name is required');
+
     // *************** validation to ensure bad input is handled correctly
     ValidateSchoolCreateInput(newSchool);
 
@@ -147,6 +151,9 @@ async function UpdateSchool(parent, { input }) {
       city: input.city,
       zipcode: input.zipcode,
     };
+
+    // *************** mandatory fields fail-fast
+    ValidateId(editedSchool._id);
 
     // *************** validation to ensure bad input is handled correctly
     ValidateSchoolUpdateInput(editedSchool);
