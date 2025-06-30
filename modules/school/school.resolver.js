@@ -8,12 +8,11 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 // *************** IMPORT VALIDATORS ***********************
 const { ValidateSchoolCreateInput, ValidateSchoolUpdateInput } = require('./school.validators.js');
 
-// *************** IMPORT UTILS ***************
+// *************** IMPORT UTIL ***************
 const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
-const { SchoolIsExist } = require('../../shared/utils/school.js');
 
 // *************** IMPORT HELPER ***************
-const { SchoolNameIsExist, SchoolIsReferencedByStudent } = require('./school.helpers.js');
+const { SchoolIsExist, SchoolNameIsExist, SchoolIsReferencedByStudent } = require('./school.helpers.js');
 
 //**************** QUERY ****************
 

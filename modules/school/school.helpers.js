@@ -11,6 +11,33 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
 
 /**
+ * Check if a school with the given ID exists and is active.
+ * @param {string} schoolId - The ID of the school to check.
+ * @returns {Promise<boolean>} - True if the school exists, false otherwise.
+ * @throws {ApolloError} - If validation fails or database operation errors occur.
+ */
+async function SchoolIsExist(schoolId) {
+  try {
+    // *************** validate schoolId
+    ValidateId(schoolId);
+
+    // *************** set query for db operation
+    const query = { _id: schoolId, status: 'active' };
+
+    const isSchoolExist = Boolean(await SchoolModel.exists(query));
+    return isSchoolExist;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'SchoolIsExist',
+      path: '/modules/school/school.helpers.js',
+      parameter_input: JSON.stringify({ schoolId }),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
  * Check if a school's long name and/or brand name already exists in the database
  * @async
  * @param {object} params - Input parameters.
@@ -90,6 +117,7 @@ async function SchoolIsReferencedByStudent(schoolId) {
 
 // *************** EXPORT MODULES ***************
 module.exports = {
+  SchoolIsExist,
   SchoolNameIsExist,
   SchoolIsReferencedByStudent,
 };
