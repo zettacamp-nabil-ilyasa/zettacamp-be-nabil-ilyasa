@@ -153,11 +153,11 @@ async function CreateStudent(parent, { input }) {
  * @param {object} args - Resolver arguments.
  * @param {object} args.input - Student update fields.
  * @param {string} args.input._id - ID of the student to update.
- * @param {string} [args.input.email] - New email address (optional).
- * @param {string} [args.input.first_name] - Updated first name (optional).
- * @param {string} [args.input.last_name] - Updated last name (optional).
+ * @param {string} args.input.email - New email address.
+ * @param {string} args.input.first_name - Updated first name.
+ * @param {string} args.input.last_name - Updated last name.
  * @param {string} [args.input.date_of_birth] - Updated date of birth in string format (optional).
- * @param {string} [args.input.school_id] - New school ID (optional).
+ * @param {string} args.input.school_id - School ID.
  * @returns {Promise<Object>} - Updated student document.
  * @throws {ApolloError} - Throws error if student does not exist, email already used, or school not found.
  */
