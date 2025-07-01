@@ -12,7 +12,7 @@ const { ValidateId } = require('../../utilities/common-validator/mongo-validator
 const { ValidateUserInput } = require('./user.validators.js');
 
 // *************** IMPORT HELPERS ***************
-const { UserIsExist, UserEmailIsExist } = require('./user.helpers.js');
+const { UserEmailIsExist } = require('./user.helpers.js');
 
 // *************** QUERY ***************
 
@@ -147,7 +147,7 @@ async function UpdateUser(parent, { _id, input }) {
     ValidateUserInput(editedUser);
 
     // **************** check if user exist
-    const userIsExist = await UserIsExist(_id);
+    const userIsExist = Boolean(await UserModel.exists({ _id }));
     if (!userIsExist) {
       throw new ApolloError('User does not exist');
     }
@@ -191,7 +191,7 @@ async function DeleteUser(parent, { _id }) {
     const deletedBy = '6862150331861f37e4e3d209';
 
     // **************** check if user to be deleted is exist
-    const userIsExist = await UserIsExist(_id);
+    const userIsExist = Boolean(await UserModel.exists({ _id }));
     if (!userIsExist) {
       throw new ApolloError('User does not exist');
     }
