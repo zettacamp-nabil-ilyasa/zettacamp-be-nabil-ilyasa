@@ -87,7 +87,6 @@ async function CreateUser(parent, { input }) {
       first_name: input.first_name,
       last_name: input.last_name,
       role: input.role,
-      created_by: '6862150331861f37e4e3d209',
     };
 
     // **************** validation to ensure fail-fast and bad input is handled correctly
@@ -98,6 +97,10 @@ async function CreateUser(parent, { input }) {
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
     }
+
+    // *************** set static User id for created_by field
+    const staticCreatedBy = '6862150331861f37e4e3d209';
+    newUser.created_by = staticCreatedBy;
 
     // **************** create user with composed object
     const createdUser = await UserModel.create(newUser);
