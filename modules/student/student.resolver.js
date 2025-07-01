@@ -106,7 +106,7 @@ async function CreateStudent(parent, { input }) {
     // *************** validation to ensure fail-fast and bad input is handled correctly
     ValidateStudentInput(newStudent);
 
-    // *************** check if email already exists
+    // *************** check if email already used by another student
     const emailIsExist = await StudentEmailIsExist({ studentEmail: newStudent.email });
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
@@ -185,7 +185,7 @@ async function UpdateStudent(parent, { _id, input }) {
       throw new ApolloError('Student does not exist');
     }
 
-    // **************** check if email already exists
+    // **************** check if email already used by another student
     const emailIsExist = await StudentEmailIsExist({ studentEmail: editedStudent.email, studentId: _id });
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
