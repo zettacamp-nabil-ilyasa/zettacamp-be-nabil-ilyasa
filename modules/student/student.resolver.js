@@ -6,8 +6,7 @@ const StudentModel = require('./student.model.js');
 const SchoolModel = require('../school/school.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
-// *************** IMPORT UTILS ***************
-const { SchoolIsExist } = require('../../shared/utils/school.js');
+// *************** IMPORT UTIL ***************
 const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
 
 // *************** IMPORT VALIDATORS ***************
@@ -115,7 +114,7 @@ async function CreateStudent(parent, { input }) {
     }
 
     // *************** check if school is exist
-    const schoolIsExist = await SchoolIsExist(newStudent.school_id);
+    const schoolIsExist = Boolean(await SchoolModel.exists({ _id: newStudent.school_id, status: 'active' }));
     if (!schoolIsExist) {
       throw new ApolloError('School does not exist');
     }
@@ -194,7 +193,7 @@ async function UpdateStudent(parent, { _id, input }) {
     }
 
     // **************** check if school is exist
-    const schoolIsExist = await SchoolIsExist(editedStudent.school_id);
+    const schoolIsExist = Boolean(await SchoolModel.exists({ _id: editedStudent.school_id, status: 'active' }));
     if (!schoolIsExist) {
       throw new ApolloError('School does not exist');
     }
