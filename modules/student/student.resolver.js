@@ -14,7 +14,6 @@ const { ValidateStudentInput } = require('./student.validators.js');
 
 // *************** IMPORT HELPERS ***************
 const {
-  StudentIsExist,
   StudentEmailIsExist,
   GetStudentCurrentSchoolId,
   GenerateBulkQueryForSchoolIdChange,
@@ -181,7 +180,7 @@ async function UpdateStudent(parent, { _id, input }) {
     ValidateStudentInput(editedStudent);
 
     // **************** check if student is exist
-    const studentIsExist = await StudentIsExist(_id);
+    const studentIsExist = Boolean(await StudentModel.exists({ _id, status: 'active' }));
     if (!studentIsExist) {
       throw new ApolloError('Student does not exist');
     }
@@ -247,7 +246,7 @@ async function DeleteStudent(parent, { _id }) {
     const deletedBy = '6862150331861f37e4e3d209';
 
     // **************** check if student to be deleted is exist
-    const studentIsExist = await StudentIsExist(_id);
+    const studentIsExist = Boolean(await StudentModel.exists({ _id }));
     if (!studentIsExist) {
       throw new ApolloError('Student does not exist');
     }

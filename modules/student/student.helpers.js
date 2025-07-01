@@ -42,34 +42,6 @@ function ConvertStringToDate(dateStr) {
 }
 
 /**
- * Check if a student with the given ID exists and is active.
- * @async
- * @param {string} studentId - The ID of the student to check.
- * @returns {Promise<boolean>} - True if the student exists and is active, false otherwise.
- * @throws {ApolloError} - If validation fails or DB query error occurs.
- */
-async function StudentIsExist(studentId) {
-  try {
-    // *************** validate studentId
-    ValidateId(studentId);
-
-    // *************** set query for db operation
-    const query = { _id: studentId, status: 'active' };
-
-    const isStudentExist = Boolean(await StudentModel.exists(query));
-    return isStudentExist;
-  } catch (error) {
-    await ErrorLogModel.create({
-      error_stack: error.stack,
-      function_name: 'StudentIsExist',
-      path: '/modules/student/student.helpers.js',
-      parameter_input: JSON.stringify({ studentId }),
-    });
-    throw new ApolloError(error.message);
-  }
-}
-
-/**
  * Check if a student email already exists in the database.
  * @async
  * @param {object} params - Input parameters.
@@ -166,7 +138,6 @@ function GenerateBulkQueryForSchoolIdChange({ studentId, newSchoolId, oldSchoolI
 
 // *************** EXPORT MODULE ***************
 module.exports = {
-  StudentIsExist,
   StudentEmailIsExist,
   GetStudentCurrentSchoolId,
   GenerateBulkQueryForSchoolIdChange,
