@@ -48,8 +48,9 @@ async function GetAllUsers() {
  */
 async function GetOneUser(parent, { _id }) {
   try {
-    // **************** validate id
+    // **************** validate user's _id, ensure that it can be casted into valid ObjectId
     ValidateId(_id);
+
     const user = await UserModel.findOne({ _id: _id, status: 'active' }).lean();
     return user;
   } catch (error) {
@@ -130,7 +131,6 @@ async function UpdateUser(parent, { _id, input }) {
   try {
     // **************** compose new object from input
     let editedUser = {
-      _id,
       email: input.email,
       first_name: input.first_name,
       last_name: input.last_name,
@@ -138,25 +138,25 @@ async function UpdateUser(parent, { _id, input }) {
     };
 
     // **************** validate _id
-    ValidateId(editedUser._id);
+    ValidateId(_id);
 
     // **************** validation to ensure fail-fast and bad input is handled correctly
     ValidateUserInput(editedUser);
 
     // **************** check if user exist
-    const userIsExist = await UserIsExist(editedUser._id);
+    const userIsExist = await UserIsExist(_id);
     if (!userIsExist) {
       throw new ApolloError('User does not exist');
     }
 
     // **************** check if email already exist
-    const emailIsExist = await UserEmailIsExist({ userEmail: editedUser.email, userId: editedUser._id });
+    const emailIsExist = await UserEmailIsExist({ userEmail: editedUser.email, userId: _id });
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
     }
 
     // **************** update user with composed object
-    const updatedUser = await UserModel.findOneAndUpdate({ _id: editedUser._id }, { $set: editedUser }, { new: true }).lean();
+    const updatedUser = await UserModel.findOneAndUpdate({ _id }, { $set: editedUser }, { new: true }).lean();
     return updatedUser;
   } catch (error) {
     await ErrorLogModel.create({
@@ -181,7 +181,7 @@ async function UpdateUser(parent, { _id, input }) {
  */
 async function DeleteUser(parent, { _id }) {
   try {
-    // **************** validate id
+    // **************** validate user's _id, ensure that it can be casted into valid ObjectId
     ValidateId(_id);
 
     // **************** sets static deleted_by
