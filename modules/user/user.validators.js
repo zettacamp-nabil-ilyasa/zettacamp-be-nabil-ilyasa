@@ -13,7 +13,7 @@ const userNameRegexPattern = /^[\p{L}\s'-]+$/u;
 function ValidateRole(role) {
   // *************** role input check
   if (!role) {
-    throw new ApolloError('Invalid role input');
+    throw new ApolloError('role is required');
   }
 
   const validRoles = ['admin', 'user'];
@@ -53,12 +53,13 @@ function ValidateUserInput(inputObject) {
   });
 
   // *************** destructured input object
-  let { first_name, last_name, email } = inputObject;
+  let { first_name, last_name, email, role } = inputObject;
 
   // *************** mandatory fields fail-fast
   if (!email) throw new ApolloError('email is required');
   if (!first_name) throw new ApolloError('first_name is required');
   if (!last_name) throw new ApolloError('last_name is required');
+  ValidateRole(role);
 
   // *************** validate input using joi schema
   const { error } = userSchema.validate({ first_name, last_name, email }, { abortEarly: true });
@@ -70,4 +71,4 @@ function ValidateUserInput(inputObject) {
 }
 
 // *************** EXPORT MODULES ***************
-module.exports = { ValidateUserInput, ValidateRole };
+module.exports = { ValidateUserInput };

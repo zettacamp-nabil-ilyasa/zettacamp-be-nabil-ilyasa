@@ -3,17 +3,12 @@ const { gql } = require('apollo-server-express');
 
 // ***************
 const userTypeDefs = gql`
-  enum Role {
-    admin
-    user
-  }
-
   type User {
     _id: ID!
     first_name: String!
     last_name: String!
     email: String!
-    roles: [Role!]
+    role: String!
     status: Status!
     deleted_at: Date
     deleted_by: ID
@@ -26,10 +21,6 @@ const userTypeDefs = gql`
     first_name: String!
     last_name: String!
     email: String!
-  }
-
-  input EditRoleInput {
-    _id: ID!
     role: String!
   }
 
@@ -42,8 +33,6 @@ const userTypeDefs = gql`
     CreateUser(input: UserInput): User
     UpdateUser(_id: ID!, input: UserInput!): User
     DeleteUser(_id: ID!): String
-    AddRole(input: EditRoleInput): User
-    DeleteRole(input: EditRoleInput): User
   }
 `;
 

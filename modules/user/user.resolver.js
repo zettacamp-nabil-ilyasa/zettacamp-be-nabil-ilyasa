@@ -8,11 +8,11 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 // *************** IMPORT UTIL ***************
 const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
 
-// *************** IMPORT VALIDATORS ***************
-const { ValidateUserInput, ValidateRole } = require('./user.validators.js');
+// *************** IMPORT VALIDATOR ***************
+const { ValidateUserInput } = require('./user.validators.js');
 
 // *************** IMPORT HELPERS ***************
-const { UserIsExist, UserEmailIsExist, UserHasRole, IsRemovableRole } = require('./user.helpers.js');
+const { UserIsExist, UserEmailIsExist } = require('./user.helpers.js');
 
 // *************** QUERY ***************
 
@@ -73,6 +73,7 @@ async function GetOneUser(parent, { _id }) {
  * @param {string} args.input.email - Email address of the new user.
  * @param {string} args.input.first_name - First name of the new user.
  * @param {string} args.input.last_name - Last name of the new user.
+ * @param {string} args.input.role - Role of the new user.
  * @param {string} args.input.created_by - ID of the admin who creates this user.
  * @returns {Promise<Object>} - Created user document.
  * @throws {ApolloError} - Throws error if validation fails, user unauthorized, or email already exists.
@@ -84,6 +85,7 @@ async function CreateUser(parent, { input }) {
       email: input.email,
       first_name: input.first_name,
       last_name: input.last_name,
+      role: input.role,
       created_by: '6862150331861f37e4e3d209',
     };
 
@@ -117,9 +119,10 @@ async function CreateUser(parent, { input }) {
  * @param {object} args - Resolver arguments.
  * @param {object} args.input - Fields to update in the user document.
  * @param {string} args.input._id - ID of the user to update.
- * @param {string} [args.input.email] - Updated email (optional).
- * @param {string} [args.input.first_name] - Updated first name (optional).
- * @param {string} [args.input.last_name] - Updated last name (optional).
+ * @param {string} args.input.email - Updated email.
+ * @param {string} args.input.first_name - Updated first name.
+ * @param {string} args.input.last_name - Updated last name.
+ * @param {string} args.input.role - Updated role.
  * @returns {Promise<Object>} - Updated user document.
  * @throws {ApolloError} - Throws error if validation fails, user not found, or email already exists.
  */
@@ -131,6 +134,7 @@ async function UpdateUser(parent, { _id, input }) {
       email: input.email,
       first_name: input.first_name,
       last_name: input.last_name,
+      role: input.role,
     };
 
     // **************** validate _id
@@ -144,12 +148,11 @@ async function UpdateUser(parent, { _id, input }) {
     if (!userIsExist) {
       throw new ApolloError('User does not exist');
     }
+
     // **************** check if email already exist
-    if (editedUser.email) {
-      const emailIsExist = await UserEmailIsExist({ userEmail: editedUser.email, userId: editedUser._id });
-      if (emailIsExist) {
-        throw new ApolloError('Email already exist');
-      }
+    const emailIsExist = await UserEmailIsExist({ userEmail: editedUser.email, userId: editedUser._id });
+    if (emailIsExist) {
+      throw new ApolloError('Email already exist');
     }
 
     // **************** update user with composed object
@@ -161,118 +164,6 @@ async function UpdateUser(parent, { _id, input }) {
       function_name: 'UpdateUser',
       path: '/modules/user/user.resolver.js',
       parameter_input: JSON.stringify({ _id, input }),
-    });
-    throw new ApolloError(error.message);
-  }
-}
-
-/**
- * Add a new role to a user.
- * @async
- * @param {object} parent - Not used (GraphQL resolver convention).
- * @param {object} args - Resolver arguments.
- * @param {object} args.input - Fields to modify user roles.
- * @param {string} args.input._id - ID of the user to assign the role to.
- * @param {string} args.input.updater_id - ID of the admin who assigns the role.
- * @param {string} args.input.role - Role to be added (e.g. "admin", "editor").
- * @returns {Promise<Object>} - Updated user document.
- * @throws {ApolloError} - Throws error if validation fails, unauthorized, or user already has the role.
- */
-async function AddRole(parent, { input }) {
-  try {
-    // **************** validate input
-    const addedRoleForUser = {
-      _id: input._id,
-      role: typeof input.role === 'string' ? input.role.trim().toLowerCase() : input.role,
-    };
-
-    // **************** mandatory fields fail-fast
-    ValidateId(addedRoleForUser._id);
-    ValidateRole(addedRoleForUser.role);
-
-    // **************** check if user whose role is to be added exist
-    const userIsExist = await UserIsExist(addedRoleForUser._id);
-    if (!userIsExist) {
-      throw new ApolloError('User does not exist');
-    }
-
-    // **************** check if user already has the role
-    const userHasRole = await UserHasRole({ userId: addedRoleForUser._id, role: addedRoleForUser.role });
-    if (userHasRole) {
-      throw new ApolloError('User already has the role');
-    }
-
-    const updatedUser = await UserModel.findOneAndUpdate(
-      { _id: addedRoleForUser._id },
-      { $addToSet: { roles: addedRoleForUser.role } },
-      { new: true }
-    ).lean();
-    return updatedUser;
-  } catch (error) {
-    await ErrorLogModel.create({
-      error_stack: error.stack,
-      function_name: 'AddRole',
-      path: '/modules/user/user.resolver.js',
-      parameter_input: JSON.stringify({ input }),
-    });
-    throw new ApolloError(error.message);
-  }
-}
-
-/**
- * Remove a role from a user.
- * @async
- * @param {object} parent - Not used (GraphQL resolver convention).
- * @param {object} args - Resolver arguments.
- * @param {object} args.input - Fields to modify user roles.
- * @param {string} args.input._id - ID of the user to remove the role from.
- * @param {string} args.input.updater_id - ID of the admin who removes the role.
- * @param {string} args.input.role - Role to be removed.
- * @returns {Promise<Object>} - Updated user document.
- * @throws {ApolloError} - Throws error if validation fails, unauthorized, role not found, or role is not removable.
- */
-async function DeleteRole(parent, { input }) {
-  try {
-    // **************** compose new object from input
-    const deletedRoleFromUser = {
-      _id: input._id,
-      role: typeof input.role === 'string' ? input.role.trim().toLowerCase() : input.role,
-    };
-
-    // **************** mandatory fields fail-fast
-    ValidateId(deletedRoleFromUser._id);
-    ValidateRole(deletedRoleFromUser.role);
-
-    // **************** check if user whose role is to be added exist
-    const userIsExist = await UserIsExist(deletedRoleFromUser._id);
-    if (!userIsExist) {
-      throw new ApolloError('User does not exist');
-    }
-
-    // **************** check if user has the role
-    const userHasRole = await UserHasRole({ userId: deletedRoleFromUser._id, role: deletedRoleFromUser.role });
-    if (!userHasRole) {
-      throw new ApolloError('User does not have the role');
-    }
-
-    // **************** check if role can be removed
-    const isRemovableRole = IsRemovableRole(deletedRoleFromUser.role);
-    if (!isRemovableRole) {
-      throw new ApolloError('Role cannot be removed');
-    }
-
-    const updatedUser = await UserModel.findOneAndUpdate(
-      { _id: deletedRoleFromUser._id },
-      { $pull: { roles: deletedRoleFromUser.role } },
-      { new: true }
-    ).lean();
-    return updatedUser;
-  } catch (error) {
-    await ErrorLogModel.create({
-      error_stack: error.stack,
-      function_name: 'DeleteRole',
-      path: '/modules/user/user.resolver.js',
-      parameter_input: JSON.stringify({ input }),
     });
     throw new ApolloError(error.message);
   }
@@ -355,7 +246,7 @@ async function created_by(parent, args, context) {
 // *************** EXPORT MODULES ***************
 module.exports = {
   Query: { GetAllUsers, GetOneUser },
-  Mutation: { CreateUser, UpdateUser, DeleteUser, AddRole, DeleteRole },
+  Mutation: { CreateUser, UpdateUser, DeleteUser },
   User: {
     created_by,
   },

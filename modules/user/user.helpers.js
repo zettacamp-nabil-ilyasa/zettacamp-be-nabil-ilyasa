@@ -5,14 +5,8 @@ const { ApolloError } = require('apollo-server-express');
 const UserModel = require('./user.model');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
-// *************** IMPORT UTILS ***************
+// *************** IMPORT UTIL ***************
 const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
-
-// *************** IMPORT VALIDATORS ***************
-const { ValidateRole } = require('./user.validators.js');
-
-// *************** list of protected roles
-const protectedRoles = ['user'];
 
 /**
  * Check if a user with the given ID exists and is active.
@@ -83,59 +77,8 @@ async function UserEmailIsExist({ userEmail, userId }) {
   }
 }
 
-/**
- * Check if a role is removable (not protected).
- * @param {string} role - The role to validate and check.
- * @returns {boolean} - True if the role can be removed, false otherwise.
- * @throws {ApolloError} - If the role is invalid.
- */
-function IsRemovableRole(role) {
-  // *************** validate role
-  ValidateRole(role);
-
-  // *************** check if role is not a protected role
-  const isRemovableRole = !protectedRoles.includes(role);
-  return isRemovableRole;
-}
-
-/**
- * Check if a user already has a specific role.
- * @async
- * @param {object} params - Input parameters.
- * @param {string} params.userId - The ID of the user.
- * @param {string} params.role - The role to check for.
- * @returns {Promise<boolean>} - True if the user has the role, false otherwise.
- * @throws {ApolloError} - If validation fails or DB query fails.
- */
-async function UserHasRole({ userId, role }) {
-  try {
-    // *************** validate userId
-    ValidateId(userId);
-
-    // *************** role input check
-    ValidateRole(role);
-
-    // *************** set query for db operation
-    const query = { _id: userId, roles: role };
-
-    // *************** db operation
-    const isUserHasRole = Boolean(await UserModel.exists(query));
-    return isUserHasRole;
-  } catch (error) {
-    await ErrorLogModel.create({
-      error_stack: error.stack,
-      function_name: 'UserHasRole',
-      path: '/modules/user/user.helpers.js',
-      parameter_input: JSON.stringify({ userId, role }),
-    });
-    throw new ApolloError(error.message);
-  }
-}
-
 // *************** EXPORT MODULES ***************
 module.exports = {
   UserIsExist,
   UserEmailIsExist,
-  IsRemovableRole,
-  UserHasRole,
 };

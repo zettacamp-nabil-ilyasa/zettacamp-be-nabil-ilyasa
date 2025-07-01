@@ -16,7 +16,7 @@ const user = new mongoose.Schema(
     password_hash: { type: String },
 
     //User role
-    roles: { type: [String], enum: ['admin', 'user'], default: ['user'], required: true },
+    role: { type: String, enum: ['admin', 'user'], default: 'user', required: true },
 
     //Account status
     status: { type: String, enum: ['active', 'deleted'], default: 'active' },
