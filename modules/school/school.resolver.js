@@ -93,7 +93,6 @@ async function CreateSchool(parent, { input }) {
       country: input.country,
       city: input.city,
       zipcode: input.zipcode,
-      created_by: '6862150331861f37e4e3d209',
     };
 
     // *************** validation to ensure bad input is handled correctly
@@ -104,6 +103,10 @@ async function CreateSchool(parent, { input }) {
     if (isSchoolNameExist) {
       throw new ApolloError('School name already exist');
     }
+
+    // *************** set static User id for created_by field
+    const staticCreatedBy = '6862150331861f37e4e3d209';
+    newSchool.created_by = staticCreatedBy;
 
     // *************** create school with composed object
     const createdSchool = await SchoolModel.create(newSchool);
