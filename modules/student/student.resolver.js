@@ -57,7 +57,7 @@ async function GetAllStudents() {
 
 async function GetOneStudent(parent, { _id }) {
   try {
-    // **************** validate _id
+    // **************** validate student's _id, ensure that it can be casted into valid ObjectId
     ValidateId(_id);
 
     const student = await StudentModel.findOne({ _id: _id, status: 'active' }).lean();
@@ -103,7 +103,7 @@ async function CreateStudent(parent, { input }) {
       created_by: '6862150331861f37e4e3d209',
     };
 
-    // **************** validate school_id
+    // **************** validate school_id, ensure that it can be casted into valid ObjectId
     ValidateId(newStudent.school_id);
 
     // *************** validation to ensure fail-fast and bad input is handled correctly
@@ -163,7 +163,6 @@ async function UpdateStudent(parent, { _id, input }) {
   try {
     // **************** compose new object from input
     let editedStudent = {
-      _id,
       email: input.email,
       first_name: input.first_name,
       last_name: input.last_name,
@@ -172,21 +171,21 @@ async function UpdateStudent(parent, { _id, input }) {
       school_id: input.school_id,
     };
 
-    // **************** validate ids
-    ValidateId(editedStudent._id);
+    // **************** validate student's _id and school_id, ensure that it can be casted into valid ObjectId
+    ValidateId(_id);
     ValidateId(editedStudent.school_id);
 
     // **************** validation to ensure bad input is handled correctly
     ValidateStudentInput(editedStudent);
 
     // **************** check if student is exist
-    const studentIsExist = await StudentIsExist(editedStudent._id);
+    const studentIsExist = await StudentIsExist(_id);
     if (!studentIsExist) {
       throw new ApolloError('Student does not exist');
     }
 
     // **************** check if email already exists
-    const emailIsExist = await StudentEmailIsExist({ studentEmail: editedStudent.email, studentId: editedStudent._id });
+    const emailIsExist = await StudentEmailIsExist({ studentEmail: editedStudent.email, studentId: _id });
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
     }
@@ -197,11 +196,11 @@ async function UpdateStudent(parent, { _id, input }) {
       throw new ApolloError('School does not exist');
     }
 
-    const studentCurrentSchoolId = await GetStudentCurrentSchoolId(editedStudent._id);
+    const studentCurrentSchoolId = await GetStudentCurrentSchoolId(_id);
     // **************** check if current school id is different from edited school id (changed school id)
     if (String(studentCurrentSchoolId) !== editedStudent.school_id) {
       const bulkQuery = GenerateBulkQueryForSchoolIdChange({
-        studentId: editedStudent._id,
+        studentId: _id,
         newSchoolId: editedStudent.school_id,
         oldSchoolId: studentCurrentSchoolId,
       });
@@ -214,7 +213,7 @@ async function UpdateStudent(parent, { _id, input }) {
     }
 
     // **************** update student with composed object
-    const updatedStudent = await StudentModel.findOneAndUpdate({ _id: editedStudent._id }, { $set: editedStudent }, { new: true }).lean();
+    const updatedStudent = await StudentModel.findOneAndUpdate({ _id }, { $set: editedStudent }, { new: true }).lean();
     return updatedStudent;
   } catch (error) {
     await ErrorLogModel.create({
@@ -239,8 +238,9 @@ async function UpdateStudent(parent, { _id, input }) {
  */
 async function DeleteStudent(parent, { _id }) {
   try {
-    // **************** validate id and deleted_by
+    // **************** validate student's _id, ensure that it can be casted into valid ObjectId
     ValidateId(_id);
+
     // **************** sets static deleted_by
     const deletedBy = '6862150331861f37e4e3d209';
 
