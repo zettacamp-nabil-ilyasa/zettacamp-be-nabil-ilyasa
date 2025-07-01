@@ -1,4 +1,5 @@
 // *************** IMPORT LIBRARY ***************
+const mongoose = require('mongoose');
 const { ApolloError } = require('apollo-server-express');
 
 // *************** IMPORT MODULE ***************
