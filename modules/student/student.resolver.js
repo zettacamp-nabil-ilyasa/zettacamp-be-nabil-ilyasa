@@ -186,11 +186,9 @@ async function UpdateStudent(parent, { _id, input }) {
     }
 
     // **************** check if email already exists
-    if (editedStudent.email) {
-      const emailIsExist = await StudentEmailIsExist({ studentEmail: editedStudent.email, studentId: editedStudent._id });
-      if (emailIsExist) {
-        throw new ApolloError('Email already exist');
-      }
+    const emailIsExist = await StudentEmailIsExist({ studentEmail: editedStudent.email, studentId: editedStudent._id });
+    if (emailIsExist) {
+      throw new ApolloError('Email already exist');
     }
 
     // **************** check if school is exist
