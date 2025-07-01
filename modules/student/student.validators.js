@@ -58,50 +58,5 @@ function ValidateStudentInput(inputObject) {
   }
 }
 
-/**
- * Validates student update input.
- * @param {object} inputObject - The input object containing updated student data.
- * @returns {object} - The validated and formatted input.
- * @throws {Error} - If validation fails.
- */
-function ValidateStudentUpdateInput(inputObject) {
-  // *************** joi schema for student update
-  const updateStudentSchema = Joi.object({
-    first_name: Joi.string()
-      .optional()
-      .trim()
-      .pattern(studentNameRegexPattern)
-      .messages({ 'string.pattern.base': 'first name contains invalid characters' }),
-    last_name: Joi.string()
-      .optional()
-      .trim()
-      .pattern(studentNameRegexPattern)
-      .messages({ 'string.pattern.base': 'last name contains invalid characters' }),
-    email: Joi.string()
-      .optional()
-      .trim()
-      .email()
-      .lowercase()
-      .messages({ 'string.email': 'email format is invalid', 'any.required': 'email is required' }),
-    date_of_birth: Joi.string()
-      .optional()
-      .trim()
-      .pattern(dateRegexPattern)
-      .allow('')
-      .messages({ 'string.pattern.base': 'date of birth should be in DD-MM-YYYY format' }),
-  });
-
-  // *************** destructured input object
-  let { first_name, last_name, email, date_of_birth } = inputObject;
-
-  // *************** validate input using joi schema
-  const { error } = updateStudentSchema.validate({ first_name, last_name, email, date_of_birth }, { abortEarly: true });
-
-  // *************** throw error if joi validation fails
-  if (error) {
-    throw new ApolloError(error.message);
-  }
-}
-
 // *************** MODULE EXPORTS ***************
 module.exports = { ValidateStudentInput };
