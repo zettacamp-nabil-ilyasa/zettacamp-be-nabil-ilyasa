@@ -97,7 +97,7 @@ async function CreateSchool(parent, { input }) {
     // *************** validation to ensure bad input is handled correctly
     ValidateSchoolInput(newSchool);
 
-    // *************** check if school name already exists
+    // *************** check if school name already used by another school
     const isSchoolNameExist = await SchoolNameIsExist({ longName: newSchool.long_name, brandName: newSchool.brand_name });
     if (isSchoolNameExist) {
       throw new ApolloError('School name already exist');
@@ -161,7 +161,7 @@ async function UpdateSchool(parent, { _id, input }) {
       throw new ApolloError('School does not exist');
     }
 
-    // *************** check if school name already exists
+    // *************** check if school name already used by another school
     const isSchoolNameExist = await SchoolNameIsExist({
       longName: editedSchool.long_name,
       brandName: editedSchool.brand_name,

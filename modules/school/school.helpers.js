@@ -29,6 +29,12 @@ async function SchoolNameIsExist({ longName, brandName, schoolId }) {
     // *************** set base query object
     const query = { status: 'active' };
 
+    // *************** add _id to query if schoolId is provided
+    if (schoolId) {
+      ValidateId(schoolId);
+      query._id = { $ne: schoolId };
+    }
+
     // *************** set query with or if both longName and brandName are not empty
     if (longName && brandName) {
       query.$or = [{ long_name: longName }, { brand_name: brandName }];
@@ -40,11 +46,6 @@ async function SchoolNameIsExist({ longName, brandName, schoolId }) {
       // *************** set query with brandName if only brandName is not empty
     } else if (brandName) {
       query.brand_name = brandName;
-    }
-    // *************** add _id to query if schoolId is provided
-    if (schoolId) {
-      ValidateId(schoolId);
-      query._id = { $ne: schoolId };
     }
     const isExist = Boolean(await SchoolModel.exists(query));
     return isExist;
