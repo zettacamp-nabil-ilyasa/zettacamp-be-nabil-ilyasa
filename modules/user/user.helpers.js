@@ -24,14 +24,10 @@ async function UserEmailIsExist({ userEmail, userId }) {
       throw new ApolloError('Invalid email input');
     }
 
-    // *************** validate userId
-    if (userId) {
-      ValidateId(userId);
-    }
-
     // *************** set query for db operation
     const query = { email: userEmail };
     if (userId) {
+      ValidateId(userId);
       query._id = { $ne: userId };
     }
 

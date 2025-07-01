@@ -2,9 +2,6 @@
 const { ApolloError } = require('apollo-server-express');
 const Joi = require('joi');
 
-// *************** regex pattern to ensure first and last name contains only letters
-const userNameRegexPattern = /^[\p{L}\s'-]+$/u;
-
 /**
  * Check if role is valid
  * @param {string} role - The role to be checked.
@@ -34,16 +31,8 @@ function ValidateRole(role) {
 function ValidateUserInput(inputObject) {
   // *************** joi schema for create user
   const userSchema = Joi.object({
-    first_name: Joi.string()
-      .required()
-      .trim()
-      .pattern(userNameRegexPattern)
-      .messages({ 'string.pattern.base': 'first name contains invalid characters', 'any.required': 'first name is required' }),
-    last_name: Joi.string()
-      .required()
-      .trim()
-      .pattern(userNameRegexPattern)
-      .messages({ 'string.pattern.base': 'last name contains invalid characters', 'any.required': 'last name is required' }),
+    first_name: Joi.string().required().messages({ 'any.required': 'first name is required' }),
+    last_name: Joi.string().required().messages({ 'any.required': 'last name is required' }),
     email: Joi.string()
       .required()
       .trim()
