@@ -13,12 +13,7 @@ const { ValidateId } = require('../../utilities/common-validator/mongo-validator
 const { ValidateStudentInput } = require('./student.validators.js');
 
 // *************** IMPORT HELPERS ***************
-const {
-  StudentEmailIsExist,
-  GetStudentCurrentSchoolId,
-  GenerateBulkQueryForSchoolIdChange,
-  ConvertStringToDate,
-} = require('./student.helpers.js');
+const { StudentEmailIsExist, GenerateBulkQueryForSchoolIdChange } = require('./student.helpers.js');
 
 // *************** QUERY ***************
 
@@ -118,11 +113,6 @@ async function CreateStudent(parent, { input }) {
       throw new ApolloError('School does not exist');
     }
 
-    // *************** convert string value to Date and assign to date_of_birth
-    if (newStudent.date_of_birth) {
-      newStudent.date_of_birth = ConvertStringToDate(newStudent.date_of_birth);
-    }
-
     // *************** set static User id for created_by field
     const createdByUserId = '6862150331861f37e4e3d209';
     newStudent.created_by = createdByUserId;
@@ -197,20 +187,15 @@ async function UpdateStudent(parent, { _id, input }) {
       throw new ApolloError('School does not exist');
     }
 
-    const studentCurrentSchoolId = await GetStudentCurrentSchoolId(_id);
+    const currentStudentDocument = await StudentModel.findOne({ _id }).lean();
     // **************** check if current school id is different from edited school id (changed school id)
-    if (String(studentCurrentSchoolId) !== editedStudent.school_id) {
+    if (String(currentStudentDocument.school_id) !== editedStudent.school_id) {
       const bulkQuery = GenerateBulkQueryForSchoolIdChange({
         studentId: _id,
         newSchoolId: editedStudent.school_id,
-        oldSchoolId: studentCurrentSchoolId,
+        oldSchoolId: currentStudentDocument.school_id,
       });
       await SchoolModel.bulkWrite(bulkQuery);
-    }
-
-    // **************** check if date_of_birth is provided and convert validated string value to date
-    if (editedStudent.date_of_birth) {
-      editedStudent.date_of_birth = ConvertStringToDate(editedStudent.date_of_birth);
     }
 
     // **************** update student with composed object

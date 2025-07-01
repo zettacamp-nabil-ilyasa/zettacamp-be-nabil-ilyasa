@@ -2,12 +2,6 @@
 const { ApolloError } = require('apollo-server-express');
 const Joi = require('joi');
 
-// *************** regex pattern to ensure first and last name contains only letters
-const studentNameRegexPattern = /^[\p{L}\s'-]+$/u;
-
-// *************** regex pattern to ensure date is in DD-MM-YYYY format
-const dateRegexPattern = /^\d{2}-\d{2}-\d{4}$/;
-
 /**
  * Validates student creation input.
  * @param {object} inputObject - The input object containing student data.
@@ -17,28 +11,15 @@ const dateRegexPattern = /^\d{2}-\d{2}-\d{4}$/;
 function ValidateStudentInput(inputObject) {
   // *************** joi schema for student create
   const studentSchema = Joi.object({
-    first_name: Joi.string()
-      .required()
-      .trim()
-      .pattern(studentNameRegexPattern)
-      .messages({ 'string.pattern.base': 'first name contains invalid characters', 'any.required': 'first name is required' }),
-    last_name: Joi.string()
-      .required()
-      .trim()
-      .pattern(studentNameRegexPattern)
-      .messages({ 'string.pattern.base': 'last name contains invalid characters', 'any.required': 'last name is required' }),
+    first_name: Joi.string().required().messages({ 'any.required': 'first name is required' }),
+    last_name: Joi.string().required().messages({ 'any.required': 'last name is required' }),
     email: Joi.string()
       .required()
       .trim()
       .email()
       .lowercase()
       .messages({ 'string.email': 'email format is invalid', 'any.required': 'email is required' }),
-    date_of_birth: Joi.string()
-      .optional()
-      .trim()
-      .pattern(dateRegexPattern)
-      .allow('')
-      .messages({ 'string.pattern.base': 'date of birth should be in DD-MM-YYYY format' }),
+    date_of_birth: Joi.string().required().messages({ 'any.required': 'date of birth is required' }),
   });
 
   // *************** destructured input object
@@ -51,6 +32,10 @@ function ValidateStudentInput(inputObject) {
 
   // *************** validate input using joi schema
   const { error } = studentSchema.validate({ first_name, last_name, email, date_of_birth }, { abortEarly: true });
+
+  // *************** validate date_of_birth string
+  const parsedDate = date_of_birth instanceof Date ? date_of_birth : new Date(date_of_birth);
+  if (isNaN(parsedDate.getTime()) || parsedDate.getFullYear() < 1900) throw new ApolloError('invalid date_of_birth format');
 
   // *************** throw error if joi validation fails
   if (error) {

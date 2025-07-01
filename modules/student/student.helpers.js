@@ -9,39 +9,6 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
 
 /**
- * Convert a date string in "DD-MM-YYYY" format to a JavaScript Date object.
- * @param {string} dateStr - The date string to be parsed.
- * @returns {Date|undefined} - The corresponding Date object, or undefined if input is empty.
- * @throws {ApolloError} - If the date is invalid or the date is in the future.
- */
-function ConvertStringToDate(dateStr) {
-  // *************** date input check, return undefined to escape mongo date cast error
-  if (!dateStr) {
-    return undefined;
-  }
-
-  // *************** split to get day, month and year
-  const [day, month, year] = dateStr.split('-');
-  if (day < 1 || day > 31 || month < 1 || month > 12) {
-    throw new ApolloError('Invalid date format');
-  }
-  const birthDate = new Date(year, month - 1, day);
-  const today = new Date();
-
-  // *************** check if date is an invalid date
-  if (isNaN(birthDate.getTime())) {
-    throw new ApolloError('Invalid date format');
-  }
-
-  // *************** check if date is in the future
-  if (birthDate > today) {
-    throw new ApolloError('Date of birth cannot be in the future');
-  }
-
-  return birthDate;
-}
-
-/**
  * Check if a student email already exists in the database.
  * @async
  * @param {object} params - Input parameters.
@@ -81,35 +48,6 @@ async function StudentEmailIsExist({ studentEmail, studentId }) {
 }
 
 /**
- * Get the current school ID of a student.
- * @async
- * @param {string} studentId - The ID of the student.
- * @returns {Promise<string>} - The current school ID of the student.
- * @throws {ApolloError} - If validation fails or student does not exist.
- */
-async function GetStudentCurrentSchoolId(studentId) {
-  try {
-    // *************** validate id
-    ValidateId(studentId);
-
-    const student = await StudentModel.findOne({ _id: studentId }).lean();
-    if (!student) {
-      throw new ApolloError('Student does not exist');
-    }
-
-    return student.school_id;
-  } catch (error) {
-    await ErrorLogModel.create({
-      error_stack: error.stack,
-      function_name: 'GetStudentCurrentSchoolId',
-      path: '/modules/student/student.helpers.js',
-      parameter_input: JSON.stringify({ studentId }),
-    });
-    throw new ApolloError(error.message);
-  }
-}
-
-/**
  * Generate a bulk write query to move a student from one school to another.
  * @param {object} params - Input parameters.
  * @param {string} params.studentId - The student ID to move.
@@ -139,7 +77,5 @@ function GenerateBulkQueryForSchoolIdChange({ studentId, newSchoolId, oldSchoolI
 // *************** EXPORT MODULE ***************
 module.exports = {
   StudentEmailIsExist,
-  GetStudentCurrentSchoolId,
   GenerateBulkQueryForSchoolIdChange,
-  ConvertStringToDate,
 };
