@@ -99,8 +99,8 @@ async function CreateUser(parent, { input }) {
     }
 
     // *************** set static User id for created_by field
-    const staticCreatedBy = '6862150331861f37e4e3d209';
-    newUser.created_by = staticCreatedBy;
+    const createdByUserId = '6862150331861f37e4e3d209';
+    newUser.created_by = createdByUserId;
 
     // **************** create user with composed object
     const createdUser = await UserModel.create(newUser);
@@ -188,7 +188,7 @@ async function DeleteUser(parent, { _id }) {
     ValidateId(_id);
 
     // **************** sets static deleted_by
-    const deletedBy = '6862150331861f37e4e3d209';
+    const deletedByUserId = '6862150331861f37e4e3d209';
 
     // **************** check if user to be deleted is exist
     const userIsExist = Boolean(await UserModel.exists({ _id }));
@@ -197,12 +197,12 @@ async function DeleteUser(parent, { _id }) {
     }
 
     // **************** check if user is trying to delete themselves
-    if (_id === deletedBy) {
+    if (_id === deletedByUserId) {
       throw new ApolloError('You cannot delete yourself');
     }
 
     // **************** soft-delete user by updating it's status
-    await UserModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: deletedBy, deleted_at: new Date() } });
+    await UserModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: deletedByUserId, deleted_at: new Date() } });
     return 'User deleted successfully';
   } catch (error) {
     await ErrorLogModel.create({
