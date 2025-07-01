@@ -92,7 +92,7 @@ async function CreateUser(parent, { input }) {
     // **************** validation to ensure fail-fast and bad input is handled correctly
     ValidateUserInput(newUser);
 
-    // **************** check if email already exist
+    // **************** check if email already used by another user
     const emailIsExist = await UserEmailIsExist({ userEmail: newUser.email });
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
@@ -152,7 +152,7 @@ async function UpdateUser(parent, { _id, input }) {
       throw new ApolloError('User does not exist');
     }
 
-    // **************** check if email already exist
+    // **************** check if email already used by another user
     const emailIsExist = await UserEmailIsExist({ userEmail: editedUser.email, userId: _id });
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
