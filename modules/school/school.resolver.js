@@ -50,7 +50,7 @@ async function GetAllSchools() {
  */
 async function GetOneSchool(parent, { _id }) {
   try {
-    //**************** validate id
+    //**************** validate school's _id, ensure that it can be casted into valid ObjectId
     ValidateId(_id);
 
     const school = await SchoolModel.findOne({ _id: _id, status: 'active' }).lean();
@@ -139,7 +139,6 @@ async function UpdateSchool(parent, { _id, input }) {
   try {
     // *************** compose new object from input
     const editedSchool = {
-      _id,
       long_name: input.long_name,
       brand_name: input.brand_name,
       address: input.address,
@@ -148,14 +147,14 @@ async function UpdateSchool(parent, { _id, input }) {
       zipcode: input.zipcode,
     };
 
-    // *************** validate id
-    ValidateId(editedSchool._id);
+    // *************** validate school's _id, ensure that it can be casted into valid ObjectId
+    ValidateId(_id);
 
     // *************** validation to ensure fail-fast and bad input is handled correctly
     ValidateSchoolInput(editedSchool);
 
     // *************** check if school exists
-    const schoolIsExist = await SchoolIsExist(editedSchool._id);
+    const schoolIsExist = await SchoolIsExist(_id);
     if (!schoolIsExist) {
       throw new ApolloError('School does not exist');
     }
@@ -164,14 +163,14 @@ async function UpdateSchool(parent, { _id, input }) {
     const isSchoolNameExist = await SchoolNameIsExist({
       longName: editedSchool.long_name,
       brandName: editedSchool.brand_name,
-      schoolId: editedSchool._id,
+      schoolId: _id,
     });
     if (isSchoolNameExist) {
       throw new ApolloError('School name already exist');
     }
 
     // *************** update school with composed object
-    const updatedSchool = await SchoolModel.findOneAndUpdate({ _id: editedSchool._id }, { $set: editedSchool }, { new: true }).lean();
+    const updatedSchool = await SchoolModel.findOneAndUpdate({ _id }, { $set: editedSchool }, { new: true }).lean();
     return updatedSchool;
   } catch (error) {
     await ErrorLogModel.create({
@@ -196,7 +195,7 @@ async function UpdateSchool(parent, { _id, input }) {
  */
 async function DeleteSchool(parent, { _id }) {
   try {
-    //**************** validate _id
+    //**************** validate school's _id, ensure that it can be casted into valid ObjectId
     ValidateId(_id);
 
     // **************** sets static deleted_by
