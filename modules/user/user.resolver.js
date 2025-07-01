@@ -209,7 +209,7 @@ async function DeleteUser(parent, { _id }) {
       error_stack: error.stack,
       function_name: 'DeleteUser',
       path: '/modules/user/user.resolver.js',
-      parameter_input: JSON.stringify({ _id, deleted_by }),
+      parameter_input: JSON.stringify({ _id }),
     });
     throw new ApolloError(error.message);
   }
