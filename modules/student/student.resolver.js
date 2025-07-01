@@ -100,7 +100,6 @@ async function CreateStudent(parent, { input }) {
       school_id: input.school_id,
       // *************** set date_of_birth to undefined if it's an empty string
       date_of_birth: typeof input.date_of_birth === 'string' && input.date_of_birth.trim() === '' ? undefined : input.date_of_birth,
-      created_by: '6862150331861f37e4e3d209',
     };
 
     // **************** validate school_id, ensure that it can be casted into valid ObjectId
@@ -125,6 +124,10 @@ async function CreateStudent(parent, { input }) {
     if (newStudent.date_of_birth) {
       newStudent.date_of_birth = ConvertStringToDate(newStudent.date_of_birth);
     }
+
+    // *************** set static User id for created_by field
+    const staticCreatedBy = '6862150331861f37e4e3d209';
+    newStudent.created_by = staticCreatedBy;
 
     // *************** create student with composed object
     const createdStudent = await StudentModel.create(newStudent);
