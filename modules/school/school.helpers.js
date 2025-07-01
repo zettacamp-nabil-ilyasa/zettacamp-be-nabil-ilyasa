@@ -4,7 +4,6 @@ const { ApolloError } = require('apollo-server-express');
 
 // *************** IMPORT MODULE ***************
 const SchoolModel = require('./school.model.js');
-const StudentModel = require('../student/student.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT UTIL ***************
