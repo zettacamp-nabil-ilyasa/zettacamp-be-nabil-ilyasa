@@ -8,9 +8,8 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 // *************** IMPORT VALIDATORS ***********************
 const { ValidateSchoolInput } = require('./school.validators.js');
 
-// *************** IMPORT UTILS ***************
+// *************** IMPORT UTIL ***************
 const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
-const { SchoolIsExist } = require('../../shared/utils/school.js');
 
 // *************** IMPORT HELPER ***************
 const { SchoolNameIsExist, SchoolIsReferencedByStudent } = require('./school.helpers.js');
@@ -157,7 +156,7 @@ async function UpdateSchool(parent, { _id, input }) {
     ValidateSchoolInput(editedSchool);
 
     // *************** check if school exists
-    const schoolIsExist = await SchoolIsExist(_id);
+    const schoolIsExist = Boolean(await SchoolModel.exists({ _id, status: 'active' }));
     if (!schoolIsExist) {
       throw new ApolloError('School does not exist');
     }
@@ -205,7 +204,7 @@ async function DeleteSchool(parent, { _id }) {
     const deletedBy = '6862150331861f37e4e3d209';
 
     //**************** check if school to be deleted is exist
-    const schoolIsExist = await SchoolIsExist(_id);
+    const schoolIsExist = Boolean(await SchoolModel.exists({ _id, status: 'active' }));
     if (!schoolIsExist) {
       throw new ApolloError('School does not exist');
     }
