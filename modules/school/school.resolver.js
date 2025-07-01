@@ -3,6 +3,7 @@ const { ApolloError } = require('apollo-server-express');
 
 // *************** IMPORT MODULE ***************
 const SchoolModel = require('./school.model.js');
+const StudentModel = require('../student/student.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATORS ***********************
@@ -12,7 +13,7 @@ const { ValidateSchoolInput } = require('./school.validators.js');
 const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
 
 // *************** IMPORT HELPER ***************
-const { SchoolNameIsExist, SchoolIsReferencedByStudent } = require('./school.helpers.js');
+const { SchoolNameIsExist } = require('./school.helpers.js');
 
 //**************** QUERY ****************
 
@@ -104,8 +105,8 @@ async function CreateSchool(parent, { input }) {
     }
 
     // *************** set static User id for created_by field
-    const staticCreatedBy = '6862150331861f37e4e3d209';
-    newSchool.created_by = staticCreatedBy;
+    const CreatedByUserId = '6862150331861f37e4e3d209';
+    newSchool.created_by = CreatedByUserId;
 
     // *************** create school with composed object
     const createdSchool = await SchoolModel.create(newSchool);
@@ -201,7 +202,7 @@ async function DeleteSchool(parent, { _id }) {
     ValidateId(_id);
 
     // **************** sets static deleted_by
-    const deletedBy = '6862150331861f37e4e3d209';
+    const deletedByUserId = '6862150331861f37e4e3d209';
 
     //**************** check if school to be deleted is exist
     const schoolIsExist = Boolean(await SchoolModel.exists({ _id, status: 'active' }));
@@ -209,14 +210,14 @@ async function DeleteSchool(parent, { _id }) {
       throw new ApolloError('School does not exist');
     }
 
-    //**************** check if school is referenced by any student
-    const schoolIsReferenced = await SchoolIsReferencedByStudent(_id);
+    //**************** check if school is referenced by any student, cast school id to mongoose ObjectId
+    const schoolIsReferenced = Boolean(await StudentModel.exists({ school_id: new mongoose.Types.ObjectId(_id), status: 'active' }));
     if (schoolIsReferenced) {
       throw new ApolloError('School that is referenced by a student cannot be deleted');
     }
 
     //**************** soft-delete school by updating it with composed object
-    await SchoolModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: deletedBy, deleted_at: new Date() } });
+    await SchoolModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: deletedByUserId, deleted_at: new Date() } });
     return 'School deleted successfully';
   } catch (error) {
     await ErrorLogModel.create({

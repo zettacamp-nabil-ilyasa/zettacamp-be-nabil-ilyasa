@@ -60,37 +60,7 @@ async function SchoolNameIsExist({ longName, brandName, schoolId }) {
   }
 }
 
-/**
- * Check if a school is referenced by any student.
- * @async
- * @param {string} schoolId - The ID of the school to check.
- * @returns {Promise<boolean>} - Returns true if at least one student references the school.
- * @throws {ApolloError} - If input validation or DB operation fails.
- */
-async function SchoolIsReferencedByStudent(schoolId) {
-  try {
-    // *************** schoolId input check
-    ValidateId(schoolId);
-
-    // *************** set query for db operation, cast string schoolId to ObjectId (mongoDB doesn't auto cast field besides _id)
-    const query = { school_id: new mongoose.Types.ObjectId(schoolId), status: 'active' };
-
-    // *************** store db operation result as boolean
-    const isReferenced = Boolean(await StudentModel.exists(query));
-    return isReferenced;
-  } catch (error) {
-    await ErrorLogModel.create({
-      error_stack: error.stack,
-      function_name: 'SchoolIsReferencedByStudent',
-      path: '/modules/school/school.helpers.js',
-      parameter_input: JSON.stringify({ schoolId }),
-    });
-    throw new ApolloError(error.message);
-  }
-}
-
 // *************** EXPORT MODULES ***************
 module.exports = {
   SchoolNameIsExist,
-  SchoolIsReferencedByStudent,
 };
