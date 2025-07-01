@@ -124,8 +124,8 @@ async function CreateStudent(parent, { input }) {
     }
 
     // *************** set static User id for created_by field
-    const staticCreatedBy = '6862150331861f37e4e3d209';
-    newStudent.created_by = staticCreatedBy;
+    const createdByUserId = '6862150331861f37e4e3d209';
+    newStudent.created_by = createdByUserId;
 
     // *************** create student with composed object
     const createdStudent = await StudentModel.create(newStudent);
@@ -243,7 +243,7 @@ async function DeleteStudent(parent, { _id }) {
     ValidateId(_id);
 
     // **************** sets static deleted_by
-    const deletedBy = '6862150331861f37e4e3d209';
+    const deletedByUserId = '6862150331861f37e4e3d209';
 
     // **************** check if student to be deleted is exist
     const studentIsExist = Boolean(await StudentModel.exists({ _id }));
@@ -255,7 +255,7 @@ async function DeleteStudent(parent, { _id }) {
     await SchoolModel.updateOne({ students: _id }, { $pull: { students: _id } });
 
     // **************** soft delete student by updating it with composed object
-    await StudentModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: deletedBy, deleted_at: new Date() } });
+    await StudentModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: deletedByUserId, deleted_at: new Date() } });
     return 'Student deleted successfully';
   } catch (error) {
     await ErrorLogModel.create({
