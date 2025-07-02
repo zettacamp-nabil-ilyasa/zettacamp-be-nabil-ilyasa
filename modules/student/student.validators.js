@@ -29,6 +29,7 @@ function ValidateStudentInput(inputObject) {
   if (!email) throw new ApolloError('email is required');
   if (!first_name) throw new ApolloError('first_name is required');
   if (!last_name) throw new ApolloError('last_name is required');
+  if (!date_of_birth) throw new ApolloError('date_of_birth is required');
 
   // *************** validate input using joi schema
   const { error } = studentSchema.validate({ first_name, last_name, email, date_of_birth }, { abortEarly: true });

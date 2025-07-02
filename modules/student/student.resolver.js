@@ -91,8 +91,7 @@ async function CreateStudent(parent, { input }) {
       first_name: input.first_name,
       last_name: input.last_name,
       school_id: input.school_id,
-      // *************** set date_of_birth to undefined if it's an empty string
-      date_of_birth: typeof input.date_of_birth === 'string' && input.date_of_birth.trim() === '' ? undefined : input.date_of_birth,
+      date_of_birth: input.date_of_birth,
     };
 
     // **************** validate school_id, ensure that it can be casted into valid ObjectId
@@ -157,8 +156,7 @@ async function UpdateStudent(parent, { _id, input }) {
       email: input.email,
       first_name: input.first_name,
       last_name: input.last_name,
-      // **************** set date_of_birth to undefined if it's an empty string
-      date_of_birth: typeof input.date_of_birth === 'string' && input.date_of_birth.trim() === '' ? undefined : input.date_of_birth,
+      date_of_birth: input.date_of_birth,
       school_id: input.school_id,
     };
 
