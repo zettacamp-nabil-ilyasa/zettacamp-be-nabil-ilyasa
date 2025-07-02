@@ -36,7 +36,8 @@ function ValidateStudentInput(inputObject) {
 
   // *************** validate date_of_birth string
   const parsedDate = date_of_birth instanceof Date ? date_of_birth : new Date(date_of_birth);
-  if (isNaN(parsedDate.getTime()) || parsedDate.getFullYear() < 1900) throw new ApolloError('invalid date_of_birth format');
+  if (isNaN(parsedDate.getTime()) || parsedDate.getFullYear() < 1900)
+    throw new ApolloError('date_of_birth should be in YYYY-MM-DD and year cannot be less than 1900');
 
   // *************** throw error if joi validation fails
   if (error) {
