@@ -106,8 +106,8 @@ async function CreateSchool(parent, { input }) {
     }
 
     // *************** set static User id for created_by field
-    const CreatedByUserId = '6862150331861f37e4e3d209';
-    newSchool.created_by = CreatedByUserId;
+    const createdByUserId = '6862150331861f37e4e3d209';
+    newSchool.created_by = createdByUserId;
 
     // *************** create school with composed object
     const createdSchool = await SchoolModel.create(newSchool);

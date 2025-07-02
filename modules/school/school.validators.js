@@ -17,10 +17,10 @@ function ValidateSchoolInput(inputObject) {
     long_name: Joi.string().required().messages({
       'any.required': 'long name is required',
     }),
-    address: Joi.string().optional().allow('', null),
-    country: Joi.string().optional().allow('', null),
-    city: Joi.string().optional().allow('', null),
-    zipcode: Joi.string().optional().allow('', null),
+    address: Joi.string().optional().allow(''),
+    country: Joi.string().optional().allow(''),
+    city: Joi.string().optional().allow(''),
+    zipcode: Joi.string().optional().allow(''),
   });
 
   // *************** destructured input object
