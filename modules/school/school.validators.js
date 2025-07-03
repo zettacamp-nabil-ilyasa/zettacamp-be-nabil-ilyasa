@@ -23,16 +23,16 @@ function ValidateSchoolInput(inputObject) {
   if (typeof brand_name !== 'string' || brand_name.trim() === '') throw new ApolloError('brand_name is required');
 
   // *************** validate school's address
-  if (typeof address !== 'string') throw new ApolloError('address must be a string');
+  if (typeof address !== 'undefined' && typeof address !== 'string') throw new ApolloError('address must be a string');
 
   // *************** validate school's country
-  if (typeof country !== 'string') throw new ApolloError('country must be a string');
+  if (typeof country !== 'undefined' && typeof country !== 'string') throw new ApolloError('country must be a string');
 
   // *************** validate school's city
-  if (typeof city !== 'string') throw new ApolloError('city must be a string');
+  if (typeof city !== 'undefined' && typeof city !== 'string') throw new ApolloError('city must be a string');
 
   // *************** validate school's zipcode
-  if (typeof zipcode !== 'string') throw new ApolloError('zipcode must be a string');
+  if (typeof zipcode !== 'undefined' && typeof zipcode !== 'string') throw new ApolloError('zipcode must be a string');
 }
 
 // *************** EXPORT MODULE ***************
