@@ -1,34 +1,35 @@
 // *************** IMPORT LIBRARY ***************
-const mongoose = require('mongoose');
+const Mongoose = require('mongoose');
+const Schema = Mongoose.Schema;
 
-const user = new mongoose.Schema(
+const userSchema = new Schema(
   {
-    //First name
+    // First name of User
     first_name: { type: String, required: true, trim: true },
 
-    //Last name
+    // Last name of User
     last_name: { type: String, required: true, trim: true },
 
-    //Email
+    // Email of User
     email: { type: String, required: true, trim: true, lowercase: true, unique: true },
 
-    //Password hashed
+    // Hashed password of User
     password_hash: { type: String },
 
-    //User role
+    // Role of User
     role: { type: String, enum: ['admin', 'user'], default: 'user', required: true },
 
-    //Account status
+    // Status of User
     status: { type: String, enum: ['active', 'deleted'], default: 'active' },
 
-    //Reference to user who created this user
-    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
+    // Reference to User who created this User
+    created_by: { type: Schema.Types.ObjectId, ref: 'user' },
 
-    //Soft-delete timestamp
+    // Soft-delete timestamp
     deleted_at: { type: Date },
 
-    //Reference to user who deleted this user
-    deleted_by: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
+    // Reference to User who deleted this User
+    deleted_by: { type: Schema.Types.ObjectId, ref: 'user' },
   },
   {
     // Timestamp set-up for createdAt and updatedAt
@@ -37,4 +38,4 @@ const user = new mongoose.Schema(
 );
 
 // *************** EXPORT MODULE ***************
-module.exports = mongoose.model('user', user);
+module.exports = Mongoose.model('user', userSchema);

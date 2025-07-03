@@ -5,14 +5,11 @@ const { ApolloError } = require('apollo-server-express');
 const UserModel = require('./user.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
-// *************** IMPORT UTIL ***************
+// *************** IMPORT VALIDATOR ***************
+const { ValidateUserInput, UserIsExist, UserEmailIsExist } = require('./user.validators.js');
 const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
 
-// *************** IMPORT VALIDATOR ***************
-const { ValidateUserInput } = require('./user.validators.js');
-
 // *************** QUERY ***************
-
 /**
  * Get all active users from the database.
  * @async
@@ -48,7 +45,11 @@ async function GetOneUser(parent, { _id }) {
     // **************** validate user's _id, ensure that it can be casted into valid ObjectId
     ValidateId(_id);
 
+    // **************** throw error if there's no student to returned
     const user = await UserModel.findOne({ _id: _id, status: 'active' }).lean();
+    if (!user) {
+      throw new ApolloError('cannot get the requested user');
+    }
     return user;
   } catch (error) {
     await ErrorLogModel.create({
@@ -66,18 +67,26 @@ async function GetOneUser(parent, { _id }) {
  * Create a new user after validating input and checking constraints.
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
- * @param {object} args - Resolver arguments.
- * @param {object} args.input - User input fields.
- * @param {string} args.input.email - Email address of the new user.
- * @param {string} args.input.first_name - First name of the new user.
- * @param {string} args.input.last_name - Last name of the new user.
- * @param {string} args.input.role - Role of the new user.
- * @param {string} args.input.created_by - ID of the admin who creates this user.
+ * @param {object} input - User input fields.
+ * @param {string} input.email - Email address of the new user.
+ * @param {string} input.first_name - First name of the new user.
+ * @param {string} input.last_name - Last name of the new user.
+ * @param {string} input.role - Role of the new user.
+ * @param {string} input.created_by - ID of the admin who creates this user.
  * @returns {Promise<Object>} - Created user document.
  * @throws {ApolloError} - Throws error if validation fails, user unauthorized, or email already exists.
  */
 async function CreateUser(parent, { input }) {
   try {
+    // **************** validation to ensure fail-fast and bad input is handled correctly
+    ValidateUserInput(input);
+
+    // **************** check if email already used by another user
+    const emailIsExist = await UserEmailIsExist({ userEmail: input.email.trim().toLowerCase() });
+    if (emailIsExist) {
+      throw new ApolloError('Email already exist');
+    }
+
     // **************** compose new object from input, sets static created_by
     const newUser = {
       email: input.email,
@@ -85,15 +94,6 @@ async function CreateUser(parent, { input }) {
       last_name: input.last_name,
       role: input.role,
     };
-
-    // **************** validation to ensure fail-fast and bad input is handled correctly
-    ValidateUserInput(newUser);
-
-    // **************** check if email already used by another user
-    const emailIsExist = Boolean(await UserModel.exists({ email: newUser.email.toLowerCase() }));
-    if (emailIsExist) {
-      throw new ApolloError('Email already exist');
-    }
 
     // *************** set static User id for created_by field
     const createdByUserId = '6862150331861f37e4e3d209';
@@ -117,43 +117,42 @@ async function CreateUser(parent, { input }) {
  * Update a user document after validating input and checking user existence.
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
- * @param {object} args - Resolver arguments.
- * @param {object} args.input - Fields to update in the user document.
- * @param {string} args.input._id - ID of the user to update.
- * @param {string} args.input.email - Updated email.
- * @param {string} args.input.first_name - Updated first name.
- * @param {string} args.input.last_name - Updated last name.
- * @param {string} args.input.role - Updated role.
+ * @param {object} input - Fields to update in the user document.
+ * @param {string} input._id - ID of the user to update.
+ * @param {string} input.email - Updated email.
+ * @param {string} input.first_name - Updated first name.
+ * @param {string} input.last_name - Updated last name.
+ * @param {string} input.role - Updated role.
  * @returns {Promise<Object>} - Updated user document.
  * @throws {ApolloError} - Throws error if validation fails, user not found, or email already exists.
  */
 async function UpdateUser(parent, { _id, input }) {
   try {
-    // **************** compose new object from input
-    let editedUser = {
-      email: input.email,
-      first_name: input.first_name,
-      last_name: input.last_name,
-      role: input.role,
-    };
-
     // **************** validate _id
     ValidateId(_id);
 
     // **************** validation to ensure fail-fast and bad input is handled correctly
-    ValidateUserInput(editedUser);
+    ValidateUserInput(input);
 
     // **************** check if user exist
-    const userIsExist = Boolean(await UserModel.exists({ _id, status: 'active' }));
+    const userIsExist = await UserIsExist(_id);
     if (!userIsExist) {
       throw new ApolloError('User does not exist');
     }
 
     // **************** check if email already used by another user
-    const emailIsExist = Boolean(await UserModel.exists({ _id: { $ne: _id }, email: editedUser.email.toLowerCase() }));
+    const emailIsExist = await UserEmailIsExist({ userId: _id, userEmail: input.email.trim().toLowerCase() });
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
     }
+
+    // **************** compose new object from input
+    const editedUser = {
+      email: input.email,
+      first_name: input.first_name,
+      last_name: input.last_name,
+      role: input.role,
+    };
 
     // **************** update user with composed object
     const updatedUser = await UserModel.findOneAndUpdate({ _id }, { $set: editedUser }, { new: true }).lean();
@@ -173,9 +172,7 @@ async function UpdateUser(parent, { _id, input }) {
  * Soft delete a user by updating their status to 'deleted'.
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
- * @param {object} args - Resolver arguments.
- * @param {string} args._id - ID of the user to delete.
- * @param {string} args.deleted_by - ID of the admin performing the deletion.
+ * @param {string} _id - ID of the user to delete.
  * @returns {Promise<string>} - Deletion success message.
  * @throws {ApolloError} - Throws error if unauthorized, user not found, or attempt to self-delete.
  */
@@ -184,14 +181,14 @@ async function DeleteUser(parent, { _id }) {
     // **************** validate user's _id, ensure that it can be casted into valid ObjectId
     ValidateId(_id);
 
+    // **************** check if user to be deleted is exist
+    const userIsExist = await UserIsExist(_id);
+    if (!userIsExist) {
+      throw new ApolloError('User does not exist or already deleted');
+    }
+
     // **************** set static deleted_by
     const deletedByUserId = '6862150331861f37e4e3d209';
-
-    // **************** check if user to be deleted is exist
-    const userIsExist = Boolean(await UserModel.exists({ _id }));
-    if (!userIsExist) {
-      throw new ApolloError('User does not exist');
-    }
 
     // **************** check if user is trying to delete themselves
     if (_id === deletedByUserId) {

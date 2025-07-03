@@ -8,6 +8,7 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 /**
  * Batch function to load multiple users by their IDs.
+ * @async
  * @param {Array<string>} userIds - Array of user IDs to fetch.
  * @returns {Promise<Array<Object>>} - Array of user objects aligned with input IDs.
  * @throws {ApolloError} - If database query fails.
@@ -38,7 +39,7 @@ async function BatchUsers(userIds) {
 
 /**
  * Create a new DataLoader instance for batching users by user IDs
- * @returns {DataLoader<string, Object} A DataLoader instance that loads users by user ID
+ * @returns {DataLoader<string, Object>} A DataLoader instance that loads users by user ID
  */
 function UserLoader() {
   return new DataLoader(BatchUsers);
