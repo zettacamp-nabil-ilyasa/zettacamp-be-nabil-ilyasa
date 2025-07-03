@@ -13,7 +13,7 @@ const { ValidateSchoolInput } = require('./school.validators.js');
 // *************** IMPORT UTIL ***************
 const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
 
-//**************** QUERY ****************
+// **************** QUERY ****************
 
 /**
  * Get all active schools from the database.
@@ -48,7 +48,7 @@ async function GetAllSchools() {
  */
 async function GetOneSchool(parent, { _id }) {
   try {
-    //**************** validate school's _id, ensure that it can be casted into valid ObjectId
+    // **************** validate school's _id, ensure that it can be casted into valid ObjectId
     ValidateId(_id);
 
     const school = await SchoolModel.findOne({ _id: _id, status: 'active' }).lean();
@@ -64,7 +64,7 @@ async function GetOneSchool(parent, { _id }) {
   }
 }
 
-//**************** MUTATION ****************
+// **************** MUTATION ****************
 /**
  * Create a new school after validating input and checking for duplicates.
  * @async
@@ -161,7 +161,7 @@ async function UpdateSchool(parent, { _id, input }) {
     }
 
     // *************** check if school name already used by another school
-    const isSchoolNameExist = Boolean(await SchoolModel.exists({ _id, long_name: editedSchool.long_name }));
+    const isSchoolNameExist = Boolean(await SchoolModel.exists({ _id: { $ne: _id }, long_name: editedSchool.long_name }));
     if (isSchoolNameExist) {
       throw new ApolloError('School long name already exist');
     }
@@ -192,25 +192,25 @@ async function UpdateSchool(parent, { _id, input }) {
  */
 async function DeleteSchool(parent, { _id }) {
   try {
-    //**************** validate school's _id, ensure that it can be casted into valid ObjectId
+    // **************** validate school's _id, ensure that it can be casted into valid ObjectId
     ValidateId(_id);
 
     // **************** set static deleted_by
     const deletedByUserId = '6862150331861f37e4e3d209';
 
-    //**************** check if school to be deleted is exist
+    // *************** check if school to be deleted is exist
     const schoolIsExist = Boolean(await SchoolModel.exists({ _id, status: 'active' }));
     if (!schoolIsExist) {
       throw new ApolloError('School does not exist');
     }
 
-    //**************** check if school is referenced by any student, cast school id to mongoose ObjectId
+    // **************** check if school is referenced by any student, cast school id to mongoose ObjectId
     const schoolIsReferenced = Boolean(await StudentModel.exists({ school_id: new mongoose.Types.ObjectId(_id), status: 'active' }));
     if (schoolIsReferenced) {
       throw new ApolloError('School that is referenced by a student cannot be deleted');
     }
 
-    //**************** soft-delete school by updating it with composed object
+    // **************** soft-delete school by updating it with composed object
     await SchoolModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: deletedByUserId, deleted_at: new Date() } });
     return 'School deleted successfully';
   } catch (error) {

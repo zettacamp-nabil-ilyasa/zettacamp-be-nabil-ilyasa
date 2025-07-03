@@ -5,8 +5,8 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 // *************** check if environment variables are set
-if (!process.env.DB_NAME || !process.env.DB_HOST) {
-  console.error('env config is missing');
+if (!process.env.DB_NAME || !process.env.DB_HOST || !process.env.PORT) {
+  console.error('missing environtment variables: DB_NAME, DB_HOST, or PORT ');
   process.exit(1);
 }
 
