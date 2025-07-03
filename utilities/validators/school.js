@@ -7,7 +7,7 @@ const { ValidateId } = require('../common-validator/mongo-validator.js');
 /**
  * Check if a school with the given ID exists and is active.
  * @param {string} schoolId - The ID of the school to check.
- * @returns {Promise<boolean>} - True if the school exists, false otherwise.
+ * @returns {Promise<Object|null>} - The School object if found, otherwise null.
  * @throws {ApolloError} - If validation fails or database operation errors occur.
  */
 async function SchoolIsExist(schoolId) {
@@ -18,8 +18,8 @@ async function SchoolIsExist(schoolId) {
     // *************** set query for db operation
     const query = { _id: schoolId, status: 'active' };
 
-    const isSchoolExist = SchoolModel.findOne(query);
-    return isSchoolExist;
+    const schoolIsExist = SchoolModel.findOne(query);
+    return schoolIsExist;
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,

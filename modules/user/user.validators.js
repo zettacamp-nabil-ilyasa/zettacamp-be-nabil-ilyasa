@@ -42,7 +42,7 @@ function ValidateUserInput(inputObject) {
  * Check if a user with the given ID exists and is active.
  * @async
  * @param {string} userId - The ID of the user to check.
- * @returns {Promise<boolean>} - True if the user exists and is active, false otherwise.
+ * @returns {Promise<Object|null>} - The User object if found, otherwise null.
  * @throws {ApolloError} - If validation fails or DB query fails.
  */
 async function UserIsExist(userId) {
@@ -73,7 +73,7 @@ async function UserIsExist(userId) {
  * @param {object} params - Input parameters.
  * @param {string} params.userEmail - The email to check.
  * @param {string} [params.userId] - The user ID to exclude (optional).
- * @returns {Promise<boolean>} - True if the email exists, false otherwise.
+ * @returns {Promise<Object|null>} - The User object if found, otherwise null.
  * @throws {ApolloError} - If input is invalid or DB query fails.
  */
 async function UserEmailIsExist({ userEmail, userId }) {

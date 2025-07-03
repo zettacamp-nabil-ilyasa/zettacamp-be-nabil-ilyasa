@@ -35,9 +35,8 @@ async function GetAllUsers() {
  * Get one active user by ID.
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
- * @param {object} args - Resolver arguments.
- * @param {string} args._id - ID of the user to retrieve.
- * @returns {Promise<Object|null>} - The user document or null if not found.
+ * @param {string} _id - ID of the user to retrieve.
+ * @returns {Promise<Object|null>} - The User document or null if not found.
  * @throws {ApolloError} - Throws error if validation fails or query error occurs.
  */
 async function GetOneUser(parent, { _id }) {
@@ -216,7 +215,7 @@ async function DeleteUser(parent, { _id }) {
  * @param {object} parent - Parent user object.
  * @param {object} args - Not used (GraphQL resolver convention).
  * @param {object} context - Resolver context that contains DataLoaders.
- * @returns {Promise<Object|null>} - The user document of the creator, or null if not available.
+ * @returns {Promise<Object|null>} - The User document of the creator, or null if not available.
  * @throws {ApolloError} - Throws error if DataLoader fails.
  */
 async function created_by(parent, args, context) {
