@@ -12,11 +12,7 @@ const { ValidateId } = require('../../utilities/common-validator/mongo-validator
 // *************** IMPORT VALIDATORS ***************
 const { ValidateStudentInput } = require('./student.validators.js');
 
-// *************** IMPORT HELPERS ***************
-const { StudentEmailIsExist, GenerateBulkQueryForSchoolIdChange } = require('./student.helpers.js');
-
 // *************** QUERY ***************
-
 /**
  * Get all active students from the database.
  * @async
@@ -101,7 +97,7 @@ async function CreateStudent(parent, { input }) {
     ValidateStudentInput(newStudent);
 
     // *************** check if email already used by another student
-    const emailIsExist = await StudentEmailIsExist({ studentEmail: newStudent.email });
+    const emailIsExist = Boolean(await StudentModel.exists({ email: newStudent.email }));
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
     }
@@ -174,7 +170,7 @@ async function UpdateStudent(parent, { _id, input }) {
     }
 
     // **************** check if email already used by another student
-    const emailIsExist = await StudentEmailIsExist({ studentEmail: editedStudent.email, studentId: _id });
+    const emailIsExist = Boolean(await StudentModel.exists({ email: editedStudent.email, _id: { $ne: _id } }));
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
     }
@@ -185,15 +181,17 @@ async function UpdateStudent(parent, { _id, input }) {
       throw new ApolloError('School does not exist');
     }
 
+    // **************** get student's current school_id from the document
     const currentStudentDocument = await StudentModel.findOne({ _id }).lean();
+    const oldSchoolId = currentStudentDocument.school_id;
+
     // **************** check if current school id is different from edited school id (changed school id)
     if (String(currentStudentDocument.school_id) !== editedStudent.school_id) {
-      const bulkQuery = GenerateBulkQueryForSchoolIdChange({
-        studentId: _id,
-        newSchoolId: editedStudent.school_id,
-        oldSchoolId: currentStudentDocument.school_id,
-      });
-      await SchoolModel.bulkWrite(bulkQuery);
+      // ****************  remove student's id from previous school
+      await SchoolModel.updateOne({ _id: oldSchoolId }, { $pull: { students: _id } });
+
+      // **************** add student's id to new school
+      await SchoolModel.updateOne({ _id: editedStudent.school_id }, { $addToSet: { students: _id } });
     }
 
     // **************** update student with composed object
