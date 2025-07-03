@@ -2,7 +2,7 @@
 const DataLoader = require('dataloader');
 const { ApolloError } = require('apollo-server-express');
 
-// *************** IMPORT MODULES ***************
+// *************** IMPORT MODULE ***************
 const StudentModel = require('./student.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
