@@ -1,7 +1,7 @@
 // *************** IMPORT LIBRARY ***************
 const { ApolloError } = require('apollo-server-express');
 
-// *************** IMPORT MODULES ***************
+// *************** IMPORT MODULE ***************
 const UserModel = require('./user.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
@@ -243,7 +243,7 @@ async function created_by(parent, args, context) {
   }
 }
 
-// *************** EXPORT MODULES ***************
+// *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllUsers, GetOneUser },
   Mutation: { CreateUser, UpdateUser, DeleteUser },

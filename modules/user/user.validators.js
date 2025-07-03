@@ -31,5 +31,5 @@ function ValidateUserInput(inputObject) {
     throw new ApolloError('role is required and should be one of: ' + validRoles.join(', '));
 }
 
-// *************** EXPORT MODULES ***************
+// *************** EXPORT MODULE ***************
 module.exports = { ValidateUserInput };
