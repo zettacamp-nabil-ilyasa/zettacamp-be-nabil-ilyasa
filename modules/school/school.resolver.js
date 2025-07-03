@@ -288,7 +288,7 @@ async function created_by(parent, args, context) {
   }
 }
 
-// *************** EXPORT MODULES ***************
+// *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllSchools, GetOneSchool },
   Mutation: { CreateSchool, UpdateSchool, DeleteSchool },

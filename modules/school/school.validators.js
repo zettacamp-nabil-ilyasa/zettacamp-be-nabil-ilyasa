@@ -35,5 +35,5 @@ function ValidateSchoolInput(inputObject) {
   if (typeof zipcode !== 'string') throw new ApolloError('zipcode must be a string');
 }
 
-// *************** EXPORT MODULES ***************
+// *************** EXPORT MODULE ***************
 module.exports = { ValidateSchoolInput };
