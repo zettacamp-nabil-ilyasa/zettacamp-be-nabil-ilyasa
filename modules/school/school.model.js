@@ -1,40 +1,41 @@
 // *************** IMPORT LIBRARY ***************
-const mongoose = require('mongoose');
+const Mongoose = require('mongoose');
+const Schema = Mongoose.Schema;
 
-const school = new mongoose.Schema(
+const schoolSchema = new Schema(
   {
-    //Brand or trade name
+    // Brand or trade name of School
     brand_name: { type: String, required: true, trim: true },
 
-    //Full legal name
+    // Full legal name of School
     long_name: { type: String, required: true, trim: true },
 
-    //Address
+    // Address of School
     address: { type: String, trim: true },
 
-    //Country
+    // Country of School
     country: { type: String, trim: true },
 
-    //City
+    // City of School
     city: { type: String, trim: true },
 
-    //Zipcode
+    // Zipcode of School
     zipcode: { type: String, trim: true },
 
-    //Students associated with this school
-    students: [{ type: mongoose.Schema.Types.ObjectId, ref: 'student' }],
+    // Students associated with this school
+    students: [{ type: Schema.Types.ObjectId, ref: 'student' }],
 
-    //School status
+    // Status of School
     status: { type: String, enum: ['active', 'deleted'], default: 'active' },
 
-    //Soft-delete timestamp
+    // Soft-delete timestamp
     deleted_at: { type: Date },
 
-    //User who created this school
-    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
+    // User who created this school
+    created_by: { type: Schema.Types.ObjectId, ref: 'user' },
 
-    //User who deleted this school
-    deleted_by: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
+    // User who deleted this school
+    deleted_by: { type: Schema.Types.ObjectId, ref: 'user' },
   },
   {
     // Timestamp set-up for createdAt and updatedAt
@@ -43,4 +44,4 @@ const school = new mongoose.Schema(
 );
 
 // *************** EXPORT MODULE ***************
-module.exports = mongoose.model('school', school);
+module.exports = Mongoose.model('school', schoolSchema);

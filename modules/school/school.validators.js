@@ -1,5 +1,10 @@
 // *************** IMPORT LIBRARY ***************
 const { ApolloError } = require('apollo-server-express');
+const SchoolModel = require('./school.model');
+const ErrorLogModel = require('../errorLog/error_log.model.js');
+
+// *************** IMPORT VALIDATOR ***************
+const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
 
 /**
  * Validates the school input object for required and optional fields.
@@ -35,5 +40,38 @@ function ValidateSchoolInput(inputObject) {
   if (typeof zipcode !== 'undefined' && typeof zipcode !== 'string') throw new ApolloError('zipcode must be a string');
 }
 
+/**
+ * Check if a school's long name and/or brand name already exists in the database
+ * @async
+ * @param {object} params - Input parameters.
+ * @param {string} params.longName - The school's long name to be checked.
+ * @param {string} params.brandName - The school's brand name to be checked.
+ * @param {string} [params.schoolId] - ID of the school to exclude from the check (optional).
+ * @returns {Promise<boolean>} - Returns true if a school with the same name exists, otherwise false.
+ * @throws {ApolloError} - If both names are missing, invalid ID, or DB operation fails.
+ */
+async function SchoolLongNameIsExist({ longName, schoolId }) {
+  try {
+    // *************** set base query object with School's long name and status
+    const query = { long_name: longName, status: 'active' };
+
+    // *************** add _id to query if schoolId is provided
+    if (schoolId) {
+      ValidateId(schoolId);
+      query._id = { $ne: schoolId };
+    }
+    const isExist = Boolean(await SchoolModel.exists(query));
+    return isExist;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'SchoolNameIsExist',
+      path: '/modules/school/school.helpers.js',
+      parameter_input: JSON.stringify({ longName, schoolId }),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
 // *************** EXPORT MODULE ***************
-module.exports = { ValidateSchoolInput };
+module.exports = { ValidateSchoolInput, SchoolLongNameIsExist };

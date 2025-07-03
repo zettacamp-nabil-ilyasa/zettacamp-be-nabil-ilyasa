@@ -1,27 +1,22 @@
 // *************** IMPORT LIBRARY ***************
-const mongoose = require('mongoose');
 const { ApolloError } = require('apollo-server-express');
 
 // *************** IMPORT MODULE ***************
 const SchoolModel = require('./school.model.js');
-const StudentModel = require('../student/student.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
-// *************** IMPORT VALIDATORS ***********************
-const { ValidateSchoolInput } = require('./school.validators.js');
-
-// *************** IMPORT UTIL ***************
+// *************** IMPORT VALIDATOR ***********************
+const { ValidateSchoolInput, SchoolLongNameIsExist } = require('./school.validators.js');
 const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
+const { SchoolIsExist } = require('../../utilities/validators/school.js');
 
 // **************** QUERY ****************
-
 /**
  * Get all active schools from the database.
  * @async
  * @returns {Promise<Array<Object>>} - Array of school documents with status 'active'.
  * @throws {ApolloError} - Throws error if database query fails.
  */
-
 async function GetAllSchools() {
   try {
     const schools = await SchoolModel.find({ status: 'active' }).lean();
@@ -41,8 +36,7 @@ async function GetAllSchools() {
  * Get one active school by its ID.
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
- * @param {object} args - Resolver arguments.
- * @param {string} args._id - ID of the school to retrieve.
+ * @param {string} _id - ID of the school to retrieve.
  * @returns {Promise<Object|null>} - School document or null if not found.
  * @throws {ApolloError} - Throws error if validation fails or database query fails.
  */
@@ -52,6 +46,11 @@ async function GetOneSchool(parent, { _id }) {
     ValidateId(_id);
 
     const school = await SchoolModel.findOne({ _id: _id, status: 'active' }).lean();
+
+    // **************** throw error if there's no student to returned
+    if (!school) {
+      throw new ApolloError('cannot get the requested school');
+    }
     return school;
   } catch (error) {
     await ErrorLogModel.create({
@@ -69,21 +68,29 @@ async function GetOneSchool(parent, { _id }) {
  * Create a new school after validating input and checking for duplicates.
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
- * @param {object} args - Resolver arguments.
- * @param {object} args.input - School input fields.
- * @param {string} args.input.long_name - Official name of the school.
- * @param {string} args.input.brand_name - Brand or alias name of the school.
- * @param {string} [args.input.address] - Address of the school (optional).
- * @param {string} [args.input.country] - Country of the school (optional).
- * @param {string} [args.input.city] - City of the school (optional).
- * @param {string} [args.input.zipcode] - Zip code (optional).
- * @param {string} args.input.created_by - ID of the admin who creates the school.
+ * @param {object} input - School input fields.
+ * @param {string} input.long_name - Official name of the school.
+ * @param {string} input.brand_name - Brand or alias name of the school.
+ * @param {string} [input.address] - Address of the school (optional).
+ * @param {string} [input.country] - Country of the school (optional).
+ * @param {string} [input.city] - City of the school (optional).
+ * @param {string} [input.zipcode] - Zip code (optional).
+ * @param {string} [input.created_by - ID of the admin who creates the school.
  * @returns {Promise<Object>} - Created school document.
  * @throws {ApolloError} - Throws error if validation fails, user unauthorized, or name conflict occurs.
  */
 async function CreateSchool(parent, { input }) {
   try {
-    // *************** compose new object from input, sets static created_by
+    // *************** validation to ensure bad input is handled correctly
+    ValidateSchoolInput(input);
+
+    // *************** check if school long name already used by another school
+    const schoolNameExist = await SchoolLongNameIsExist({ longName: input.long_name });
+    if (schoolNameExist) {
+      throw new ApolloError('School long name already exist');
+    }
+
+    // *************** compose new object from input for insert
     const newSchool = {
       long_name: input.long_name,
       brand_name: input.brand_name,
@@ -92,15 +99,6 @@ async function CreateSchool(parent, { input }) {
       city: input.city,
       zipcode: input.zipcode,
     };
-
-    // *************** validation to ensure bad input is handled correctly
-    ValidateSchoolInput(newSchool);
-
-    // *************** check if school long name already used by another school
-    const isSchoolNameExist = Boolean(await SchoolModel.exists({ long_name: newSchool.long_name }));
-    if (isSchoolNameExist) {
-      throw new ApolloError('School long name already exist');
-    }
 
     // *************** set static User id for created_by field
     const createdByUserId = '6862150331861f37e4e3d209';
@@ -124,21 +122,38 @@ async function CreateSchool(parent, { input }) {
  * Update a school document after validating input and checking constraints.
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
- * @param {object} args - Resolver arguments.
- * @param {object} args.input - School input fields.
- * @param {string} args.input._id - ID of the school to update.
- * @param {string} [args.input.long_name] - Official name of the school (optional).
- * @param {string} [args.input.brand_name] - Brand or alias name of the school (optional).
- * @param {string} [args.input.address] - Address of the school (optional).
- * @param {string} [args.input.country] - Country of the school (optional).
- * @param {string} [args.input.city] - City of the school (optional).
- * @param {string} [args.input.zipcode] - Zip code (optional).
+ * @param {object} input - School input fields.
+ * @param {string} input._id - ID of the school to update.
+ * @param {string} input.long_name - Official name of the School.
+ * @param {string} input.brand_name - Brand or alias name of the School.
+ * @param {string} [input.address] - Address of the School (optional).
+ * @param {string} [input.country] - Country of the School (optional).
+ * @param {string} [input.city] - City of the School (optional).
+ * @param {string} [input.zipcode] - Zip code of the School (optional).
  * @returns {Promise<Object>} - Updated school document.
  * @throws {ApolloError} - Throws error if validation fails or name conflict exists.
  */
 async function UpdateSchool(parent, { _id, input }) {
   try {
-    // *************** compose new object from input
+    // *************** validate school's _id, ensure that it can be casted into valid ObjectId
+    ValidateId(_id);
+
+    // *************** validation to ensure fail-fast and bad input is handled correctly
+    ValidateSchoolInput(input);
+
+    // *************** check if school exists
+    const schoolIsExist = await SchoolIsExist(_id);
+    if (!schoolIsExist) {
+      throw new ApolloError('School does not exist');
+    }
+
+    // *************** check if school name already used by another school
+    const schoolLongNameExist = await SchoolLongNameIsExist({ longName: input.long_name, schoolId: _id });
+    if (schoolLongNameExist) {
+      throw new ApolloError('School long name already exist');
+    }
+
+    // *************** compose new object from input for update
     const editedSchool = {
       long_name: input.long_name,
       brand_name: input.brand_name,
@@ -148,23 +163,9 @@ async function UpdateSchool(parent, { _id, input }) {
       zipcode: input.zipcode,
     };
 
-    // *************** validate school's _id, ensure that it can be casted into valid ObjectId
-    ValidateId(_id);
-
-    // *************** validation to ensure fail-fast and bad input is handled correctly
-    ValidateSchoolInput(editedSchool);
-
-    // *************** check if school exists
-    const schoolIsExist = Boolean(await SchoolModel.exists({ _id, status: 'active' }));
-    if (!schoolIsExist) {
-      throw new ApolloError('School does not exist');
-    }
-
-    // *************** check if school name already used by another school
-    const isSchoolNameExist = Boolean(await SchoolModel.exists({ _id: { $ne: _id }, long_name: editedSchool.long_name }));
-    if (isSchoolNameExist) {
-      throw new ApolloError('School long name already exist');
-    }
+    // *************** set static User id for created_by field
+    const createdByUserId = '6862150331861f37e4e3d209';
+    editedSchool.created_by = createdByUserId;
 
     // *************** update school with composed object
     const updatedSchool = await SchoolModel.findOneAndUpdate({ _id }, { $set: editedSchool }, { new: true }).lean();
@@ -184,9 +185,7 @@ async function UpdateSchool(parent, { _id, input }) {
  * Soft delete a school by marking its status as 'deleted', prevents deletion if school is referenced by any student.
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
- * @param {object} args - Resolver arguments.
- * @param {string} args._id - ID of the school to delete.
- * @param {string} args.deleted_by - ID of the admin who deletes the school.
+ * @param {string} _id - ID of the school to delete.
  * @returns {Promise<string>} - Deletion success message.
  * @throws {ApolloError} - Throws error if unauthorized, school not found, or school is referenced.
  */
@@ -195,20 +194,20 @@ async function DeleteSchool(parent, { _id }) {
     // **************** validate school's _id, ensure that it can be casted into valid ObjectId
     ValidateId(_id);
 
-    // **************** set static deleted_by
-    const deletedByUserId = '6862150331861f37e4e3d209';
-
     // *************** check if school to be deleted is exist
-    const schoolIsExist = Boolean(await SchoolModel.exists({ _id, status: 'active' }));
+    const schoolIsExist = await SchoolIsExist(_id);
     if (!schoolIsExist) {
-      throw new ApolloError('School does not exist');
+      throw new ApolloError('School does not exist or already deleted');
     }
 
-    // **************** check if school is referenced by any student, cast school id to mongoose ObjectId
-    const schoolIsReferenced = Boolean(await StudentModel.exists({ school_id: new mongoose.Types.ObjectId(_id), status: 'active' }));
-    if (schoolIsReferenced) {
+    // **************** check if school is referenced by any student
+    const deletedSchoolDocument = await SchoolModel.findOne({ _id }).lean();
+    if (deletedSchoolDocument.students.length) {
       throw new ApolloError('School that is referenced by a student cannot be deleted');
     }
+
+    // **************** set static deleted_by
+    const deletedByUserId = '6862150331861f37e4e3d209';
 
     // **************** soft-delete school by updating it with composed object
     await SchoolModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: deletedByUserId, deleted_at: new Date() } });
@@ -225,7 +224,6 @@ async function DeleteSchool(parent, { _id }) {
 }
 
 // *************** LOADERS ***************
-
 /**
  * Resolve the students field in a School document using DataLoader.
  * @async
