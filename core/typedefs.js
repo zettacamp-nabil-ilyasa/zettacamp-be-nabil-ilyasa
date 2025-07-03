@@ -3,9 +3,9 @@ const { mergeTypeDefs } = require('@graphql-tools/merge');
 const { gql } = require('apollo-server-express');
 
 // *************** IMPORT MODULE ***************
-const userTypeDefs = require('../modules/user/user.typedef.js');
-const schoolTypeDefs = require('../modules/school/school.typedef.js');
-const studentTypeDefs = require('../modules/student/student.typedef.js');
+const UserTypeDefs = require('../modules/user/user.typedef.js');
+const SchoolTypeDefs = require('../modules/school/school.typedef.js');
+const StudentTypeDefs = require('../modules/student/student.typedef.js');
 
 // *************** base typedef
 const baseTypeDefs = gql`
@@ -21,7 +21,7 @@ const baseTypeDefs = gql`
 `;
 
 // *************** merge base typedef with all typedefs from modules
-const TypeDefs = mergeTypeDefs([baseTypeDefs, userTypeDefs, schoolTypeDefs, studentTypeDefs]);
+const typeDefs = mergeTypeDefs([baseTypeDefs, UserTypeDefs, SchoolTypeDefs, StudentTypeDefs]);
 
 // *************** EXPORT MODULE ***************
-module.exports = TypeDefs;
+module.exports = typeDefs;

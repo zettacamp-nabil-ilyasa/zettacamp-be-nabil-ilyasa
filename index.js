@@ -1,10 +1,10 @@
-// *************** IMPORT LIBRARY ***************
-const { PORT } = require('./core/config');
-
-// *************** IMPORT UTILS ***************
+// *************** IMPORT CORE ***************
 const ConnectDb = require('./core/database');
 const InitializeApolloServer = require('./core/apollo');
 const InitializeExpressApp = require('./core/express');
+
+// *************** IMPORT LIBRARY ***************
+const { PORT } = require('./core/config');
 
 /**
  * Initializes and starts the Express server along with Apollo Server.

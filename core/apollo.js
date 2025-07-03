@@ -1,12 +1,12 @@
+// *************** IMPORT CORE ***************
+const DataLoaders = require('./loaders.js');
+
 // *************** IMPORT LIBRARY ***************
 const { ApolloServer } = require('apollo-server-express');
 
 // *************** IMPORT MODULE ***************
 const TypeDefs = require('./typedefs.js');
 const Resolvers = require('./resolvers.js');
-
-// *************** IMPORT DATALOADERS ***************
-const DataLoaders = require('./loaders.js');
 
 /**
  * Initializes and returns a configured Apollo Server instance.

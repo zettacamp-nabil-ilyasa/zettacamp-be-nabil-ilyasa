@@ -1,8 +1,8 @@
 // *************** IMPORT LIBRARY ***************
-const dotenv = require('dotenv');
+const Dotenv = require('dotenv');
 
 // *************** load environment variables
-dotenv.config();
+Dotenv.config();
 
 // *************** check if environment variables are set
 if (!process.env.DB_NAME || !process.env.DB_HOST || !process.env.PORT) {

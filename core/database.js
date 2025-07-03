@@ -1,8 +1,8 @@
-// *************** IMPORT LIBRARY ***************
-const mongoose = require('mongoose');
+// *************** IMPORT CORE ***************
+const Config = require('./config');
 
-// *************** IMPORT MODULE ***************
-const config = require('./config');
+// *************** IMPORT LIBRARY ***************
+const Mongoose = require('mongoose');
 
 /**
  * Connects to MongoDB using the URI specified in the `.env` file under `MONGODB_URI`.
@@ -13,8 +13,8 @@ const config = require('./config');
  */
 async function ConnectDb() {
   try {
-    const MongoDbUri = `mongodb://${config.DB_HOST}/${config.DB_NAME}`;
-    await mongoose.connect(MongoDbUri);
+    const mongoDbUri = `mongodb://${Config.DB_HOST}/${Config.DB_NAME}`;
+    await Mongoose.connect(mongoDbUri);
   } catch (error) {
     console.error(error);
     process.exit(1);

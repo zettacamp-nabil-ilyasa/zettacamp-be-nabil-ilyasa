@@ -2,12 +2,12 @@
 const { mergeResolvers } = require('@graphql-tools/merge');
 
 // *************** IMPORT MODULE ***************
-const userResolvers = require('../modules/user/user.resolver.js');
-const schoolResolvers = require('../modules/school/school.resolver.js');
-const studentResolvers = require('../modules/student/student.resolver.js');
+const UserResolvers = require('../modules/user/user.resolver.js');
+const SchoolResolvers = require('../modules/school/school.resolver.js');
+const StudentResolvers = require('../modules/student/student.resolver.js');
 
 // ***************  Merge all resolvers from modules
-const Resolvers = mergeResolvers([userResolvers, schoolResolvers, studentResolvers]);
+const resolvers = mergeResolvers([UserResolvers, SchoolResolvers, StudentResolvers]);
 
 // *************** EXPORT MODULE ***************
-module.exports = Resolvers;
+module.exports = resolvers;
