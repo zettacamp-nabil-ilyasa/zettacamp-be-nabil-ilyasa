@@ -61,7 +61,7 @@ async function GetOneUser(parent, { _id }) {
   }
 }
 
-//************** MUTATION ***************
+// *************** MUTATION ***************
 /**
  * Create a new user after validating input and checking constraints.
  * @async
@@ -144,13 +144,13 @@ async function UpdateUser(parent, { _id, input }) {
     ValidateUserInput(editedUser);
 
     // **************** check if user exist
-    const userIsExist = Boolean(await UserModel.exists({ _id }));
+    const userIsExist = Boolean(await UserModel.exists({ _id, status: 'active' }));
     if (!userIsExist) {
       throw new ApolloError('User does not exist');
     }
 
     // **************** check if email already used by another user
-    const emailIsExist = Boolean(await UserModel.exists({ email: editedUser.email.toLowerCase(), _id: { $ne: _id } }));
+    const emailIsExist = Boolean(await UserModel.exists({ _id: { $ne: _id }, email: editedUser.email.toLowerCase() }));
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
     }
