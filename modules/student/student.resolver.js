@@ -6,11 +6,10 @@ const StudentModel = require('./student.model.js');
 const SchoolModel = require('../school/school.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
-// *************** IMPORT UTIL ***************
+// *************** IMPORT VALIDATOR ***************
+const { ValidateStudentInput, StudentIsExist, StudentEmailIsExist } = require('./student.validators.js');
+const { SchoolIsExist } = require('../../utilities/validators/school.js');
 const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
-
-// *************** IMPORT VALIDATORS ***************
-const { ValidateStudentInput } = require('./student.validators.js');
 
 // *************** QUERY ***************
 /**
@@ -38,18 +37,21 @@ async function GetAllStudents() {
  * Get one active student by ID.
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
- * @param {object} args - Resolver arguments.
- * @param {string} args._id - ID of the student to retrieve.
+ * @param {string} _id - ID of the student to retrieve.
  * @returns {Promise<Object|null>} - The student document or null if not found.
  * @throws {ApolloError} - Throws error if validation fails or student not found.
  */
-
 async function GetOneStudent(parent, { _id }) {
   try {
     // **************** validate student's _id, ensure that it can be casted into valid ObjectId
     ValidateId(_id);
 
     const student = await StudentModel.findOne({ _id: _id, status: 'active' }).lean();
+
+    // **************** throw error if there's no student to returned
+    if (!student) {
+      throw new ApolloError('cannot get the requested student');
+    }
     return student;
   } catch (error) {
     await ErrorLogModel.create({
@@ -63,50 +65,48 @@ async function GetOneStudent(parent, { _id }) {
 }
 
 // *************** MUTATION ***************
-
 /**
  * Create a new student after validating input and checking constraints.
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
- * @param {object} args - Resolver arguments.
- * @param {object} args.input - Input object to create a new student.
- * @param {string} args.input.email - Student's email address.
- * @param {string} args.input.first_name - Student's first name.
- * @param {string} args.input.last_name - Student's last name.
- * @param {string} args.input.school_id - ID of the school the student belongs to.
- * @param {string} [args.input.date_of_birth] - Student's date of birth as a string (optional, can be empty string).
- * @param {string} args.input.created_by - User ID of the admin who creates the student.
+ * @param {object} input - Student input fields.
+ * @param {string} input.email - Student's email address.
+ * @param {string} input.first_name - Student's first name.
+ * @param {string} input.last_name - Student's last name.
+ * @param {string} input.school_id - ID of the school the student belongs to.
+ * @param {string} input.date_of_birth - Student's date of birth as a string.
+ * @param {string} input.created_by - User ID of the admin who creates the student.
  * @returns {Promise<Object>} - The newly created student document.
  * @throws {ApolloError} - Throws error if validation fails or email/school is invalid.
  */
 async function CreateStudent(parent, { input }) {
   try {
+    // **************** validate school_id, ensure that it can be casted into valid ObjectId
+    ValidateId(input.school_id);
+
+    // *************** validation to ensure fail-fast and bad input is handled correctly
+    ValidateStudentInput(input);
+
+    // *************** check if email already used by another student
+    const studentEmailIsExist = await StudentEmailIsExist({ studentEmail: input.email.trim().toLowerCase() });
+    if (studentEmailIsExist) {
+      throw new ApolloError('Email already exist');
+    }
+
+    // *************** check if school is exist
+    const schoolIsExist = await SchoolIsExist(input.school_id);
+    if (!schoolIsExist) {
+      throw new ApolloError('School does not exist');
+    }
+
     // *************** compose new object from input, sets static created_by
-    let newStudent = {
+    const newStudent = {
       email: input.email,
       first_name: input.first_name,
       last_name: input.last_name,
       school_id: input.school_id,
       date_of_birth: input.date_of_birth,
     };
-
-    // **************** validate school_id, ensure that it can be casted into valid ObjectId
-    ValidateId(newStudent.school_id);
-
-    // *************** validation to ensure fail-fast and bad input is handled correctly
-    ValidateStudentInput(newStudent);
-
-    // *************** check if email already used by another student
-    const emailIsExist = Boolean(await StudentModel.exists({ email: newStudent.email.toLowerCase() }));
-    if (emailIsExist) {
-      throw new ApolloError('Email already exist');
-    }
-
-    // *************** check if school is exist
-    const schoolIsExist = Boolean(await SchoolModel.exists({ _id: newStudent.school_id, status: 'active' }));
-    if (!schoolIsExist) {
-      throw new ApolloError('School does not exist');
-    }
 
     // *************** set static User id for created_by field
     const createdByUserId = '6862150331861f37e4e3d209';
@@ -134,19 +134,42 @@ async function CreateStudent(parent, { input }) {
  * Update a student's information after validating input and checking existence.
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
- * @param {object} args - Resolver arguments.
- * @param {object} args.input - Student update fields.
- * @param {string} args.input._id - ID of the student to update.
- * @param {string} args.input.email - New email address.
- * @param {string} args.input.first_name - Updated first name.
- * @param {string} args.input.last_name - Updated last name.
- * @param {string} [args.input.date_of_birth] - Updated date of birth in string format (optional).
- * @param {string} args.input.school_id - School ID.
+ * @param {string} input._id - ID of the student to update.
+ * @param {string} input.email - New email address.
+ * @param {string} input.first_name - Updated first name.
+ * @param {string} input.last_name - Updated last name.
+ * @param {string} [input.date_of_birth] - Updated date of birth in string format (optional).
+ * @param {string} input.school_id - School ID.
  * @returns {Promise<Object>} - Updated student document.
  * @throws {ApolloError} - Throws error if student does not exist, email already used, or school not found.
  */
 async function UpdateStudent(parent, { _id, input }) {
   try {
+    // **************** validate student's _id and school_id, ensure that it can be casted into valid ObjectId
+    ValidateId(_id);
+    ValidateId(input.school_id);
+
+    // **************** validation to ensure bad input is handled correctly
+    ValidateStudentInput(input);
+
+    // **************** check if student is exist
+    const studentIsExist = await StudentIsExist(_id);
+    if (!studentIsExist) {
+      throw new ApolloError('Student does not exist');
+    }
+
+    // **************** check if email already used by another student
+    const emailIsExist = await StudentEmailIsExist({ studentId: _id, studentEmail: input.email.trim().toLowerCase() });
+    if (emailIsExist) {
+      throw new ApolloError('Email already exist');
+    }
+
+    // **************** check if school is exist
+    const schoolIsExist = await SchoolIsExist(input.school_id);
+    if (!schoolIsExist) {
+      throw new ApolloError('School does not exist');
+    }
+
     // **************** compose new object from input
     let editedStudent = {
       email: input.email,
@@ -155,31 +178,6 @@ async function UpdateStudent(parent, { _id, input }) {
       date_of_birth: input.date_of_birth,
       school_id: input.school_id,
     };
-
-    // **************** validate student's _id and school_id, ensure that it can be casted into valid ObjectId
-    ValidateId(_id);
-    ValidateId(editedStudent.school_id);
-
-    // **************** validation to ensure bad input is handled correctly
-    ValidateStudentInput(editedStudent);
-
-    // **************** check if student is exist
-    const studentIsExist = Boolean(await StudentModel.exists({ _id, status: 'active' }));
-    if (!studentIsExist) {
-      throw new ApolloError('Student does not exist');
-    }
-
-    // **************** check if email already used by another student
-    const emailIsExist = Boolean(await StudentModel.exists({ _id: { $ne: _id }, email: editedStudent.email.toLowerCase() }));
-    if (emailIsExist) {
-      throw new ApolloError('Email already exist');
-    }
-
-    // **************** check if school is exist
-    const schoolIsExist = Boolean(await SchoolModel.exists({ _id: editedStudent.school_id, status: 'active' }));
-    if (!schoolIsExist) {
-      throw new ApolloError('School does not exist');
-    }
 
     // **************** get student's current school_id from the document
     const currentStudentDocument = await StudentModel.findOne({ _id }).lean();
@@ -212,9 +210,7 @@ async function UpdateStudent(parent, { _id, input }) {
  * Soft delete a student by marking their status as 'deleted' and removing them from associated school.
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
- * @param {object} args - Resolver arguments.
- * @param {string} args._id - ID of the student to delete.
- * @param {string} args.deleted_by - ID of the admin who deletes the student.
+ * @param {string} _id - ID of the student to delete.
  * @returns {Promise<string>} - Success message upon deletion.
  * @throws {ApolloError} - Throws error if unauthorized or student not found.
  */
@@ -223,14 +219,14 @@ async function DeleteStudent(parent, { _id }) {
     // **************** validate student's _id, ensure that it can be casted into valid ObjectId
     ValidateId(_id);
 
+    // **************** check if student to be deleted is exist
+    const studentIsExist = await StudentIsExist(_id);
+    if (!studentIsExist) {
+      throw new ApolloError('Student does not exist or already deleted');
+    }
+
     // **************** set static deleted_by
     const deletedByUserId = '6862150331861f37e4e3d209';
-
-    // **************** check if student to be deleted is exist
-    const studentIsExist = Boolean(await StudentModel.exists({ _id }));
-    if (!studentIsExist) {
-      throw new ApolloError('Student does not exist');
-    }
 
     // **************** remove student_id from student array in school document
     await SchoolModel.updateOne({ students: _id }, { $pull: { students: _id } });

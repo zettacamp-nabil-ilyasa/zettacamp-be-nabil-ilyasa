@@ -8,6 +8,7 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 /**
  * Batch function to load multiple students by their IDs.
+ * @async
  * @param {Array<string>} studentIds - Array of student IDs to fetch.
  * @returns {Promise<Array<Object>>} - Array of student objects aligned with input IDs.
  * @throws {ApolloError} - If database query fails.
@@ -38,7 +39,7 @@ async function BatchStudents(studentIds) {
 
 /**
  * create a new DataLoader instance for batching students by student IDs.
- * @returns {DataLoader<string, Object} A DataLoader instance that loads students by student ID.
+ * @returns {DataLoader<string, Object>s} A DataLoader instance that loads students by student ID.
  */
 function StudentLoader() {
   return new DataLoader(BatchStudents);
