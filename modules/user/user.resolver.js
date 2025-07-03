@@ -11,9 +11,6 @@ const { ValidateId } = require('../../utilities/common-validator/mongo-validator
 // *************** IMPORT VALIDATOR ***************
 const { ValidateUserInput } = require('./user.validators.js');
 
-// *************** IMPORT HELPERS ***************
-const { UserEmailIsExist } = require('./user.helpers.js');
-
 // *************** QUERY ***************
 
 /**
@@ -93,7 +90,7 @@ async function CreateUser(parent, { input }) {
     ValidateUserInput(newUser);
 
     // **************** check if email already used by another user
-    const emailIsExist = await UserEmailIsExist({ userEmail: newUser.email });
+    const emailIsExist = Boolean(await UserModel.exists({ email: newUser.email }));
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
     }
@@ -153,7 +150,7 @@ async function UpdateUser(parent, { _id, input }) {
     }
 
     // **************** check if email already used by another user
-    const emailIsExist = await UserEmailIsExist({ userEmail: editedUser.email, userId: _id });
+    const emailIsExist = Boolean(await UserModel.exists({ _id, email: editedUser.email }));
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
     }
