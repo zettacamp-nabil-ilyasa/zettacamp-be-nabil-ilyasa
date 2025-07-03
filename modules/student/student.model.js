@@ -10,7 +10,7 @@ const student = new mongoose.Schema(
     last_name: { type: String, trim: true, required: true },
 
     //Email
-    email: { type: String, trim: true, lowercase: true, required: true },
+    email: { type: String, trim: true, lowercase: true, required: true, unique: true },
 
     //Date of birth
     date_of_birth: { type: Date },
