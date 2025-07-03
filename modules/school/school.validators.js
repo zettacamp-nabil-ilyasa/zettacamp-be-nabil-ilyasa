@@ -47,7 +47,7 @@ function ValidateSchoolInput(inputObject) {
  * @param {string} params.longName - The school's long name to be checked.
  * @param {string} params.brandName - The school's brand name to be checked.
  * @param {string} [params.schoolId] - ID of the school to exclude from the check (optional).
- * @returns {Promise<boolean>} - Returns true if a school with the same name exists, otherwise false.
+ * @returns {Promise<Object|null>} - Returns the School object if found, otherwise null.
  * @throws {ApolloError} - If both names are missing, invalid ID, or DB operation fails.
  */
 async function SchoolLongNameIsExist({ longName, schoolId }) {
@@ -60,8 +60,8 @@ async function SchoolLongNameIsExist({ longName, schoolId }) {
       ValidateId(schoolId);
       query._id = { $ne: schoolId };
     }
-    const isExist = Boolean(await SchoolModel.exists(query));
-    return isExist;
+    const schoolLongNameIsExist = await SchoolModel.findOne(query);
+    return schoolLongNameIsExist;
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,

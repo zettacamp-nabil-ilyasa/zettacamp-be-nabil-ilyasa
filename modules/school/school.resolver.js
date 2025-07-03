@@ -262,7 +262,7 @@ async function students(parent, args, context) {
  * @param {object} args - Not used (GraphQL resolver convention).
  * @param {object} context - Resolver context containing DataLoaders.
  * @param {object} context.loaders.user - DataLoader instance for users.
- * @returns {Promise<Object|null>} - The user document or null if not available.
+ * @returns {Promise<Object|null>} - The School document or null if not available.
  * @throws {ApolloError} - Throws error if loading fails.
  */
 async function created_by(parent, args, context) {
