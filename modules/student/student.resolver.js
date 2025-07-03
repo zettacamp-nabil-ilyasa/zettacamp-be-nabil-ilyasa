@@ -38,7 +38,7 @@ async function GetAllStudents() {
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {string} _id - ID of the student to retrieve.
- * @returns {Promise<Object|null>} - The student document or null if not found.
+ * @returns {Promise<Object|null>} - The Student document or null if not found.
  * @throws {ApolloError} - Throws error if validation fails or student not found.
  */
 async function GetOneStudent(parent, { _id }) {

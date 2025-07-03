@@ -43,7 +43,7 @@ function ValidateStudentInput(inputObject) {
  * Check if a student with the given ID exists and is active.
  * @async
  * @param {string} studentId - The ID of the student to check.
- * @returns {Promise<boolean>} - True if the student exists and is active, false otherwise.
+ * @returns {Promise<Object|null>} - The Student object if found, otherwise null.
  * @throws {ApolloError} - If validation fails or DB query error occurs.
  */
 async function StudentIsExist(studentId) {
@@ -73,7 +73,7 @@ async function StudentIsExist(studentId) {
  * @param {object} params - Input parameters.
  * @param {string} params.studentEmail - The email address to check.
  * @param {string} [params.studentId] - The ID of the student to exclude (optional).
- * @returns {Promise<boolean>} - True if the email exists, false otherwise.
+ * @returns {Promise<Object|null>} - The Student object if found, otherwise null.
  * @throws {ApolloError} - If input is invalid or DB query fails.
  */
 async function StudentEmailIsExist({ studentEmail, studentId }) {
