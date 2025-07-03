@@ -13,9 +13,6 @@ const { ValidateSchoolInput } = require('./school.validators.js');
 // *************** IMPORT UTIL ***************
 const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
 
-// *************** IMPORT HELPER ***************
-const { SchoolNameIsExist } = require('./school.helpers.js');
-
 //**************** QUERY ****************
 
 /**
@@ -99,10 +96,10 @@ async function CreateSchool(parent, { input }) {
     // *************** validation to ensure bad input is handled correctly
     ValidateSchoolInput(newSchool);
 
-    // *************** check if school name already used by another school
-    const isSchoolNameExist = await SchoolNameIsExist({ longName: newSchool.long_name, brandName: newSchool.brand_name });
+    // *************** check if school long name already used by another school
+    const isSchoolNameExist = Boolean(await SchoolModel.exists({ long_name: newSchool.long_name }));
     if (isSchoolNameExist) {
-      throw new ApolloError('School name already exist');
+      throw new ApolloError('School long name already exist');
     }
 
     // *************** set static User id for created_by field
@@ -164,13 +161,9 @@ async function UpdateSchool(parent, { _id, input }) {
     }
 
     // *************** check if school name already used by another school
-    const isSchoolNameExist = await SchoolNameIsExist({
-      longName: editedSchool.long_name,
-      brandName: editedSchool.brand_name,
-      schoolId: _id,
-    });
+    const isSchoolNameExist = Boolean(await SchoolModel.exists({ _id, long_name: editedSchool.long_name }));
     if (isSchoolNameExist) {
-      throw new ApolloError('School name already exist');
+      throw new ApolloError('School long name already exist');
     }
 
     // *************** update school with composed object
