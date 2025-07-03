@@ -14,16 +14,16 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
  */
 async function BatchUsers(userIds) {
   try {
-    //**************** get all active users with id within userIds and status is not deleted
+    // **************** get all active users with id within userIds and status is not deleted
     const users = await UserModel.find({ _id: { $in: userIds }, status: 'active' }).lean();
 
-    //**************** set users data to dataMap
+    // **************** set users data to dataMap
     const dataMap = new Map();
     users.forEach((user) => {
       dataMap.set(String(user._id), user);
     });
 
-    //**************** return array of user objects with order of userIds
+    // **************** return array of user objects with order of userIds
     return userIds.map((userId) => dataMap.get(String(userId)));
   } catch (error) {
     await ErrorLogModel.create({

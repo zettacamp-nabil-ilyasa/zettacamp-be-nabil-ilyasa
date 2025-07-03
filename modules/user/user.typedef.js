@@ -1,7 +1,6 @@
 // *************** IMPORT LIBRARY ***************
 const { gql } = require('apollo-server-express');
 
-// ***************
 const userTypeDefs = gql`
   type User {
     _id: ID!
