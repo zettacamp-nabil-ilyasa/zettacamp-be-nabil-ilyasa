@@ -223,7 +223,7 @@ async function DeleteStudent(parent, { _id }) {
     // **************** validate student's _id, ensure that it can be casted into valid ObjectId
     ValidateId(_id);
 
-    // **************** sets static deleted_by
+    // **************** set static deleted_by
     const deletedByUserId = '6862150331861f37e4e3d209';
 
     // **************** check if student to be deleted is exist

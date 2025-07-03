@@ -14,16 +14,16 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
  */
 async function BatchStudents(studentIds) {
   try {
-    //**************** get all active students with id within studentIds and status is not deleted
+    // **************** get all active students with id within studentIds and status is not deleted
     const students = await StudentModel.find({ _id: { $in: studentIds }, status: 'active' }).lean();
 
-    //**************** set students data to dataMap
+    // **************** set students data to dataMap
     const dataMap = new Map();
     students.forEach((student) => {
       dataMap.set(String(student._id), student);
     });
 
-    //**************** return array of student objects with order of studentIds
+    // **************** return array of student objects with order of studentIds
     return studentIds.map((studentId) => dataMap.get(String(studentId)));
   } catch (error) {
     await ErrorLogModel.create({
