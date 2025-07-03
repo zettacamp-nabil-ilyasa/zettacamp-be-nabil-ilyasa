@@ -15,15 +15,15 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 async function BatchSchools(schoolIds) {
   try {
-    //**************** get all active schools with id within schoolIds and status is not deleted
+    // **************** get all active schools with id within schoolIds and status is not deleted
     const schools = await SchoolModel.find({ _id: { $in: schoolIds }, status: 'active' }).lean();
 
-    //**************** set schools data to dataMap
+    // **************** set schools data to dataMap
     const dataMap = new Map();
     schools.forEach((school) => {
       dataMap.set(String(school._id), school);
     });
-    //**************** return array of school objects with order of schoolIds
+    // **************** return array of school objects with order of schoolIds
     return schoolIds.map((schoolId) => dataMap.get(String(schoolId)));
   } catch (error) {
     await ErrorLogModel.create({
