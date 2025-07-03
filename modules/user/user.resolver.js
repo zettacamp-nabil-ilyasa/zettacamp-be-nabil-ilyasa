@@ -90,7 +90,7 @@ async function CreateUser(parent, { input }) {
     ValidateUserInput(newUser);
 
     // **************** check if email already used by another user
-    const emailIsExist = Boolean(await UserModel.exists({ email: newUser.email }));
+    const emailIsExist = Boolean(await UserModel.exists({ email: newUser.email.toLowerCase() }));
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
     }
@@ -150,7 +150,7 @@ async function UpdateUser(parent, { _id, input }) {
     }
 
     // **************** check if email already used by another user
-    const emailIsExist = Boolean(await UserModel.exists({ _id, email: editedUser.email }));
+    const emailIsExist = Boolean(await UserModel.exists({ email: editedUser.email.toLowerCase(), _id: { $ne: _id } }));
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
     }
