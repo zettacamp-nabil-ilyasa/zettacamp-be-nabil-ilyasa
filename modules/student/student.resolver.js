@@ -188,12 +188,6 @@ async function UpdateStudent(parent, { _id, input }) {
           },
         },
       ]);
-
-      // ****************  remove student's id from previous school
-      await SchoolModel.updateOne({ _id: oldSchoolId }, { $pull: { students: _id } });
-
-      // **************** add student's id to new school
-      await SchoolModel.updateOne({ _id: editedStudent.school_id }, { $addToSet: { students: _id } });
     }
 
     // **************** update student with composed object
