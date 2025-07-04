@@ -104,5 +104,5 @@ async function StudentEmailIsExist({ studentEmail, studentId }) {
   }
 }
 
-// *************** MODULE EXPORTS ***************
+// *************** EXPORT MODULE ***************
 module.exports = { ValidateStudentInput, StudentIsExist, StudentEmailIsExist };
