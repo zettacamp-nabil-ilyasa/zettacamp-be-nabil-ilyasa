@@ -6,9 +6,9 @@ const SchoolModel = require('./school.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***********************
-const { ValidateSchoolInput, SchoolLongNameIsExist } = require('./school.validators.js');
-const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
-const { SchoolIsExist } = require('../../utilities/validators/school.js');
+const { ValidateSchoolInput, ValidateUniqueSchoolLongName } = require('./school.validators.js');
+const { ValidateSchoolExistence } = require('../../utilities/validators/school-validator.js');
+const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
 
 // **************** QUERY ****************
 /**
@@ -85,10 +85,7 @@ async function CreateSchool(parent, { input }) {
     ValidateSchoolInput(input);
 
     // *************** check if school long name already used by another school
-    const schoolNameExist = await SchoolLongNameIsExist({ longName: input.long_name });
-    if (schoolNameExist) {
-      throw new ApolloError('School long name already exist');
-    }
+    await ValidateUniqueSchoolLongName({ longName: input.long_name });
 
     // *************** compose new object from input for insert
     const newSchool = {
@@ -141,17 +138,11 @@ async function UpdateSchool(parent, { _id, input }) {
     // *************** validation to ensure fail-fast and bad input is handled correctly
     ValidateSchoolInput(input);
 
-    // *************** check if school exists
-    const schoolIsExist = await SchoolIsExist(_id);
-    if (!schoolIsExist) {
-      throw new ApolloError('School does not exist');
-    }
+    // *************** check if school is exist
+    await ValidateSchoolExistence(_id);
 
-    // *************** check if school name already used by another school
-    const schoolLongNameExist = await SchoolLongNameIsExist({ longName: input.long_name, schoolId: _id });
-    if (schoolLongNameExist) {
-      throw new ApolloError('School long name already exist');
-    }
+    // *************** check if School long name is used by another School
+    await ValidateUniqueSchoolLongName({ schoolId: _id, longName: input.long_name });
 
     // *************** compose new object from input for update
     const editedSchool = {
@@ -190,22 +181,23 @@ async function DeleteSchool(parent, { _id }) {
     // **************** validate school's _id, ensure that it can be casted into valid ObjectId
     ValidateId(_id);
 
-    // *************** check if school to be deleted is exist
-    const schoolIsExist = await SchoolIsExist(_id);
-    if (!schoolIsExist) {
-      throw new ApolloError('School does not exist or already deleted');
+    // **************** get the School document
+    const toBeDeletedSchoolDocument = await SchoolModel.findOne({ _id }).lean();
+
+    // **************** check if School is exist
+    if (!toBeDeletedSchoolDocument) {
+      throw new ApolloError("School doesn't exist or already deleted");
     }
 
-    // **************** check if school is referenced by any student
-    const deletedSchoolDocument = await SchoolModel.findOne({ _id }).lean();
-    if (deletedSchoolDocument.students.length) {
-      throw new ApolloError('School that is referenced by a student cannot be deleted');
+    // **************** check if School is referenced by Student
+    if (toBeDeletedSchoolDocument.students.length) {
+      throw new ApolloError('School that is referenced by Student cannot be deleted');
     }
 
     // **************** set static User id for deleted_by
     const deletedByUserId = '6862150331861f37e4e3d209';
 
-    // **************** soft-delete school by updating it with composed object
+    // **************** soft-delete School by updating it with composed object
     await SchoolModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: deletedByUserId, deleted_at: new Date() } });
     return 'School deleted successfully';
   } catch (error) {

@@ -4,7 +4,7 @@ const SchoolModel = require('./school.model');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
+const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
 
 /**
  * Validates the school input object for required and optional fields.
@@ -46,25 +46,33 @@ function ValidateSchoolInput(inputObject) {
  * @param {object} params - Input parameters.
  * @param {string} params.longName - The school's long name to be checked.
  * @param {string} [params.schoolId] - ID of the school to exclude from the check (optional).
- * @returns {Promise<Object|null>} - Returns the School object if found, otherwise null.
  * @throws {ApolloError} - If both names are missing, invalid ID, or DB operation fails.
  */
-async function SchoolLongNameIsExist({ longName, schoolId }) {
+async function ValidateUniqueSchoolLongName({ longName, schoolId }) {
   try {
+    // *************** validate longName input
+    if (!longName) {
+      throw new ApolloError('long_name is required');
+    }
+
     // *************** set base query object with School's long name and status
     const query = { long_name: longName.trim(), status: 'active' };
 
-    // *************** add _id to query if schoolId is provided
+    // *************** schoolId is used in update, to exclude the to be updated school from checking
     if (schoolId) {
       ValidateId(schoolId);
       query._id = { $ne: schoolId };
     }
-    const schoolLongNameIsExist = await SchoolModel.findOne(query);
-    return schoolLongNameIsExist;
+    const schoolLongNameIsExist = await SchoolModel.findOne(query).lean();
+
+    // *************** throw error if long_name is already exist
+    if (schoolLongNameIsExist) {
+      throw new ApolloError('the School long name already used by another School');
+    }
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
-      function_name: 'SchoolNameIsExist',
+      function_name: 'ValidateUniqueSchoolLongName',
       path: '/modules/school/school.validator.js',
       parameter_input: JSON.stringify({ longName, schoolId }),
     });
@@ -73,4 +81,4 @@ async function SchoolLongNameIsExist({ longName, schoolId }) {
 }
 
 // *************** EXPORT MODULE ***************
-module.exports = { ValidateSchoolInput, SchoolLongNameIsExist };
+module.exports = { ValidateSchoolInput, ValidateUniqueSchoolLongName };
