@@ -134,7 +134,6 @@ async function CreateStudent(parent, { input }) {
  * Update a student's information after validating input and checking existence.
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
- * @param {string} input._id - ID of the student to update.
  * @param {string} input.email - New email address.
  * @param {string} input.first_name - Updated first name.
  * @param {string} input.last_name - Updated last name.
