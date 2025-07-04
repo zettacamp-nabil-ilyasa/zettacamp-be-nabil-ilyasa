@@ -23,4 +23,4 @@ const errorLogSchema = new Schema(
 );
 
 // *************** EXPORT MODULE ***************
-module.exports = Mongoose.model('error_logs', errorLogSchema);
+module.exports = Mongoose.model('error_log', errorLogSchema);
