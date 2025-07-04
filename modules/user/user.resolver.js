@@ -6,7 +6,7 @@ const UserModel = require('./user.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateUserInput, UserIsExist, ValidateUniqueUserEmail, ValidateUserExistence } = require('./user.validators.js');
+const { ValidateUserInput, ValidateUniqueUserEmail, ValidateUserExistence } = require('./user.validators.js');
 const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
 
 // *************** QUERY ***************
