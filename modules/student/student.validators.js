@@ -6,7 +6,7 @@ const StudentModel = require('./student.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
+const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
 
 /**
  * Validates the student input object for required fields and basic date formatting.
@@ -40,34 +40,6 @@ function ValidateStudentInput(inputObject) {
 }
 
 /**
- * Check if a student with the given ID exists and is active.
- * @async
- * @param {string} studentId - The ID of the student to check.
- * @returns {Promise<Object|null>} - The Student object if found, otherwise null.
- * @throws {ApolloError} - If validation fails or DB query error occurs.
- */
-async function StudentIsExist(studentId) {
-  try {
-    // *************** validate studentId
-    ValidateId(studentId);
-
-    // *************** set query for db operation
-    const query = { _id: studentId, status: 'active' };
-
-    const studentIsExist = await StudentModel.findOne(query);
-    return studentIsExist;
-  } catch (error) {
-    await ErrorLogModel.create({
-      error_stack: error.stack,
-      function_name: 'StudentIsExist',
-      path: '/modules/student/student.validators.js',
-      parameter_input: JSON.stringify({ studentId }),
-    });
-    throw new ApolloError(error.message);
-  }
-}
-
-/**
  * Check if a student email already exists in the database.
  * @async
  * @param {object} params - Input parameters.
@@ -76,27 +48,32 @@ async function StudentIsExist(studentId) {
  * @returns {Promise<Object|null>} - The Student object if found, otherwise null.
  * @throws {ApolloError} - If input is invalid or DB query fails.
  */
-async function StudentEmailIsExist({ studentEmail, studentId }) {
+async function ValidateUniqueStudentEmail({ studentEmail, studentId }) {
   try {
+    // *************** validate studentEmail input
     if (!studentEmail) {
-      throw new ApolloError('Invalid email input');
+      throw new ApolloError('email is required');
     }
 
     // *************** set basequery for db operation
     const query = { email: studentEmail.trim().toLowerCase() };
 
-    // *************** set query for _id if studentId is provided
+    // *************** studentId used for update, to exclude the to be updated student from checking
     if (studentId) {
       ValidateId(studentId);
       query._id = { $ne: studentId };
     }
 
-    const emailIsExist = await StudentModel.findOne(query);
-    return emailIsExist;
+    const emailIsExist = await StudentModel.findOne(query).lean();
+
+    // *************** throw error if email is already exist
+    if (emailIsExist) {
+      throw new ApolloError('email already used by another student');
+    }
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
-      function_name: 'StudentEmailIsExist',
+      function_name: 'ValidateUniqueStudentEmail',
       path: '/modules/student/student.validators.js',
       parameter_input: JSON.stringify({ studentEmail, studentId }),
     });
@@ -105,4 +82,4 @@ async function StudentEmailIsExist({ studentEmail, studentId }) {
 }
 
 // *************** EXPORT MODULE ***************
-module.exports = { ValidateStudentInput, StudentIsExist, StudentEmailIsExist };
+module.exports = { ValidateStudentInput, ValidateUniqueStudentEmail };
