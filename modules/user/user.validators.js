@@ -6,7 +6,7 @@ const UserModel = require('./user.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
+const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
 
 /**
  * Validates the user input object for required fields.
@@ -45,7 +45,7 @@ function ValidateUserInput(inputObject) {
  * @returns {Promise<Object|null>} - The User object if found, otherwise null.
  * @throws {ApolloError} - If validation fails or DB query fails.
  */
-async function UserIsExist(userId) {
+async function ValidateUserExistence(userId) {
   try {
     // *************** validate userId
     ValidateId(userId);
@@ -54,12 +54,16 @@ async function UserIsExist(userId) {
     const query = { _id: userId, status: 'active' };
 
     // *************** db operation
-    const userIsExist = await UserModel.findOne(query);
-    return userIsExist;
+    const userIsExist = await UserModel.findOne(query).lean();
+
+    // *************** throw error if user doesn't exist
+    if (!userIsExist) {
+      throw new ApolloError("user doesn't exist");
+    }
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
-      function_name: 'UserIsExist',
+      function_name: 'ValidateUserExistence',
       path: '/modules/user/user.validators.js',
       parameter_input: JSON.stringify({ userId }),
     });
@@ -76,7 +80,7 @@ async function UserIsExist(userId) {
  * @returns {Promise<Object|null>} - The User object if found, otherwise null.
  * @throws {ApolloError} - If input is invalid or DB query fails.
  */
-async function UserEmailIsExist({ userEmail, userId }) {
+async function ValidateUniqueUserEmail({ userEmail, userId }) {
   try {
     // *************** check if email is empty
     if (!userEmail) {
@@ -92,12 +96,16 @@ async function UserEmailIsExist({ userEmail, userId }) {
       query._id = { $ne: userId };
     }
 
-    const emailIsExist = await UserModel.findOne(query);
-    return emailIsExist;
+    const emailIsExist = await UserModel.findOne(query).lean();
+
+    // *************** throw error if email is already exist
+    if (emailIsExist) {
+      throw new ApolloError('email already used by another user');
+    }
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
-      function_name: 'UserEmailIsExist',
+      function_name: 'ValidateUniqueUserEmail',
       path: '/modules/user/user.validators.js',
       parameter_input: JSON.stringify({ userEmail, userId }),
     });
@@ -106,4 +114,4 @@ async function UserEmailIsExist({ userEmail, userId }) {
 }
 
 // *************** EXPORT MODULE ***************
-module.exports = { ValidateUserInput, UserIsExist, UserEmailIsExist };
+module.exports = { ValidateUserInput, ValidateUserExistence, ValidateUniqueUserEmail };

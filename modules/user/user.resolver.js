@@ -6,8 +6,8 @@ const UserModel = require('./user.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateUserInput, UserIsExist, UserEmailIsExist } = require('./user.validators.js');
-const { ValidateId } = require('../../utilities/common-validator/mongo-validator.js');
+const { ValidateUserInput, UserIsExist, ValidateUniqueUserEmail, ValidateUserExistence } = require('./user.validators.js');
+const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
 
 // *************** QUERY ***************
 /**
@@ -81,10 +81,7 @@ async function CreateUser(parent, { input }) {
     ValidateUserInput(input);
 
     // **************** check if email already used by another user
-    const emailIsExist = await UserEmailIsExist({ userEmail: input.email });
-    if (emailIsExist) {
-      throw new ApolloError('Email already exist');
-    }
+    await ValidateUniqueUserEmail({ userEmail: input.email });
 
     // **************** compose new object from input
     const newUser = {
@@ -134,16 +131,10 @@ async function UpdateUser(parent, { _id, input }) {
     ValidateUserInput(input);
 
     // **************** check if user exist
-    const userIsExist = await UserIsExist(_id);
-    if (!userIsExist) {
-      throw new ApolloError('User does not exist');
-    }
+    await ValidateUserExistence(_id);
 
     // **************** check if email already used by another user
-    const emailIsExist = await UserEmailIsExist({ userId: _id, userEmail: input.email });
-    if (emailIsExist) {
-      throw new ApolloError('Email already exist');
-    }
+    await ValidateUniqueUserEmail({ userId: _id, userEmail: input.email });
 
     // **************** compose new object from input
     const editedUser = {
@@ -181,10 +172,7 @@ async function DeleteUser(parent, { _id }) {
     ValidateId(_id);
 
     // **************** check if user to be deleted is exist
-    const userIsExist = await UserIsExist(_id);
-    if (!userIsExist) {
-      throw new ApolloError('User does not exist or already deleted');
-    }
+    await ValidateUserExistence(_id);
 
     // **************** set static User id for deleted_by
     const deletedByUserId = '6862150331861f37e4e3d209';
