@@ -66,7 +66,7 @@ async function SchoolLongNameIsExist({ longName, schoolId }) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'SchoolNameIsExist',
-      path: '/modules/school/school.helpers.js',
+      path: '/modules/school/school.validator.js',
       parameter_input: JSON.stringify({ longName, schoolId }),
     });
     throw new ApolloError(error.message);
