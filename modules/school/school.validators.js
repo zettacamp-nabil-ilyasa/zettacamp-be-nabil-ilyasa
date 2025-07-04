@@ -41,11 +41,10 @@ function ValidateSchoolInput(inputObject) {
 }
 
 /**
- * Check if a school's long name and/or brand name already exists in the database
+ * Check if a school's long name already exists in the database
  * @async
  * @param {object} params - Input parameters.
  * @param {string} params.longName - The school's long name to be checked.
- * @param {string} params.brandName - The school's brand name to be checked.
  * @param {string} [params.schoolId] - ID of the school to exclude from the check (optional).
  * @returns {Promise<Object|null>} - Returns the School object if found, otherwise null.
  * @throws {ApolloError} - If both names are missing, invalid ID, or DB operation fails.
