@@ -35,7 +35,7 @@ function ValidateUserInput(inputObject) {
   // *************** validate user's role
   const validRoles = ['admin', 'operator'];
   if (typeof role !== 'string' || !validRoles.includes(role))
-    throw new ApolloError('role is required and should be one of: ' + validRoles.join(', '));
+    throw new ApolloError(`role is required and should be one of: ${validRoles.join(', ')}`);
 }
 
 /**
@@ -60,7 +60,7 @@ async function UserIsExist(userId) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'UserIsExist',
-      path: '/modules/user/user.helpers.js',
+      path: '/modules/user/user.validators.js',
       parameter_input: JSON.stringify({ userId }),
     });
     throw new ApolloError(error.message);
@@ -98,7 +98,7 @@ async function UserEmailIsExist({ userEmail, userId }) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'UserEmailIsExist',
-      path: '/modules/user/user.helpers.js',
+      path: '/modules/user/user.validators.js',
       parameter_input: JSON.stringify({ userEmail, userId }),
     });
     throw new ApolloError(error.message);
