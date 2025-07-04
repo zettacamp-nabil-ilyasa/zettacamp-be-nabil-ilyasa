@@ -90,7 +90,7 @@ async function ValidateUniqueUserEmail({ userEmail, userId }) {
     // *************** set base query for db operation
     const query = { email: userEmail.trim().toLowerCase() };
 
-    // *************** set query for User's id
+    // *************** userId is used in update, to exclude the to be updated user from checking
     if (userId) {
       ValidateId(userId);
       query._id = { $ne: userId };
