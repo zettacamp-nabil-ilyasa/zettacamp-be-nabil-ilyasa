@@ -73,7 +73,7 @@ async function GetOneUser(parent, { _id }) {
  * @param {string} input.role - Role of the new user.
  * @param {string} input.created_by - ID of the admin who creates this user.
  * @returns {Promise<Object>} - Created user document.
- * @throws {ApolloError} - Throws error if validation fails, user unauthorized, or email already exists.
+ * @throws {ApolloError} - Throws error if validation fails or email already exist.
  */
 async function CreateUser(parent, { input }) {
   try {
@@ -81,12 +81,12 @@ async function CreateUser(parent, { input }) {
     ValidateUserInput(input);
 
     // **************** check if email already used by another user
-    const emailIsExist = await UserEmailIsExist({ userEmail: input.email.trim().toLowerCase() });
+    const emailIsExist = await UserEmailIsExist({ userEmail: input.email });
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
     }
 
-    // **************** compose new object from input, sets static created_by
+    // **************** compose new object from input
     const newUser = {
       email: input.email,
       first_name: input.first_name,
@@ -123,7 +123,7 @@ async function CreateUser(parent, { input }) {
  * @param {string} input.last_name - Updated last name.
  * @param {string} input.role - Updated role.
  * @returns {Promise<Object>} - Updated user document.
- * @throws {ApolloError} - Throws error if validation fails, user not found, or email already exists.
+ * @throws {ApolloError} - Throws error if validation fails, user not found, or email already exist.
  */
 async function UpdateUser(parent, { _id, input }) {
   try {
@@ -140,7 +140,7 @@ async function UpdateUser(parent, { _id, input }) {
     }
 
     // **************** check if email already used by another user
-    const emailIsExist = await UserEmailIsExist({ userId: _id, userEmail: input.email.trim().toLowerCase() });
+    const emailIsExist = await UserEmailIsExist({ userId: _id, userEmail: input.email });
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
     }
@@ -186,7 +186,7 @@ async function DeleteUser(parent, { _id }) {
       throw new ApolloError('User does not exist or already deleted');
     }
 
-    // **************** set static deleted_by
+    // **************** set static User id for deleted_by
     const deletedByUserId = '6862150331861f37e4e3d209';
 
     // **************** check if user is trying to delete themselves

@@ -84,7 +84,7 @@ async function UserEmailIsExist({ userEmail, userId }) {
     }
 
     // *************** set base query for db operation
-    const query = { email: userEmail };
+    const query = { email: userEmail.trim().toLowerCase() };
 
     // *************** set query for User's id
     if (userId) {
