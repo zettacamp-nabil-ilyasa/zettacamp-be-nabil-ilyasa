@@ -163,10 +163,6 @@ async function UpdateSchool(parent, { _id, input }) {
       zipcode: input.zipcode,
     };
 
-    // *************** set static User id for created_by field
-    const createdByUserId = '6862150331861f37e4e3d209';
-    editedSchool.created_by = createdByUserId;
-
     // *************** update school with composed object
     const updatedSchool = await SchoolModel.findOneAndUpdate({ _id }, { $set: editedSchool }, { new: true }).lean();
     return updatedSchool;
@@ -206,7 +202,7 @@ async function DeleteSchool(parent, { _id }) {
       throw new ApolloError('School that is referenced by a student cannot be deleted');
     }
 
-    // **************** set static deleted_by
+    // **************** set static User id for deleted_by
     const deletedByUserId = '6862150331861f37e4e3d209';
 
     // **************** soft-delete school by updating it with composed object

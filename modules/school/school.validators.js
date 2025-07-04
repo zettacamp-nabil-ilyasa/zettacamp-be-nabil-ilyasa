@@ -52,7 +52,7 @@ function ValidateSchoolInput(inputObject) {
 async function SchoolLongNameIsExist({ longName, schoolId }) {
   try {
     // *************** set base query object with School's long name and status
-    const query = { long_name: longName, status: 'active' };
+    const query = { long_name: longName.trim(), status: 'active' };
 
     // *************** add _id to query if schoolId is provided
     if (schoolId) {
