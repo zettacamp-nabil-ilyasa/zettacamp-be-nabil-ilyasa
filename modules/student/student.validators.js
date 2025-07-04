@@ -83,7 +83,7 @@ async function StudentEmailIsExist({ studentEmail, studentId }) {
     }
 
     // *************** set basequery for db operation
-    const query = { email: studentEmail };
+    const query = { email: studentEmail.trim().toLowerCase() };
 
     // *************** set query for _id if studentId is provided
     if (studentId) {

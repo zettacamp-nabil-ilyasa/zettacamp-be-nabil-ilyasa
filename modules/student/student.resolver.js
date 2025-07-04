@@ -88,7 +88,7 @@ async function CreateStudent(parent, { input }) {
     ValidateStudentInput(input);
 
     // *************** check if email already used by another student
-    const studentEmailIsExist = await StudentEmailIsExist({ studentEmail: input.email.trim().toLowerCase() });
+    const studentEmailIsExist = await StudentEmailIsExist({ studentEmail: input.email });
     if (studentEmailIsExist) {
       throw new ApolloError('Email already exist');
     }
@@ -99,7 +99,7 @@ async function CreateStudent(parent, { input }) {
       throw new ApolloError('School does not exist');
     }
 
-    // *************** compose new object from input, sets static created_by
+    // *************** compose new object from input
     const newStudent = {
       email: input.email,
       first_name: input.first_name,
@@ -158,7 +158,7 @@ async function UpdateStudent(parent, { _id, input }) {
     }
 
     // **************** check if email already used by another student
-    const emailIsExist = await StudentEmailIsExist({ studentId: _id, studentEmail: input.email.trim().toLowerCase() });
+    const emailIsExist = await StudentEmailIsExist({ studentId: _id, studentEmail: input.email });
     if (emailIsExist) {
       throw new ApolloError('Email already exist');
     }
@@ -224,7 +224,7 @@ async function DeleteStudent(parent, { _id }) {
       throw new ApolloError('Student does not exist or already deleted');
     }
 
-    // **************** set static deleted_by
+    // **************** set static User id for deleted_by
     const deletedByUserId = '6862150331861f37e4e3d209';
 
     // **************** remove student_id from student array in school document
