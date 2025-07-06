@@ -6,7 +6,7 @@ const UserModel = require('./user.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateUserInput, ValidateUniqueUserEmail, ValidateUserExistence } = require('./user.validators.js');
+const { ValidateUserInput, ValidateUniqueUserEmail } = require('./user.validators.js');
 const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
 
 // *************** QUERY ***************
@@ -36,7 +36,7 @@ async function GetAllUsers() {
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {string} _id - ID of the user to retrieve.
- * @returns {Promise<Object|null>} - The User document or null if not found.
+ * @returns {Promise<Object>} - The User document which match with _id.
  * @throws {ApolloError} - Throws error if validation fails or query error occurs.
  */
 async function GetOneUser(parent, { _id }) {
@@ -44,7 +44,7 @@ async function GetOneUser(parent, { _id }) {
     // **************** validate user's _id, ensure that it can be casted into valid ObjectId
     ValidateId(_id);
 
-    // **************** throw error if there's no student to returned
+    // **************** throw error if there's no user to return
     const user = await UserModel.findOne({ _id: _id, status: 'active' }).lean();
     if (!user) {
       throw new ApolloError('cannot get the requested user');
@@ -81,7 +81,7 @@ async function CreateUser(parent, { input }) {
     ValidateUserInput(input);
 
     // **************** check if email already used by another user
-    await ValidateUniqueUserEmail({ userEmail: input.email });
+    await ValidateUniqueUserEmail(input.email);
 
     // **************** compose new object from input
     const newUser = {
@@ -124,17 +124,22 @@ async function CreateUser(parent, { input }) {
  */
 async function UpdateUser(parent, { _id, input }) {
   try {
-    // **************** validate _id
-    ValidateId(_id);
-
     // **************** validation to ensure fail-fast and bad input is handled correctly
-    ValidateUserInput(input);
+    ValidateUserInput(input, { checkUserId: true, userId: _id });
 
-    // **************** check if user exist
-    await ValidateUserExistence(_id);
+    // **************** get the user document
+    const toBeUpdatedUserDocument = await UserModel.findOne({ _id, status: 'active' });
 
-    // **************** check if email already used by another user
-    await ValidateUniqueUserEmail({ userId: _id, userEmail: input.email });
+    // **************** sanity check for the user document
+    if (!toBeUpdatedUserDocument) {
+      throw new ApolloError('user does not exist');
+    }
+
+    // **************** check if email changed using the user document
+    if (input.email !== toBeUpdatedUserDocument.email) {
+      // **************** if email changed, also check if email already used by another user
+      await ValidateUniqueUserEmail({ userId: _id, userEmail: input.email });
+    }
 
     // **************** compose new object from input
     const editedUser = {
@@ -171,9 +176,6 @@ async function DeleteUser(parent, { _id }) {
     // **************** validate user's _id, ensure that it can be casted into valid ObjectId
     ValidateId(_id);
 
-    // **************** check if user to be deleted is exist
-    await ValidateUserExistence(_id);
-
     // **************** set static User id for deleted_by
     const deletedByUserId = '6862150331861f37e4e3d209';
 
@@ -183,7 +185,15 @@ async function DeleteUser(parent, { _id }) {
     }
 
     // **************** soft-delete user by updating it's status
-    await UserModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: deletedByUserId, deleted_at: new Date() } });
+    const deletedUser = await UserModel.updateOne(
+      { _id, status: 'active' },
+      { $set: { status: 'deleted', deleted_by: deletedByUserId, deleted_at: new Date() } }
+    );
+
+    // **************** check if the user is exist and not already deleted
+    if (deletedUser.matchedCount === 0) {
+      throw new ApolloError("user doesn't exist or already deleted");
+    }
     return 'User deleted successfully';
   } catch (error) {
     await ErrorLogModel.create({
@@ -196,7 +206,7 @@ async function DeleteUser(parent, { _id }) {
   }
 }
 
-// *************** LOADERS ***************
+// *************** LOADER ***************
 /**
  * Resolve the created_by field in a user object using DataLoader to prevent N+1 queries.
  * @async
