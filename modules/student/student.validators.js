@@ -16,6 +16,9 @@ const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
  * @param {string} input.last_name - The last name of the student.
  * @param {string} input.email - The email address of the student.
  * @param {string} input.date_of_birth - The student's date of birth in string format (YYYY-MM-DD).
+ *  @param {Object} [options] - Optional param to control the validation flow.
+ * @param {boolean} [options.checkStudentId] - If set to true, studentId will be validated.
+ * @param {string} [options.studentId] - id of student to be checked (if checkStudentId is true).
  * @throws {ApolloError} - If any field is missing, has the wrong type, or fails validation.
  */
 function ValidateStudentInput(input, { checkStudentId, studentId }) {
@@ -40,6 +43,8 @@ function ValidateStudentInput(input, { checkStudentId, studentId }) {
 
   // *************** validate student's date_of_birth
   if (typeof date_of_birth !== 'string' || date_of_birth.trim() === '') throw new ApolloError('date_of_birth is required');
+
+  // *************** student's date_of_birth can't be earlier than 1900 and can't be in the future
   const parsedDate = date_of_birth instanceof Date ? date_of_birth : new Date(date_of_birth);
   if (isNaN(parsedDate.getTime()) || parsedDate.getFullYear() < 1900 || parsedDate.getTime() > Date.now())
     throw new ApolloError('date_of_birth should be in YYYY-MM-DD, not earlier than 1900, and not in the future');
