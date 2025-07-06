@@ -10,16 +10,22 @@ const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
 
 /**
  * Validates the student input object for required fields and basic date formatting.
- * @param {Object} inputObject - The input object containing student data.
- * @param {string} inputObject.first_name - The first name of the student.
- * @param {string} inputObject.last_name - The last name of the student.
- * @param {string} inputObject.email - The email address of the student.
- * @param {string} inputObject.date_of_birth - The student's date of birth in string format (YYYY-MM-DD).
+ * @param {Object} studentId - The id of student.
+ * @param {Object} input - The input object containing student data.
+ * @param {string} input.first_name - The first name of the student.
+ * @param {string} input.last_name - The last name of the student.
+ * @param {string} input.email - The email address of the student.
+ * @param {string} input.date_of_birth - The student's date of birth in string format (YYYY-MM-DD).
  * @throws {ApolloError} - If any field is missing, has the wrong type, or fails validation.
  */
-function ValidateStudentInput(inputObject) {
+function ValidateStudentInput(input, { checkStudentId, studentId }) {
+  // *************** if checkStudentId set to true, validate studentId (for update mutation purpose)
+  if (checkStudentId) {
+    ValidateId(studentId);
+  }
+
   // *************** destructured input object
-  let { first_name, last_name, email, date_of_birth } = inputObject;
+  let { first_name, last_name, email, date_of_birth } = input;
 
   // *************** validate student's email
   const studentEmailRegexPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -42,29 +48,18 @@ function ValidateStudentInput(inputObject) {
 /**
  * Check if a student email already exists in the database.
  * @async
- * @param {object} params - Input parameters.
- * @param {string} params.studentEmail - The email address to check.
- * @param {string} [params.studentId] - The ID of the student to exclude (optional).
- * @returns {Promise<Object|null>} - The Student object if found, otherwise null.
+ * @param {string} studentEmail - The email address to check.
  * @throws {ApolloError} - If input is invalid or DB query fails.
  */
-async function ValidateUniqueStudentEmail({ studentEmail, studentId }) {
+async function ValidateUniqueStudentEmail(studentEmail) {
   try {
     // *************** validate studentEmail input
     if (!studentEmail) {
       throw new ApolloError('email is required');
     }
 
-    // *************** set basequery for db operation
-    const query = { email: studentEmail.trim().toLowerCase() };
-
-    // *************** studentId used for update, to exclude the to be updated student from checking
-    if (studentId) {
-      ValidateId(studentId);
-      query._id = { $ne: studentId };
-    }
-
-    const emailIsExist = await StudentModel.findOne(query).lean();
+    // *************** find the student with studentEmail
+    const emailIsExist = await StudentModel.findOne({ email: studentEmail.trim().toLowerCase() }).lean();
 
     // *************** throw error if email is already exist
     if (emailIsExist) {
@@ -75,7 +70,7 @@ async function ValidateUniqueStudentEmail({ studentEmail, studentId }) {
       error_stack: error.stack,
       function_name: 'ValidateUniqueStudentEmail',
       path: '/modules/student/student.validators.js',
-      parameter_input: JSON.stringify({ studentEmail, studentId }),
+      parameter_input: JSON.stringify({ studentEmail }),
     });
     throw new ApolloError(error.message);
   }
