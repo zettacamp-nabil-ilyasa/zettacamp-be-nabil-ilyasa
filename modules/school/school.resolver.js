@@ -7,7 +7,6 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***********************
 const { ValidateSchoolInput, ValidateUniqueSchoolLongName } = require('./school.validators.js');
-const { ValidateSchoolExistence } = require('../../utilities/validators/school-validator.js');
 const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
 
 // **************** QUERY ****************
@@ -47,7 +46,7 @@ async function GetOneSchool(parent, { _id }) {
 
     const school = await SchoolModel.findOne({ _id: _id, status: 'active' }).lean();
 
-    // **************** throw error if there's no student to returned
+    // **************** throw error if there's no school to return
     if (!school) {
       throw new ApolloError('cannot get the requested school');
     }
@@ -132,17 +131,22 @@ async function CreateSchool(parent, { input }) {
  */
 async function UpdateSchool(parent, { _id, input }) {
   try {
-    // *************** validate school's _id, ensure that it can be casted into valid ObjectId
-    ValidateId(_id);
-
     // *************** validation to ensure fail-fast and bad input is handled correctly
-    ValidateSchoolInput(input);
+    ValidateSchoolInput(input, { checkSchoolId: true, schoolId: _id });
 
-    // *************** check if school is exist
-    await ValidateSchoolExistence(_id);
+    // *************** get the school document
+    const toBeUpdatedSchoolDocument = await SchoolModel.findOne({ _id, status: 'active' });
 
-    // *************** check if School long name is used by another School
-    await ValidateUniqueSchoolLongName({ schoolId: _id, longName: input.long_name });
+    // *************** sanity check for the school document
+    if (!toBeUpdatedSchoolDocument) {
+      throw new ApolloError("school doesn't exist");
+    }
+
+    // *************** check if long name is changed using the school document
+    if (input.long_name !== toBeUpdatedSchoolDocument.long_name) {
+      // *************** if long name changed, also check if school long name is used by another School
+      await ValidateUniqueSchoolLongName(input.long_name);
+    }
 
     // *************** compose new object from input for update
     const editedSchool = {
@@ -182,15 +186,15 @@ async function DeleteSchool(parent, { _id }) {
     ValidateId(_id);
 
     // **************** get the School document
-    const toBeDeletedSchoolDocument = await SchoolModel.findOne({ _id }).lean();
+    const toBeDeletedSchoolDocument = await SchoolModel.findOne({ _id, status: 'active' }).lean();
 
-    // **************** check if School is exist
+    // **************** sanity check for the school document, check if the school is exist and not already deleted
     if (!toBeDeletedSchoolDocument) {
-      throw new ApolloError("School doesn't exist or already deleted");
+      throw new ApolloError("school doesn't exist or already deleted");
     }
 
-    // **************** check if School is referenced by Student
-    if (toBeDeletedSchoolDocument.students.length) {
+    // **************** check if school is referenced by student using the school document
+    if (toBeDeletedSchoolDocument.students?.length) {
       throw new ApolloError('School that is referenced by Student cannot be deleted');
     }
 
@@ -225,7 +229,7 @@ async function DeleteSchool(parent, { _id }) {
 async function students(parent, args, context) {
   try {
     // *************** check if school has any student
-    if (!parent?.students.length) {
+    if (!parent?.students?.length) {
       return [];
     }
 

@@ -8,73 +8,69 @@ const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
 
 /**
  * Validates the school input object for required and optional fields.
- * @param {Object} inputObject - The input object containing school data.
- * @param {string} inputObject.brand_name - The brand name of the school.
- * @param {string} inputObject.long_name - The long (formal/official) name of the school.
- * @param {string} [inputObject.address] - Address of the school (optional).
- * @param {string} [inputObject.country] - Country where the school is located (optional).
- * @param {string} [inputObject.city] - City where the school is located (optional).
- * @param {string} [inputObject.zipcode] - Zip code of the school (optional).
+ * @param {Object} input - The input object containing school data.
+ * @param {string} input.brand_name - The brand name of the school.
+ * @param {string} input.long_name - The long (formal/official) name of the school.
+ * @param {string} [input.address] - Address of the school (optional).
+ * @param {string} [input.country] - Country where the school is located (optional).
+ * @param {string} [input.city] - City where the school is located (optional).
+ * @param {string} [input.zipcode] - Zip code of the school (optional).
  * @throws {ApolloError} - If any field is missing or has the wrong type.
  */
-function ValidateSchoolInput(inputObject) {
+function ValidateSchoolInput(input, { checkSchoolId, schoolId }) {
+  // *************** if checkSchoolId set to true, validate schoolId (for update mutation purpose)
+  if (checkSchoolId) {
+    ValidateId(schoolId);
+  }
+
   // *************** destructured input object
-  let { brand_name, long_name, address, country, city, zipcode } = inputObject;
+  let { brand_name, long_name, address, country, city, zipcode } = input;
 
   // *************** validate school's long_name
-  if (typeof long_name !== 'string' || long_name.trim() === '') throw new ApolloError('long_name is required');
+  if (!long_name || typeof long_name !== 'string') throw new ApolloError('long_name is required');
 
   // *************** validate school's brand_name
-  if (typeof brand_name !== 'string' || brand_name.trim() === '') throw new ApolloError('brand_name is required');
+  if (!brand_name || typeof brand_name !== 'string') throw new ApolloError('brand_name is required');
 
   // *************** validate school's address
-  if (typeof address !== 'undefined' && typeof address !== 'string') throw new ApolloError('address must be a string');
+  if (address && typeof address !== 'string') throw new ApolloError('address must be a string');
 
   // *************** validate school's country
-  if (typeof country !== 'undefined' && typeof country !== 'string') throw new ApolloError('country must be a string');
+  if (country && typeof country !== 'string') throw new ApolloError('country must be a string');
 
   // *************** validate school's city
-  if (typeof city !== 'undefined' && typeof city !== 'string') throw new ApolloError('city must be a string');
+  if (city && typeof city !== 'string') throw new ApolloError('city must be a string');
 
   // *************** validate school's zipcode
-  if (typeof zipcode !== 'undefined' && typeof zipcode !== 'string') throw new ApolloError('zipcode must be a string');
+  if (zipcode && typeof zipcode !== 'string') throw new ApolloError('zipcode must be a string');
 }
 
 /**
  * Check if a school's long name already exists in the database
  * @async
- * @param {object} params - Input parameters.
- * @param {string} params.longName - The school's long name to be checked.
- * @param {string} [params.schoolId] - ID of the school to exclude from the check (optional).
+ * @param {string} longName - The school's long name to be checked.
  * @throws {ApolloError} - If both names are missing, invalid ID, or DB operation fails.
  */
-async function ValidateUniqueSchoolLongName({ longName, schoolId }) {
+async function ValidateUniqueSchoolLongName(longName) {
   try {
     // *************** validate longName input
     if (!longName) {
       throw new ApolloError('long_name is required');
     }
 
-    // *************** set base query object with School's long name and status
-    const query = { long_name: longName.trim(), status: 'active' };
-
-    // *************** schoolId is used in update, to exclude the to be updated school from checking
-    if (schoolId) {
-      ValidateId(schoolId);
-      query._id = { $ne: schoolId };
-    }
-    const schoolLongNameIsExist = await SchoolModel.findOne(query).lean();
+    // *************** find the school with longName
+    const schoolLongNameIsExist = await SchoolModel.findOne({ long_name: longName.trim(), status: 'active' }).lean();
 
     // *************** throw error if long_name is already exist
     if (schoolLongNameIsExist) {
-      throw new ApolloError('the School long name already used by another School');
+      throw new ApolloError('long_name already used by another School');
     }
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'ValidateUniqueSchoolLongName',
       path: '/modules/school/school.validator.js',
-      parameter_input: JSON.stringify({ longName, schoolId }),
+      parameter_input: JSON.stringify({ longName }),
     });
     throw new ApolloError(error.message);
   }
