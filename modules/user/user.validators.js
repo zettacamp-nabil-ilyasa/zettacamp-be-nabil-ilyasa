@@ -10,12 +10,15 @@ const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
 
 /**
  * Validates the user input object for required fields.
- * Set the checkUserId to true to validate input for update mutation
+ * Use the checkUserId flag to enable the userId validation (for update mutation)
  * @param {Object} input - The input object containing user data.
  * @param {string} input.first_name - The user's first name.
  * @param {string} input.last_name - The user's last name.
  * @param {string} input.email - The user's email address.
  * @param {string} input.role - Role assigned to the user.
+ * @param {Object} [options] - Optional param to control the validation flow.
+ * @param {boolean} [options.checkUserId] - If set to true, userId will be validated.
+ * @param {string} [options.userId] - id of user to be checked (if checkUserId is true).
  * @throws {ApolloError} - If any field is missing, has the wrong type, or fails validation.
  */
 function ValidateUserInput(input, { checkUserId, userId }) {
