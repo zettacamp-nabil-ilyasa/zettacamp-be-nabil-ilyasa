@@ -15,6 +15,9 @@ const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
  * @param {string} [input.country] - Country where the school is located (optional).
  * @param {string} [input.city] - City where the school is located (optional).
  * @param {string} [input.zipcode] - Zip code of the school (optional).
+ * @param {Object} [options] - Optional param to control the validation flow.
+ * @param {boolean} [options.checkSchoolId] - If set to true, schoolId will be validated.
+ * @param {string} [options.schoolId] - id of school to be checked (if checkSchoolId is true).
  * @throws {ApolloError} - If any field is missing or has the wrong type.
  */
 function ValidateSchoolInput(input, { checkSchoolId, schoolId }) {
