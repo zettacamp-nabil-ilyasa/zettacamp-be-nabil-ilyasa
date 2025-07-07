@@ -7,7 +7,7 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***********************
 const { ValidateSchoolInput, ValidateUniqueSchoolLongName } = require('./school.validators.js');
-const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
+const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 
 // **************** QUERY ****************
 /**
@@ -42,7 +42,7 @@ async function GetAllSchools() {
 async function GetOneSchool(parent, { _id }) {
   try {
     // **************** validate school's _id, ensure that it can be casted into valid ObjectId
-    ValidateId(_id);
+    ValidateMongoObjectId(_id);
 
     const school = await SchoolModel.findOne({ _id: _id, status: 'active' }).lean();
 
@@ -132,7 +132,7 @@ async function CreateSchool(parent, { input }) {
 async function UpdateSchool(parent, { _id, input }) {
   try {
     // *************** validate school's id
-    ValidateId(_id);
+    ValidateMongoObjectId(_id);
 
     // *************** validation to ensure fail-fast and bad input is handled correctly
     ValidateSchoolInput(input);
@@ -186,7 +186,7 @@ async function UpdateSchool(parent, { _id, input }) {
 async function DeleteSchool(parent, { _id }) {
   try {
     // **************** validate school's _id, ensure that it can be casted into valid ObjectId
-    ValidateId(_id);
+    ValidateMongoObjectId(_id);
 
     // **************** get the School document
     const toBeDeletedSchoolDocument = await SchoolModel.findOne({ _id, status: 'active' }).lean();

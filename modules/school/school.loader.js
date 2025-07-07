@@ -7,7 +7,7 @@ const SchoolModel = require('./school.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
+const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 
 /**
  * Batch function to load multiple schools by their IDs.
@@ -19,9 +19,9 @@ const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
 async function BatchSchools(schoolIds) {
   try {
     // **************** validate each school id
-    for (const schoolId of schoolIds) {
-      ValidateId(schoolId);
-    }
+    schoolIds.forEach((schoolId) => {
+      ValidateMongoObjectId(schoolId);
+    });
 
     // **************** get all active schools with id within schoolIds and status is not deleted
     const schools = await SchoolModel.find({ _id: { $in: schoolIds }, status: 'active' }).lean();

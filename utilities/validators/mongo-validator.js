@@ -7,7 +7,7 @@ const { ApolloError } = require('apollo-server-express');
  * @param {string} id - The ID to validate.
  * @throws {ApolloError} - Throws an error if the ID is missing or not a valid ObjectId format.
  */
-function ValidateId(id) {
+function ValidateMongoObjectId(id) {
   if (!id) {
     throw new ApolloError('ID is required');
   }
@@ -18,5 +18,5 @@ function ValidateId(id) {
 
 // *************** EXPORT MODULE ***************
 module.exports = {
-  ValidateId,
+  ValidateMongoObjectId,
 };
