@@ -80,6 +80,9 @@ async function GetOneStudent(parent, { _id }) {
  */
 async function CreateStudent(parent, { input }) {
   try {
+    // *************** validate student's school_id
+    ValidateId(input.school_id);
+
     // *************** validation to ensure fail-fast and bad input is handled correctly
     ValidateStudentInput(input);
 
@@ -131,8 +134,14 @@ async function CreateStudent(parent, { input }) {
  */
 async function UpdateStudent(parent, { _id, input }) {
   try {
+    // *************** validate student's id
+    ValidateId(_id);
+
+    // *************** validate student's school_id
+    ValidateId(input.school_id);
+
     // **************** validation to ensure bad input is handled correctly
-    ValidateStudentInput(input, { checkStudentId: true, studentId: _id });
+    ValidateStudentInput(input);
 
     // **************** get the student document
     const toBeUpdatedStudentDocument = await StudentModel.findOne({ _id, status: 'active' }).lean();

@@ -5,9 +5,6 @@ const { ApolloError } = require('apollo-server-express');
 const StudentModel = require('./student.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
-// *************** IMPORT VALIDATOR ***************
-const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
-
 /**
  * Validates the student input object for required fields and basic date formatting.
  * @param {Object} studentId - The id of student.
@@ -16,24 +13,11 @@ const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
  * @param {string} input.last_name - The last name of the student.
  * @param {string} input.email - The email address of the student.
  * @param {string} input.date_of_birth - The student's date of birth in string format (YYYY-MM-DD).
- *  @param {Object} [options] - Optional param to control the validation flow.
- * @param {boolean} [options.checkStudentId] - If set to true, studentId will be validated.
- * @param {string} [options.studentId] - id of student to be checked (if checkStudentId is true).
  * @throws {ApolloError} - If any field is missing, has the wrong type, or fails validation.
  */
-function ValidateStudentInput(input, { checkStudentId, studentId } = {}) {
+function ValidateStudentInput(input) {
   // *************** destructured input object
-  let { first_name, last_name, email, date_of_birth, school_id } = input;
-
-  // *************** if checkStudentId set to true, validate studentId (for update mutation purpose)
-  if (checkStudentId) {
-    ValidateId(studentId);
-  }
-
-  // *************** validate student's school_id if checkStudentId false
-  if (!checkStudentId) {
-    ValidateId(school_id);
-  }
+  let { first_name, last_name, email, date_of_birth } = input;
 
   // *************** validate student's email
   const studentEmailRegexPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
