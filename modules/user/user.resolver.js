@@ -7,7 +7,7 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***************
 const { ValidateUserInput, ValidateUniqueUserEmail } = require('./user.validators.js');
-const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
+const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 
 // *************** QUERY ***************
 /**
@@ -42,7 +42,7 @@ async function GetAllUsers() {
 async function GetOneUser(parent, { _id }) {
   try {
     // **************** validate user's _id, ensure that it can be casted into valid ObjectId
-    ValidateId(_id);
+    ValidateMongoObjectId(_id);
 
     // **************** throw error if there's no user to return
     const user = await UserModel.findOne({ _id: _id, status: 'active' }).lean();
@@ -125,7 +125,7 @@ async function CreateUser(parent, { input }) {
 async function UpdateUser(parent, { _id, input }) {
   try {
     // *************** validate user's id
-    ValidateId(_id);
+    ValidateMongoObjectId(_id);
 
     // **************** validation to ensure fail-fast and bad input is handled correctly
     ValidateUserInput(input);
@@ -177,7 +177,7 @@ async function UpdateUser(parent, { _id, input }) {
 async function DeleteUser(parent, { _id }) {
   try {
     // **************** validate user's _id, ensure that it can be casted into valid ObjectId
-    ValidateId(_id);
+    ValidateMongoObjectId(_id);
 
     // **************** set static User id for deleted_by
     const deletedByUserId = '6862150331861f37e4e3d209';

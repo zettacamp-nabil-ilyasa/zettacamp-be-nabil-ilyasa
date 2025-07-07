@@ -7,7 +7,7 @@ const UserModel = require('./user.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
+const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 
 /**
  * Batch function to load multiple users by their IDs.
@@ -19,9 +19,9 @@ const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
 async function BatchUsers(userIds) {
   try {
     // **************** validate each user id
-    for (const userId of userIds) {
-      ValidateId(userId);
-    }
+    userIds.forEach((userId) => {
+      ValidateMongoObjectId(userId);
+    });
 
     // **************** get all active users with id within userIds and status is not deleted
     const users = await UserModel.find({ _id: { $in: userIds }, status: 'active' }).lean();
