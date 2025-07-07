@@ -6,6 +6,9 @@ const { ApolloError } = require('apollo-server-express');
 const StudentModel = require('./student.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
+// *************** IMPORT VALIDATOR ***************
+const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
+
 /**
  * Batch function to load multiple students by their IDs.
  * @async
@@ -15,6 +18,11 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
  */
 async function BatchStudents(studentIds) {
   try {
+    // **************** validate each student id
+    for (const studentId of studentIds) {
+      ValidateId(studentId);
+    }
+
     // **************** get all active students with id within studentIds and status is not deleted
     const students = await StudentModel.find({ _id: { $in: studentIds }, status: 'active' }).lean();
 
