@@ -137,9 +137,6 @@ async function UpdateStudent(parent, { _id, input }) {
     // *************** validate student's id
     ValidateMongoObjectId(_id);
 
-    // *************** validate student's school_id
-    ValidateMongoObjectId(input.school_id);
-
     // **************** validation to ensure bad input is handled correctly
     ValidateStudentInput(input);
 
