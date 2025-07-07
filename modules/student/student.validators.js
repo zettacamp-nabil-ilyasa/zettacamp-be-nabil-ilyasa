@@ -22,13 +22,18 @@ const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
  * @throws {ApolloError} - If any field is missing, has the wrong type, or fails validation.
  */
 function ValidateStudentInput(input, { checkStudentId, studentId } = {}) {
+  // *************** destructured input object
+  let { first_name, last_name, email, date_of_birth, school_id } = input;
+
   // *************** if checkStudentId set to true, validate studentId (for update mutation purpose)
   if (checkStudentId) {
     ValidateId(studentId);
   }
 
-  // *************** destructured input object
-  let { first_name, last_name, email, date_of_birth } = input;
+  // *************** validate student's school_id if checkStudentId false
+  if (!checkStudentId) {
+    ValidateId(school_id);
+  }
 
   // *************** validate student's email
   const studentEmailRegexPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
