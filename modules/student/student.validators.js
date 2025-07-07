@@ -37,7 +37,7 @@ function ValidateStudentInput(input, { checkStudentId, studentId } = {}) {
 
   // *************** validate student's email
   const studentEmailRegexPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (typeof email !== 'string' || email.trim() === '' || !studentEmailRegexPattern.test(email))
+  if (!email || typeof email !== 'string' || !studentEmailRegexPattern.test(email))
     throw new ApolloError('email is required and must be in valid email format');
 
   // *************** validate student's first_name
