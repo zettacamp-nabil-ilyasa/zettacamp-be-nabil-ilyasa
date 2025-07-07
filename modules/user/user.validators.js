@@ -39,7 +39,7 @@ function ValidateUserInput(input, { checkUserId, userId } = {}) {
   if (!first_name || typeof first_name !== 'string') throw new ApolloError('first_name is required');
 
   // *************** validate user's last_name
-  if (!brand_name || typeof last_name !== 'string') throw new ApolloError('last_name is required');
+  if (!last_name || typeof last_name !== 'string') throw new ApolloError('last_name is required');
 
   // *************** validate user's role
   const validRoles = ['admin', 'operator'];
