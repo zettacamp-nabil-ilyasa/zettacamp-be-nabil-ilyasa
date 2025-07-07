@@ -8,7 +8,7 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***************
 const { ValidateStudentInput, ValidateUniqueStudentEmail } = require('./student.validators.js');
-const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
+const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 
 // *************** QUERY ***************
 /**
@@ -43,7 +43,7 @@ async function GetAllStudents() {
 async function GetOneStudent(parent, { _id }) {
   try {
     // **************** validate student's _id, ensure that it can be casted into valid ObjectId
-    ValidateId(_id);
+    ValidateMongoObjectId(_id);
 
     const student = await StudentModel.findOne({ _id: _id, status: 'active' }).lean();
 
@@ -81,7 +81,7 @@ async function GetOneStudent(parent, { _id }) {
 async function CreateStudent(parent, { input }) {
   try {
     // *************** validate student's school_id
-    ValidateId(input.school_id);
+    ValidateMongoObjectId(input.school_id);
 
     // *************** validation to ensure fail-fast and bad input is handled correctly
     ValidateStudentInput(input);
@@ -135,10 +135,10 @@ async function CreateStudent(parent, { input }) {
 async function UpdateStudent(parent, { _id, input }) {
   try {
     // *************** validate student's id
-    ValidateId(_id);
+    ValidateMongoObjectId(_id);
 
     // *************** validate student's school_id
-    ValidateId(input.school_id);
+    ValidateMongoObjectId(input.school_id);
 
     // **************** validation to ensure bad input is handled correctly
     ValidateStudentInput(input);
@@ -189,7 +189,7 @@ async function UpdateStudent(parent, { _id, input }) {
 async function DeleteStudent(parent, { _id }) {
   try {
     // **************** validate student's _id, ensure that it can be casted into valid ObjectId
-    ValidateId(_id);
+    ValidateMongoObjectId(_id);
 
     // **************** set static User id for deleted_by
     const deletedByUserId = '6862150331861f37e4e3d209';
