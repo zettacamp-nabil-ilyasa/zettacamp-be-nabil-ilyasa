@@ -41,13 +41,13 @@ function ValidateStudentInput(input, { checkStudentId, studentId } = {}) {
     throw new ApolloError('email is required and must be in valid email format');
 
   // *************** validate student's first_name
-  if (typeof first_name !== 'string' || first_name.trim() === '') throw new ApolloError('first_name is required');
+  if (!first_name || typeof first_name !== 'string') throw new ApolloError('first_name is required');
 
   // *************** validate student's last_name
-  if (typeof last_name !== 'string' || last_name.trim() === '') throw new ApolloError('last_name is required');
+  if (!last_name || typeof last_name !== 'string') throw new ApolloError('last_name is required');
 
   // *************** validate student's date_of_birth existence
-  if (typeof date_of_birth !== 'string' || date_of_birth.trim() === '') throw new ApolloError('date_of_birth is required');
+  if (!date_of_birth || typeof date_of_birth !== 'string') throw new ApolloError('date_of_birth is required');
 
   // *************** validate student's date_of_birth format
   const dateOfBirthRegexPatern = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;

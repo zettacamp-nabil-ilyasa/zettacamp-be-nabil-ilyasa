@@ -36,10 +36,10 @@ function ValidateUserInput(input, { checkUserId, userId } = {}) {
     throw new ApolloError('email is required and must be in valid email format');
 
   // *************** validate user's first_name
-  if (typeof first_name !== 'string' || first_name.trim() === '') throw new ApolloError('first_name is required');
+  if (!first_name || typeof first_name !== 'string') throw new ApolloError('first_name is required');
 
   // *************** validate user's last_name
-  if (typeof last_name !== 'string' || last_name.trim() === '') throw new ApolloError('last_name is required');
+  if (!brand_name || typeof last_name !== 'string') throw new ApolloError('last_name is required');
 
   // *************** validate user's role
   const validRoles = ['admin', 'operator'];
