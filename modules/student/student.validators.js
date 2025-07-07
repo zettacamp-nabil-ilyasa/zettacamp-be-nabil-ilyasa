@@ -46,13 +46,18 @@ function ValidateStudentInput(input, { checkStudentId, studentId } = {}) {
   // *************** validate student's last_name
   if (typeof last_name !== 'string' || last_name.trim() === '') throw new ApolloError('last_name is required');
 
-  // *************** validate student's date_of_birth
+  // *************** validate student's date_of_birth existence
   if (typeof date_of_birth !== 'string' || date_of_birth.trim() === '') throw new ApolloError('date_of_birth is required');
 
+  // *************** validate student's date_of_birth format
+  const dateOfBirthRegexPatern = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+  if (!dateOfBirthRegexPatern.test(date_of_birth)) throw new ApolloError('date_of_birth must be in YYYY-MM-DD format');
+
   // *************** student's date_of_birth can't be earlier than 1900 and can't be in the future
-  const parsedDate = date_of_birth instanceof Date ? date_of_birth : new Date(date_of_birth);
-  if (isNaN(parsedDate.getTime()) || parsedDate.getFullYear() < 1900 || parsedDate.getTime() > Date.now())
-    throw new ApolloError('date_of_birth should be in YYYY-MM-DD, not earlier than 1900, and not in the future');
+  const parsedDate = new Date(date_of_birth);
+  if (isNaN(parsedDate.getTime()) || parsedDate.getFullYear() < 1900 || parsedDate.getTime() > Date.now()) {
+    throw new ApolloError('date_of_birth should not be earlier than 1900 and not in the future');
+  }
 }
 
 /**
