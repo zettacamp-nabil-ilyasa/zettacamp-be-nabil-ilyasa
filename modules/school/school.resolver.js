@@ -84,7 +84,7 @@ async function CreateSchool(parent, { input }) {
     ValidateSchoolInput(input);
 
     // *************** check if school long name already used by another school
-    await ValidateUniqueSchoolLongName({ longName: input.long_name });
+    await ValidateUniqueSchoolLongName(input.long_name);
 
     // *************** compose new object from input for insert
     const newSchool = {
@@ -229,7 +229,7 @@ async function DeleteSchool(parent, { _id }) {
 async function students(parent, args, context) {
   try {
     // *************** check if school has any student
-    if (!parent?.students?.length) {
+    if (!parent?.students.length) {
       return [];
     }
 
