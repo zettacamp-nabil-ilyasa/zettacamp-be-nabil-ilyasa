@@ -80,14 +80,14 @@ async function GetOneStudent(parent, { _id }) {
  */
 async function CreateStudent(parent, { input }) {
   try {
-    // *************** validate student's school_id
-    ValidateMongoObjectId(input.school_id);
-
     // *************** validation to ensure fail-fast and bad input is handled correctly
     ValidateStudentInput(input);
 
     // *************** check if email already used by another student
     await ValidateUniqueStudentEmail(input.email);
+
+    // *************** validate student's school_id
+    ValidateMongoObjectId(input.school_id);
 
     // *************** compose new object from input
     const newStudent = {
