@@ -47,7 +47,7 @@ async function GetOneUser(parent, { _id }) {
     // **************** throw error if there's no user to return
     const user = await UserModel.findOne({ _id: _id, status: 'active' }).lean();
     if (!user) {
-      throw new ApolloError('cannot get the requested user');
+      throw new ApolloError('user not found or already deleted');
     }
     return user;
   } catch (error) {
