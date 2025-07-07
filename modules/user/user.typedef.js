@@ -9,7 +9,6 @@ const userTypeDefs = gql`
     email: String!
     role: String!
     status: Status!
-    deleted_at: Date
     deleted_by: ID
     createdAt: Date
     created_by: User
