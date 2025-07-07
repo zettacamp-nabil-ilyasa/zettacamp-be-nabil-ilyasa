@@ -48,7 +48,7 @@ async function GetOneSchool(parent, { _id }) {
 
     // **************** throw error if there's no school to return
     if (!school) {
-      throw new ApolloError('cannot get the requested school');
+      throw new ApolloError('school not found or already deleted');
     }
     return school;
   } catch (error) {
@@ -74,7 +74,7 @@ async function GetOneSchool(parent, { _id }) {
  * @param {string} [input.country] - Country of the school (optional).
  * @param {string} [input.city] - City of the school (optional).
  * @param {string} [input.zipcode] - Zip code (optional).
- * @param {string} [input.created_by - ID of the admin who creates the school.
+ * @param {string} [input.created_by] - ID of the admin who creates the school.
  * @returns {Promise<Object>} - Created school document.
  * @throws {ApolloError} - Throws error if validation fails, user unauthorized, or name conflict occurs.
  */
