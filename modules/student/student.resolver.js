@@ -144,7 +144,7 @@ async function UpdateStudent(parent, { _id, input }) {
     // **************** check if email changed using the student document
     if (input.email !== toBeUpdatedStudentDocument.email) {
       // **************** if email changed, also check if email already used by another student
-      await ValidateUniqueStudentEmail({ studentId: _id, studentEmail: input.email });
+      await ValidateUniqueStudentEmail(input.email);
     }
 
     // **************** compose new object from input
