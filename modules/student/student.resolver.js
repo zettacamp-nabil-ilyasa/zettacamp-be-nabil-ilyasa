@@ -135,7 +135,7 @@ async function UpdateStudent(parent, { _id, input }) {
     ValidateStudentInput(input, { checkStudentId: true, studentId: _id });
 
     // **************** get the student document
-    const toBeUpdatedStudentDocument = await StudentModel.findOne({ _id }).lean();
+    const toBeUpdatedStudentDocument = await StudentModel.findOne({ _id, status: 'active' }).lean();
 
     // **************** sanity check for the student document
     if (!toBeUpdatedStudentDocument) {
