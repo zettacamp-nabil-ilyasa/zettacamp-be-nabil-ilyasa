@@ -124,8 +124,11 @@ async function CreateUser(parent, { input }) {
  */
 async function UpdateUser(parent, { _id, input }) {
   try {
+    // *************** validate user's id
+    ValidateId(_id);
+
     // **************** validation to ensure fail-fast and bad input is handled correctly
-    ValidateUserInput(input, { checkUserId: true, userId: _id });
+    ValidateUserInput(input);
 
     // **************** get the user document
     const toBeUpdatedUserDocument = await UserModel.findOne({ _id, status: 'active' });
