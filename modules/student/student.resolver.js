@@ -49,7 +49,7 @@ async function GetOneStudent(parent, { _id }) {
 
     // **************** throw error if there's no student to returned
     if (!student) {
-      throw new ApolloError('cannot get the requested student');
+      throw new ApolloError('student not found or already deleted');
     }
     return student;
   } catch (error) {
