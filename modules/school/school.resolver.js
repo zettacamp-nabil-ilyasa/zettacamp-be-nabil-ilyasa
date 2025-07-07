@@ -131,8 +131,11 @@ async function CreateSchool(parent, { input }) {
  */
 async function UpdateSchool(parent, { _id, input }) {
   try {
+    // *************** validate school's id
+    ValidateId(_id);
+
     // *************** validation to ensure fail-fast and bad input is handled correctly
-    ValidateSchoolInput(input, { checkSchoolId: true, schoolId: _id });
+    ValidateSchoolInput(input);
 
     // *************** get the school document
     const toBeUpdatedSchoolDocument = await SchoolModel.findOne({ _id, status: 'active' });
