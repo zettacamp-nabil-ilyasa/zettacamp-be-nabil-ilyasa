@@ -138,7 +138,7 @@ async function UpdateUser(parent, { _id, input }) {
     // **************** check if email changed using the user document
     if (input.email !== toBeUpdatedUserDocument.email) {
       // **************** if email changed, also check if email already used by another user
-      await ValidateUniqueUserEmail({ userId: _id, userEmail: input.email });
+      await ValidateUniqueUserEmail(input.email);
     }
 
     // **************** compose new object from input

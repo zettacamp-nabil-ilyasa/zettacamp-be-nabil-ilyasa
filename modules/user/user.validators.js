@@ -21,7 +21,7 @@ const { ValidateId } = require('../../utilities/validators/mongo-validator.js');
  * @param {string} [options.userId] - id of user to be checked (if checkUserId is true).
  * @throws {ApolloError} - If any field is missing, has the wrong type, or fails validation.
  */
-function ValidateUserInput(input, { checkUserId, userId }) {
+function ValidateUserInput(input, { checkUserId, userId } = {}) {
   // *************** if checkUserId set to true, validate userId (for update mutation purpose)
   if (checkUserId) {
     ValidateId(userId);
