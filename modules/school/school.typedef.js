@@ -15,7 +15,6 @@ const schoolTypeDefs = gql`
     createdAt: Date
     updatedAt: Date
     created_by: User
-    deleted_at: Date
   }
 
   input SchoolInput {
