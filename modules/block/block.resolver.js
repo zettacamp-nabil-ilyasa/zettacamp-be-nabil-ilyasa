@@ -47,7 +47,7 @@ async function GetOneBlock({ _id }) {
     // **************** validate block's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
 
-    const block = await BlockModel.find({ _id, status: 'active' }).lean();
+    const block = await BlockModel.findOne({ _id, status: 'active' }).lean();
 
     // **************** check if block document found
     if (!block) {
@@ -77,14 +77,25 @@ async function GetOneBlock({ _id }) {
  * @throws {ApolloError} - Throws error if validation or db operation fails.
  */
 async function CreateBlock(parent, { input }) {
-  // *************** validation to ensure bad input is handled correctly
-  ValidateBlockInput(input);
+  try {
+    // *************** validation to ensure bad input is handled correctly
+    ValidateBlockInput(input);
 
-  // *************** compose payload
-  const newBlock = BlockPayloadComposer(input);
-  // *************** create block with composed payload
-  const createdBlock = BlockModel.create(newBlock);
-  return createdBlock;
+    // *************** compose payload
+    const newBlock = BlockPayloadComposer(input);
+
+    // *************** create block with composed payload
+    const createdBlock = await BlockModel.create(newBlock);
+    return createdBlock;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'CreateBlock',
+      path: '/modules/block/block.resolver.js',
+      parameter_input: JSON.stringify({ input }),
+    });
+    throw new ApolloError(error.message);
+  }
 }
 
 /**
@@ -99,18 +110,28 @@ async function CreateBlock(parent, { input }) {
  * @throws {ApolloError} - Throws error if validation or db operation fails.
  */
 async function UpdateBlock(parent, { _id, input }) {
-  // *************** validate the block's id
-  ValidateMongoObjectId(_id);
+  try {
+    // *************** validate the block's id
+    ValidateMongoObjectId(_id);
 
-  // *************** validation to ensure bad input is handled correctly
-  ValidateBlockInput(input);
+    // *************** validation to ensure bad input is handled correctly
+    ValidateBlockInput(input);
 
-  // *************** compose payload
-  const toBeUpdatedBlock = BlockPayloadComposer(input);
+    // *************** compose payload
+    const editedBlock = BlockPayloadComposer(input);
 
-  // *************** create block with composed payload
-  const editedBlock = BlockModel.create(toBeUpdatedBlock);
-  return editedBlock;
+    // *************** update block with composed payload
+    const updatedBlock = BlockModel.findOneAndUpdate({ _id }, { $set: editedBlock }, { new: true }).lean();
+    return updatedBlock;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'UpdateBlock',
+      path: '/modules/block/block.resolver.js',
+      parameter_input: JSON.stringify({ _id, input }),
+    });
+    throw new ApolloError(error.message);
+  }
 }
 
 /**
@@ -122,24 +143,36 @@ async function UpdateBlock(parent, { _id, input }) {
  * @throws {ApolloError} - Throws error if unauthorized, block not found, or block is referenced.
  */
 async function DeleteBlock(parent, { _id }) {
-  // *************** validate the block's id
-  ValidateMongoObjectId(_id);
+  try {
+    // *************** validate the block's id
+    ValidateMongoObjectId(_id);
 
-  // *************** get the block's document
-  const toBeDeletedBlockDocument = await BlockModel.findOne({ _id, status: 'activev' }).lean();
+    // *************** get the block's document
+    const toBeDeletedBlockDocument = await BlockModel.findOne({ _id, status: 'active' }).lean();
 
-  // *************** check if the block document is exist
-  if (!toBeDeletedBlockDocument) {
-    throw new ApolloError("block doesn't exist or already deleted");
+    // *************** check if the block document is exist
+    if (!toBeDeletedBlockDocument) {
+      throw new ApolloError("block doesn't exist or already deleted");
+    }
+
+    // *************** check if the block document is referenced by subject
+    if (toBeDeletedBlockDocument.subject_ids?.length) {
+      throw new ApolloError('block that is referenced by subject cannot be deleted');
+    }
+
+    // *************** soft delete the block by updating status and deleted_at
+    await BlockModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_at: new Date() } });
+
+    return 'block deleted succesfully';
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'DeleteBlock',
+      path: '/modules/block/block.resolver.js',
+      parameter_input: JSON.stringify({ _id }),
+    });
+    throw new ApolloError(error.message);
   }
-
-  // *************** check if the block document is referenced by subject
-  if (!toBeDeletedBlockDocument.subject_ids?.length) {
-    throw new ApolloError('block that is referenced by subject cannot be deleted');
-  }
-
-  // *************** soft delete the block by updating status and deleted_at
-  await BlockModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_at: new Date() } });
 }
 
 // *************** EXPORT MODULE ***************
