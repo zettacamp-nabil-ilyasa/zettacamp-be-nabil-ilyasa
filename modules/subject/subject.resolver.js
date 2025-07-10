@@ -111,6 +111,11 @@ async function CreateSubject({ input }) {
     // *************** validation to ensure bad input is handled correctly
     ValidateSubjectInput(input, { checksubjectId: true });
 
+    // *************** check block existence in db
+    const blockIsExist = await BlockModel.findOne({ _id: input.block_id, status: 'active' });
+    if (!blockIsExist) {
+      throw new ApolloError("block doesn't exist");
+    }
     // *************** compose payload
     const newSubject = SubjectPayloadComposer(input, { checkSubjectId: true });
 
