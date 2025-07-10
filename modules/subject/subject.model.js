@@ -11,7 +11,7 @@ const subjectSchema = new Schema(
     description: String,
 
     // coefficient for calculation factor (not yet implemented)
-    coefficient: { type: Int, required: true },
+    coefficient: { type: Number, required: true },
 
     // block associated with the subject
     block_id: { type: Schema.Types.ObjectId, required: true, ref: 'block' },
