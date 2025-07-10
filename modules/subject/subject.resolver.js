@@ -9,6 +9,7 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 // *************** IMPORT VALIDATOR ***********************
 const { ValidateSubjectInput } = require('./subject.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
+const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
 // *************** IMPORT HELPER ***********************
 const { SubjectPayloadComposer } = require('./subject.helper.js');
@@ -40,6 +41,9 @@ async function GetAllSubjects({ filterInput, paginationInput }) {
       // **************** add filter to query
       query.block_id = filterInput.block_id;
     }
+
+    // **************** validate pagination's input
+    ValidatePaginationInput(paginationInput);
 
     // **************** get subjects based on query
     const subjects = await SubjectModel.find(query)
@@ -241,4 +245,7 @@ async function block_id(parent, args, context) {
 module.exports = {
   Query: { GetAllSubjects, GetOneSubject },
   Mutation: { CreateSubject, UpdateSubject, DeleteSubject },
+  Subject: {
+    block_id,
+  },
 };
