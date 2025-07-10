@@ -34,19 +34,17 @@ async function GetAllTests({ filterInput, paginationInput }) {
     // **************** construct base query
     const query = { status: 'active' };
 
-    // **************** validate paginationInput
-    if (paginationInput.subject_id || paginationInput.status) {
-      ValidatePaginationInput(paginationInput);
+    // **************** validate filterInput
+    ValidateTestFilterInput(filterInput);
 
-      // **************** build query for subject_id if it exist
-      if (paginationInput.subject_id) {
-        query.subject_id = paginationInput.subject_id;
-      }
+    // **************** build query for subject_id if it exist
+    if (filterInput.subject_id) {
+      query.subject_id = filterInput.subject_id;
+    }
 
-      // **************** build query for status if it exist
-      if (paginationInput.status) {
-        query.status = paginationInput.status;
-      }
+    // **************** build query for status if it exist
+    if (filterInput.status) {
+      query.status = filterInput.status;
     }
 
     // **************** validate pagination's input
@@ -141,6 +139,54 @@ async function CreateTest({ input }) {
       function_name: 'CreateTest',
       path: '/modules/test/test.resolver.js',
       parameter_input: JSON.stringify({ input }),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
+ * Update a test document after validating test's id and input.
+ * @async
+ * @param {object} parent - Not used (GraphQL resolver convention).
+ * @param {string} _id - ID of the subject to update.
+ * @param {object} input - Test input fields.
+ * @param {string} input.name - Name of test.
+ * @param {string} [input.description] - Description of test.
+ * @param {string} input.weight - Weight or proportional value of test.
+ * @param {Array<Object>} [input.notations] - Array of notation object containing notation_text and max_point.
+ * @returns {Promise<Object>} - Updated test document.
+ * @throws {ApolloError} - Throws error if validation or db operation fails.
+ */
+async function UpdateTest({ _id, input }) {
+  try {
+    // *************** validate test's id
+    ValidateMongoObjectId(_id);
+
+    // *************** validate input to ensure bad input is handled correctly
+    ValidateTestInput(input);
+
+    // *************** get test document
+    const toBeUpdatedTestDocument = await TestModel.findOne({ _id, status: { $ne: 'deleted' } });
+    if (!toBeUpdatedTestDocument) {
+      throw new ApolloError("test doesn't exist or already deleted");
+    }
+
+    // *************** check if combined tests weight is exceed 1
+    const currentWeight = GetTotalWeightOfTests(toBeUpdatedTestDocument.subject_id);
+    if (currentWeight + input.weight > 1) {
+      throw new ApolloError('combined weight exceeding 1');
+    }
+
+    // *************** compose test payload
+    const editedTest = TestPayloadComposer(input, { checkSubjectId: false });
+    const updatedTest = await TestModel.findOneAndUpdate({ _id }, editedTest, { new: true }).lean();
+    return updatedTest;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'UpdateTest',
+      path: '/modules/test/test.resolver.js',
+      parameter_input: JSON.stringify({ _id, input }),
     });
     throw new ApolloError(error.message);
   }
