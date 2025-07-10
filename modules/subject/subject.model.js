@@ -29,7 +29,7 @@ const subjectSchema = new Schema(
     updated_by: { type: Schema.Types.ObjectId, ref: 'user' },
 
     // deletion date of the subject
-    deleted_at: Date,
+    deleted_at: { type: Date },
 
     // user who deleted the subject
     deleted_by: { type: Schema.Types.ObjectId, ref: 'user' },
