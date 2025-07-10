@@ -9,6 +9,9 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 const { ValidateBlockInput } = require('./block.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 
+// *************** IMPORT HELPER ***********************
+const { BlockPayloadComposer } = require('./block.helper.js');
+
 // **************** QUERY ****************
 /**
  * Get all active blocks from the database.
@@ -59,4 +62,15 @@ async function GetOneBlock({ _id }) {
     });
     throw new ApolloError(error.message);
   }
+}
+
+async function CreateBlock({ input }) {
+  // *************** validation to ensure bad input is handled correctly
+  ValidateBlockInput(input);
+
+  // *************** compose payload
+  const newBlock = BlockPayloadComposer(input);
+  // *************** create school with composed payload
+  const createdBlock = BlockModel.create(newBlock);
+  return createdBlock;
 }
