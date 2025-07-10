@@ -2,7 +2,7 @@
 const { ApolloError } = require('apollo-server-express');
 
 /**
- *
+ * Compose payload for block mutation
  * @param {Object} inputObject - The input object of Block
  * @param {String} inputObject.name - The name of Block
  * @param {String} inputObject.description - The description of Block
@@ -17,4 +17,5 @@ function BlockPayloadComposer(inputObject) {
   return { name: inputObject.name, description: inputObject.description };
 }
 
+// *************** EXPORT MODULE ***************
 module.exports = { BlockPayloadComposer };
