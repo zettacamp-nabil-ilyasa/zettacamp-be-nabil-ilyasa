@@ -191,3 +191,42 @@ async function UpdateTest({ _id, input }) {
     throw new ApolloError(error.message);
   }
 }
+
+/**
+ * Soft delete a test by marking its status as 'deleted'.
+ * Prevents deletion if test status is published.
+ * @async
+ * @param {object} parent - Not used (GraphQL resolver convention).
+ * @param {string} _id - ID of the test to delete.
+ * @returns {Promise<string>} - Deletion success message.
+ * @throws {ApolloError} - Throws error if unauthorized, subject not found, or subject is referenced.
+ */
+async function DeleteTest({ _id }) {
+  try {
+    // *************** validate test's id
+    ValidateMongoObjectId(_id);
+
+    // *************** get test document
+    const toBeDeletedTestDocument = await TestModel.findOne({ _id, status: { $ne: 'deleted' } });
+    if (!toBeDeletedTestDocument) {
+      throw new ApolloError("test doesn't exist or already deleted");
+    }
+    // *************** check if status is published
+    if ((toBeDeletedTestDocument.status = 'published')) {
+      throw new ApolloError('test that have been published cannot be deleted');
+    }
+    // *************** update status to deleted and set deleted_at
+    await TestModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_at: new Date() } });
+
+    // *************** remove test's id from subject's test_ids field
+    await SubjectModel.updateOne({ _id: toBeDeletedTestDocument.subject_id }, { $pull: { test_ids: _id } });
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'DeleteTest',
+      path: '/modules/test/test.resolver.js',
+      parameter_input: JSON.stringify({ _id }),
+    });
+    throw new ApolloError(error.message);
+  }
+}
