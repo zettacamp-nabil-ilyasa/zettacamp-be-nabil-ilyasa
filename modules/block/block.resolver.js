@@ -64,7 +64,18 @@ async function GetOneBlock({ _id }) {
   }
 }
 
-async function CreateBlock({ input }) {
+// **************** MUTATION ****************
+/**
+ * Create a new block after validating input.
+ * @async
+ * @param {object} parent - Not used (GraphQL resolver convention).
+ * @param {object} input - Block input fields.
+ * @param {string} input.name - Name of block.
+ * @param {string} [input.description] - Description of block.
+ * @returns {Promise<Object>} - Created block document.
+ * @throws {ApolloError} - Throws error if validation or db operation fails.
+ */
+async function CreateBlock(parent, { input }) {
   // *************** validation to ensure bad input is handled correctly
   ValidateBlockInput(input);
 
@@ -73,4 +84,30 @@ async function CreateBlock({ input }) {
   // *************** create school with composed payload
   const createdBlock = BlockModel.create(newBlock);
   return createdBlock;
+}
+
+/**
+ * Update a school document after validating input and checking constraints.
+ * @async
+ * @param {object} parent - Not used (GraphQL resolver convention).
+ * @param {string} _id - ID of the block to update.
+ * @param {object} input - BLock input fields.
+ * @param {string} input.name - Name of block.
+ * @param {string} input.description - Description of block.
+ * @returns {Promise<Object>} - Updated block document.
+ * @throws {ApolloError} - Throws error if validation or db operation fails.
+ */
+async function UpdateBlock(parent, { _id, input }) {
+  // *************** validate the block's id
+  ValidateMongoObjectId(_id);
+
+  // *************** validation to ensure bad input is handled correctly
+  ValidateBlockInput(input);
+
+  // *************** compose payload
+  const toBeUpdatedBlock = BlockPayloadComposer(input);
+
+  // *************** create school with composed payload
+  const editedBlock = BlockModel.create(toBeUpdatedBlock);
+  return editedBlock;
 }
