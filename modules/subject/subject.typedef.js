@@ -33,11 +33,6 @@ const subjectTypeDefs = gql`
     offset: Int
   }
 
-  enum Status {
-    active
-    deleted
-  }
-
   extend type Query {
     GetAllSubjects(filter: SubjectFilterInput, pagination: PaginationInput): [Subject]
     GetOneSubject(_id: ID!): Subject
