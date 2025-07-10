@@ -9,6 +9,8 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 const { ValidateSubjectInput } = require('./subject.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 
+// *************** IMPORT HELPER ***********************
+const { SubjectPayloadComposer } = require('./subject.helper.js');
 // **************** QUERY ****************
 /**
  * Get all subjects with optional filtering by subject_id and pagination.
@@ -84,4 +86,28 @@ async function GetOneSubject({ _id }) {
     });
     throw new ApolloError(error.message);
   }
+}
+
+// **************** MUTATION ****************
+/**
+ * Create a new subject after validating input.
+ * @async
+ * @param {object} parent - Not used (GraphQL resolver convention).
+ * @param {object} input - Subject input fields.
+ * @param {string} input.name - Name of subject.
+ * @param {string} [input.description] - Description of subject.
+ * @param {string} input.coefficient - Coefficient for calculation factor.
+ * @returns {Promise<Object>} - Created subject document.
+ * @throws {ApolloError} - Throws error if validation or db operation fails.
+ */
+async function CreateSubject({ input }) {
+  // *************** validation to ensure bad input is handled correctly
+  ValidateSubjectInput(input, { checksubjectId: true });
+
+  // *************** compose payload
+  const newSubject = SubjectPayloadComposer(input, { checksubjectId: true });
+
+  // *************** create subject with composed payload
+  const createdSubject = SubjectModel.create(newSubject);
+  return createdSubject;
 }
