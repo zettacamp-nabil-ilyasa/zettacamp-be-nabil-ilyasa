@@ -8,7 +8,7 @@ const blockSchema = new Schema(
     name: { type: String, required: true, trim: true },
 
     // description of the block
-    description: { type: String, required: true, trim: true },
+    description: { type: String, trim: true },
 
     // subjects associated to the block
     subject_ids: [{ type: Schema.Types.ObjectId, ref: 'subject' }],
