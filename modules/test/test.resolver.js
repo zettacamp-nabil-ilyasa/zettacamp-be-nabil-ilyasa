@@ -21,7 +21,7 @@ async function GetAllTests({ filterInput, paginationInput }) {
 
     // **************** check if filter input provided
     if (filterInput.subject_id) {
-      // **************** validate subject's _id, ensure that it can be casted into valid ObjectId
+      // **************** validate test's subject_id, ensure that it can be casted into valid ObjectId
       ValidateMongoObjectId(filterInput.subject_id);
 
       // **************** add filter to query
@@ -48,8 +48,40 @@ async function GetAllTests({ filterInput, paginationInput }) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'GetAllSubjects',
-      path: '/modules/subject/subject.resolver.js',
+      path: '/modules/test/test.resolver.js',
       parameter_input: JSON.stringify({ filterInput, paginationInput }),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
+ * Get one active test by its ID.
+ * @async
+ * @param {object} parent - Not used (GraphQL resolver convention).
+ * @param {string} _id - ID of the test to retrieve.
+ * @returns {Promise<Object|null>} - Subject document or null if not found.
+ * @throws {ApolloError} - Throws error if validation fails or database query fails.
+ */
+async function GetOneTest({ _id }) {
+  try {
+    // **************** validate test's _id, ensure that it can be casted into valid ObjectId
+    ValidateMongoObjectId(_id);
+
+    // **************** get the test document
+    const test = await TestModel.findOne({ _id, status: { $ne: 'deleted' } }).lean();
+
+    // **************** check if test document exist
+    if (!test) {
+      throw new ApolloError("test doesn't exist or already deleted");
+    }
+    return test;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'GetOneTest',
+      path: '/modules/test/test.resolver.js',
+      parameter_input: JSON.stringify({ _id }),
     });
     throw new ApolloError(error.message);
   }
