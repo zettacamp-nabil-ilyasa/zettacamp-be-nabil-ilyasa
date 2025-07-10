@@ -7,7 +7,7 @@ const SubjectModel = require('../subject/subject.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***********************
-const { ValidateTestInput } = require('./subject.validators.js');
+const { ValidateTestInput, ValidateTestFilterInput } = require('./test.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
@@ -34,20 +34,19 @@ async function GetAllTests({ filterInput, paginationInput }) {
     // **************** construct base query
     const query = { status: 'active' };
 
-    // **************** check if filter input provided
-    if (filterInput.subject_id) {
-      // **************** validate test's subject_id, ensure that it can be casted into valid ObjectId
-      ValidateMongoObjectId(filterInput.subject_id);
+    // **************** validate paginationInput
+    if (paginationInput.subject_id || paginationInput.status) {
+      ValidatePaginationInput(paginationInput);
 
-      // **************** add filter to query
-      query.block_id = filterInput.subject_id;
-    }
-    const testStatus = ['not_published', 'published'];
-    if (testStatus) {
-      if (!testStatus.includes(filterInput.status)) {
-        throw new ApolloError('status should be not_published or published');
+      // **************** build query for subject_id if it exist
+      if (paginationInput.subject_id) {
+        query.subject_id = paginationInput.subject_id;
       }
-      query.status = filterInput.status;
+
+      // **************** build query for status if it exist
+      if (paginationInput.status) {
+        query.status = paginationInput.status;
+      }
     }
 
     // **************** validate pagination's input
