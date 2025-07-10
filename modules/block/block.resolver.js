@@ -44,12 +44,12 @@ async function GetAllBlocks() {
  */
 async function GetOneBlock({ _id }) {
   try {
-    // **************** validate school's _id, ensure that it can be casted into valid ObjectId
+    // **************** validate block's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
 
     const block = await BlockModel.find({ _id, status: 'active' }).lean();
 
-    // **************** check if school document found
+    // **************** check if block document found
     if (!block) {
       throw new ApolloError("block doesn't exist or already deleted");
     }
@@ -81,13 +81,13 @@ async function CreateBlock(parent, { input }) {
 
   // *************** compose payload
   const newBlock = BlockPayloadComposer(input);
-  // *************** create school with composed payload
+  // *************** create block with composed payload
   const createdBlock = BlockModel.create(newBlock);
   return createdBlock;
 }
 
 /**
- * Update a school document after validating input and checking constraints.
+ * Update a block document after validating input and checking constraints.
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {string} _id - ID of the block to update.
@@ -107,7 +107,42 @@ async function UpdateBlock(parent, { _id, input }) {
   // *************** compose payload
   const toBeUpdatedBlock = BlockPayloadComposer(input);
 
-  // *************** create school with composed payload
+  // *************** create block with composed payload
   const editedBlock = BlockModel.create(toBeUpdatedBlock);
   return editedBlock;
 }
+
+/**
+ * Soft delete a block by marking its status as 'deleted', prevents deletion if block is referenced by any subject.
+ * @async
+ * @param {object} parent - Not used (GraphQL resolver convention).
+ * @param {string} _id - ID of the block to delete.
+ * @returns {Promise<string>} - Deletion success message.
+ * @throws {ApolloError} - Throws error if unauthorized, block not found, or block is referenced.
+ */
+async function DeleteBlock(parent, { _id }) {
+  // *************** validate the block's id
+  ValidateMongoObjectId(_id);
+
+  // *************** get the block's document
+  const toBeDeletedBlockDocument = await BlockModel.findOne({ _id, status: 'activev' }).lean();
+
+  // *************** check if the block document is exist
+  if (!toBeDeletedBlockDocument) {
+    throw new ApolloError("block doesn't exist or already deleted");
+  }
+
+  // *************** check if the block document is referenced by subject
+  if (!toBeDeletedBlockDocument.subject_ids?.length) {
+    throw new ApolloError('block that is referenced by subject cannot be deleted');
+  }
+
+  // *************** soft delete the block by updating status and deleted_at
+  await BlockModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_at: new Date() } });
+}
+
+// *************** EXPORT MODULE ***************
+module.exports = {
+  Query: { GetAllBlocks, GetOneBlock },
+  Mutation: { CreateBlock, UpdateBlock, DeleteBlock },
+};
