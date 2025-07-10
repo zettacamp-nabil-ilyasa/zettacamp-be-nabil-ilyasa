@@ -5,8 +5,8 @@ const BlockModel = require('./block.model.js');
 /**
  *
  * @param {Object} input - The input containing block data
- * @param {Object} input.name - The name of block data
- * @param {Object} input.description - The description of block data
+ * @param {String} input.name - The name of block data
+ * @param {String} input.description - The description of block data
  */
 function ValidateBlockInput(input) {
   // *************** destructured input object
