@@ -14,7 +14,7 @@ const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-vali
  * @param {Object} [option] - Optional parameter to control validation flow
  * @param {Object} [option.update] - Parameter to exclude subject_id from validation (for update mutation)
  */
-function ValidateSubjectInput(inputObject, { update } = {}) {
+function ValidateTestInput(inputObject, { update } = {}) {
   // *************** destructured input object
   const { name, description, weight, notations, subject_id } = inputObject;
 
@@ -51,5 +51,26 @@ function ValidateSubjectInput(inputObject, { update } = {}) {
   if (description && typeof description !== 'string') throw new ApolloError('description must be a string');
 }
 
+/**
+ *
+ * @param {Object} filterInput - Input containing filter data for test
+ * @param {String} filterInput._id - Id of test
+ * @param {String} filterInput.status - Status of test
+ */
+function ValidateTestFilterInput(filterInput) {
+  if (filterInput.subject_id) {
+    ValidateMongoObjectId(subject_id);
+  }
+
+  const testStatus = ['not_published', 'published'];
+
+  if (filterInput.status && typeof filterInput.status !== 'string') {
+    throw new ApolloError('status must be a string');
+  }
+  if (!testStatus.includes(filterInput.status)) {
+    throw new ApolloError(`status must be on of following: ${testStatus.join(', ')}`);
+  }
+}
+
 // *************** EXPORT MODULE ***************
-module.exports = { ValidateSubjectInput };
+module.exports = { ValidateTestInput, ValidateTestFilterInput };
