@@ -11,12 +11,12 @@ const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-vali
 
 // **************** QUERY ****************
 /**
- * Get all subjects with optional filtering by block_id and pagination.
+ * Get all subjects with optional filtering by subject_id and pagination.
  * @async
  * @function GetAllSubjects
  * @param {Object} params - The parameter object
  * @param {Object} [filterInput] - Optional filter input
- * @param {string} [filterInput.block_id] - Optional block ID to filter subjects
+ * @param {string} [filterInput.subject_id] - Optional subject ID to filter subjects
  * @param {Object} [paginationInput] - Optional pagination input
  * @param {number} [paginationInput.limit] - Number of subjects per page
  * @param {number} [paginationInput.offset] - Number of subjects to skip
@@ -29,11 +29,12 @@ async function GetAllSubjects({ filterInput, paginationInput }) {
     const query = { status: 'active' };
 
     // **************** check if filter input provided
-    if (filterInput.block_id) {
-      // **************** validate block's _id, ensure that it can be casted into valid ObjectId
-      ValidateMongoObjectId(filterInput.block_id);
+    if (filterInput.subject_id) {
+      // **************** validate subject's _id, ensure that it can be casted into valid ObjectId
+      ValidateMongoObjectId(filterInput.subject_id);
+
       // **************** add filter to query
-      query.block_id = filterInput.block_id;
+      query.subject_id = filterInput.subject_id;
     }
 
     // **************** get subjects based on query
@@ -46,6 +47,38 @@ async function GetAllSubjects({ filterInput, paginationInput }) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'GetAllSubjects',
+      path: '/modules/subject/subject.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
+ * Get one active subject by its ID.
+ * @async
+ * @param {object} parent - Not used (GraphQL resolver convention).
+ * @param {string} _id - ID of the subject to retrieve.
+ * @returns {Promise<Object|null>} - Subject document or null if not found.
+ * @throws {ApolloError} - Throws error if validation fails or database query fails.
+ */
+async function GetOneSubject({ _id }) {
+  try {
+    // **************** validate subject's _id, ensure that it can be casted into valid ObjectId
+    ValidateMongoObjectId(_id);
+
+    // **************** get the subject document
+    const subject = await SubjectModel.find({ _id, status: 'active' }).lean();
+
+    // **************** check if subject document exist
+    if (!subject) {
+      throw new ApolloError("subject doesn't exist or already deleted");
+    }
+    return subject;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'GetOneSubject',
       path: '/modules/subject/subject.resolver.js',
       parameter_input: JSON.stringify({}),
     });
