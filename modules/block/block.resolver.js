@@ -53,6 +53,7 @@ async function GetOneBlock({ _id }) {
     if (!block) {
       throw new ApolloError("block doesn't exist or already deleted");
     }
+    return block;
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
