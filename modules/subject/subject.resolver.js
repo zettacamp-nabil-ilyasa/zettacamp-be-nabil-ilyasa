@@ -105,9 +105,36 @@ async function CreateSubject({ input }) {
   ValidateSubjectInput(input, { checksubjectId: true });
 
   // *************** compose payload
-  const newSubject = SubjectPayloadComposer(input, { checksubjectId: true });
+  const newSubject = SubjectPayloadComposer(input, { checkSubjectId: true });
 
   // *************** create subject with composed payload
   const createdSubject = SubjectModel.create(newSubject);
   return createdSubject;
+}
+
+/**
+ * Update a subject document after validating subject's id and input.
+ * @async
+ * @param {object} parent - Not used (GraphQL resolver convention).
+ * @param {string} _id - ID of the subject to update.
+ * @param {object} input - BLock input fields.
+ * @param {string} input.name - Name of subject.
+ * @param {string} [input.description] - Description of subject.
+ * @param {string} input.coefficient - Coefficient for calculation factor.
+ * @returns {Promise<Object>} - Updated subject document.
+ * @throws {ApolloError} - Throws error if validation or db operation fails.
+ */
+async function UpdateSubject({ _id, input }) {
+  // *************** validate subject's id
+  ValidateMongoObjectId(_id);
+
+  // *************** validation to ensure bad input is handled correctly
+  ValidateSubjectInput(input);
+
+  // *************** compose payload
+  const editedSubject = SubjectPayloadComposer(input);
+
+  // *************** update subject with composed payload
+  const updatedSubject = await SubjectModel.findOneAndUpdate({ _id }, { $set: editedSubject }, { new: true }).lean();
+  return updatedSubject;
 }
