@@ -205,6 +205,38 @@ async function DeleteSubject({ _id }) {
   }
 }
 
+// *************** LOADERS ***************
+/**
+ * Resolve the created_by field in a School document using DataLoader.
+ * @async
+ * @param {object} parent - The subject object containing block_id field.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context containing DataLoaders.
+ * @param {object} context.loaders.user - DataLoader instance for users.
+ * @returns {Promise<Object|null>} - The subject document or null if not available.
+ * @throws {ApolloError} - Throws error if loading fails.
+ */
+async function block_id(parent, args, context) {
+  try {
+    // *************** check if subject has any block_id
+    if (!parent?.block_id) {
+      return null;
+    }
+
+    // *************** load user
+    const loadedUser = await context.loaders.block.load(parent.block_id);
+    return loadedUser;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'block_id',
+      path: '/modules/subject/subject.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllSubjects, GetOneSubject },
