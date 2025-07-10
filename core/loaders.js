@@ -4,6 +4,7 @@ const { SchoolLoader } = require('../modules/school/school.loader');
 const { UserLoader } = require('../modules/user/user.loader');
 const { BlockLoader } = require('../modules/block/block.loader');
 const { SubjectLoader } = require('../modules/subject/subject.loader');
+const { TestLoader } = require('../modules/test/test.loader');
 
 /**
  * Initialize and return DataLoader instances for batching and caching to prevent N+1 queries.
@@ -16,7 +17,14 @@ const { SubjectLoader } = require('../modules/subject/subject.loader');
  * @returns {Object} An object containing DataLoader instances.
  */
 function InitializeDataloaders() {
-  return { student: StudentLoader(), school: SchoolLoader(), user: UserLoader(), block: BlockLoader(), subject: SubjectLoader() };
+  return {
+    student: StudentLoader(),
+    school: SchoolLoader(),
+    user: UserLoader(),
+    block: BlockLoader(),
+    subject: SubjectLoader(),
+    test: TestLoader(),
+  };
 }
 
 // *************** EXPORT MODULE ***************
