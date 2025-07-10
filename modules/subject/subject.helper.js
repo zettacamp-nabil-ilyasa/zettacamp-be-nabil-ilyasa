@@ -27,4 +27,5 @@ function SubjectPayloadComposer(inputObject, { checkBlockId = false }) {
   return { name: inputObject.name, description: inputObject.description, block_id: inputObject.block_id };
 }
 
+// *************** EXPORT MODULE ***************
 module.exports = { SubjectPayloadComposer };
