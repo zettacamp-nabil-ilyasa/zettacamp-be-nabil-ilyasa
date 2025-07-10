@@ -3,6 +3,7 @@ const { ApolloError } = require('apollo-server-express');
 
 // *************** IMPORT MODULE ***************
 const SubjectModel = require('./subject.model.js');
+const BlockModel = require('../block/block.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***********************
@@ -11,6 +12,7 @@ const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-vali
 
 // *************** IMPORT HELPER ***********************
 const { SubjectPayloadComposer } = require('./subject.helper.js');
+
 // **************** QUERY ****************
 /**
  * Get all subjects with optional filtering by subject_id and pagination.
@@ -31,12 +33,12 @@ async function GetAllSubjects({ filterInput, paginationInput }) {
     const query = { status: 'active' };
 
     // **************** check if filter input provided
-    if (filterInput.subject_id) {
+    if (filterInput.block_id) {
       // **************** validate subject's _id, ensure that it can be casted into valid ObjectId
-      ValidateMongoObjectId(filterInput.subject_id);
+      ValidateMongoObjectId(filterInput.block_id);
 
       // **************** add filter to query
-      query.subject_id = filterInput.subject_id;
+      query.block_id = filterInput.block_id;
     }
 
     // **************** get subjects based on query
@@ -50,7 +52,7 @@ async function GetAllSubjects({ filterInput, paginationInput }) {
       error_stack: error.stack,
       function_name: 'GetAllSubjects',
       path: '/modules/subject/subject.resolver.js',
-      parameter_input: JSON.stringify({}),
+      parameter_input: JSON.stringify({ filterInput, paginationInput }),
     });
     throw new ApolloError(error.message);
   }
@@ -70,7 +72,7 @@ async function GetOneSubject({ _id }) {
     ValidateMongoObjectId(_id);
 
     // **************** get the subject document
-    const subject = await SubjectModel.find({ _id, status: 'active' }).lean();
+    const subject = await SubjectModel.findOne({ _id, status: 'active' }).lean();
 
     // **************** check if subject document exist
     if (!subject) {
@@ -82,7 +84,7 @@ async function GetOneSubject({ _id }) {
       error_stack: error.stack,
       function_name: 'GetOneSubject',
       path: '/modules/subject/subject.resolver.js',
-      parameter_input: JSON.stringify({}),
+      parameter_input: JSON.stringify({ _id }),
     });
     throw new ApolloError(error.message);
   }
@@ -101,15 +103,25 @@ async function GetOneSubject({ _id }) {
  * @throws {ApolloError} - Throws error if validation or db operation fails.
  */
 async function CreateSubject({ input }) {
-  // *************** validation to ensure bad input is handled correctly
-  ValidateSubjectInput(input, { checksubjectId: true });
+  try {
+    // *************** validation to ensure bad input is handled correctly
+    ValidateSubjectInput(input, { checksubjectId: true });
 
-  // *************** compose payload
-  const newSubject = SubjectPayloadComposer(input, { checkSubjectId: true });
+    // *************** compose payload
+    const newSubject = SubjectPayloadComposer(input, { checkSubjectId: true });
 
-  // *************** create subject with composed payload
-  const createdSubject = SubjectModel.create(newSubject);
-  return createdSubject;
+    // *************** create subject with composed payload
+    const createdSubject = await SubjectModel.create(newSubject);
+    return createdSubject;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'CreateSubject',
+      path: '/modules/subject/subject.resolver.js',
+      parameter_input: JSON.stringify({ input }),
+    });
+    throw new ApolloError(error.message);
+  }
 }
 
 /**
@@ -125,16 +137,76 @@ async function CreateSubject({ input }) {
  * @throws {ApolloError} - Throws error if validation or db operation fails.
  */
 async function UpdateSubject({ _id, input }) {
-  // *************** validate subject's id
-  ValidateMongoObjectId(_id);
+  try {
+    // *************** validate subject's id
+    ValidateMongoObjectId(_id);
 
-  // *************** validation to ensure bad input is handled correctly
-  ValidateSubjectInput(input);
+    // *************** validation to ensure bad input is handled correctly
+    ValidateSubjectInput(input);
 
-  // *************** compose payload
-  const editedSubject = SubjectPayloadComposer(input);
+    // *************** compose payload
+    const editedSubject = SubjectPayloadComposer(input);
 
-  // *************** update subject with composed payload
-  const updatedSubject = await SubjectModel.findOneAndUpdate({ _id }, { $set: editedSubject }, { new: true }).lean();
-  return updatedSubject;
+    // *************** update subject with composed payload
+    const updatedSubject = await SubjectModel.findOneAndUpdate({ _id }, { $set: editedSubject }, { new: true }).lean();
+    return updatedSubject;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'UpdateSubject',
+      path: '/modules/subject/subject.resolver.js',
+      parameter_input: JSON.stringify({ _id, input }),
+    });
+    throw new ApolloError(error.message);
+  }
 }
+
+/**
+ * Soft delete a subject by marking its status as 'deleted'.
+ * Prevents deletion if subject is referenced by any subject, delete subject's id from block.
+ * @async
+ * @param {object} parent - Not used (GraphQL resolver convention).
+ * @param {string} _id - ID of the subject to delete.
+ * @returns {Promise<string>} - Deletion success message.
+ * @throws {ApolloError} - Throws error if unauthorized, subject not found, or subject is referenced.
+ */
+async function DeleteSubject({ _id }) {
+  try {
+    // *************** validate subject's id
+    ValidateMongoObjectId(_id);
+
+    // *************** get the subject's document
+    const toBeDeletedSubjectDocument = await SubjectModel.findOne({ _id, status: 'active' }).lean();
+
+    if (!toBeDeletedSubjectDocument) {
+      throw new ApolloError("subject doesn't exist or already deleted");
+    }
+
+    // *************** check if the subject document is referenced by subject
+    if (toBeDeletedSubjectDocument.test_ids?.length) {
+      throw new ApolloError('subject that is referenced by test cannot be deleted');
+    }
+
+    // *************** soft delete the subject by updating status and deleted_at
+    await SubjectModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_at: new Date() } });
+
+    // *************** remove subject's id from subject_ids field in subject
+    await BlockModel.updateOne({ _id: toBeDeletedSubjectDocument.block_id }, { $pull: { subject_ids: _id } });
+
+    return 'subject deleted succesfully';
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'DeleteSubject',
+      path: '/modules/subject/subject.resolver.js',
+      parameter_input: JSON.stringify({ _id }),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+// *************** EXPORT MODULE ***************
+module.exports = {
+  Query: { GetAllSubjects, GetOneSubject },
+  Mutation: { CreateSubject, UpdateSubject, DeleteSubject },
+};
