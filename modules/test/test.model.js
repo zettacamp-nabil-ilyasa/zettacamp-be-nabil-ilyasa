@@ -3,7 +3,10 @@ const Mongoose = require('mongoose');
 const Schema = Mongoose.Schema;
 
 const notationSchema = new Schema({
-  notation_text: { type: String, required: true, trim: true },
+  // notation or text not regarding the max_point
+  notation_text: { type: String, trim: true },
+
+  // maximum point that can be achieved
   max_point: { type: Number, required: true },
 });
 
