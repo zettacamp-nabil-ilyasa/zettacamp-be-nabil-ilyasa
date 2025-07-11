@@ -8,6 +8,8 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 // *************** IMPORT VALIDATOR ***********************
 const { ValidateStudentTestResultFilterInput } = require('./studentTestResult.validators.js');
 const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
+const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
+const studentTestResultModel = require('./studentTestResult.model.js');
 
 // **************** QUERY ****************
 /**
@@ -62,6 +64,38 @@ async function GetAllStudentTestResults({ filterInput, paginationInput }) {
       function_name: 'GetAllStudentTestResult',
       path: '/modules/studentTestResult/studentTestResult.resolver.js',
       parameter_input: JSON.stringify({ filterInput, paginationInput }),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
+ * Get one not-deleted student test result by its ID.
+ * @async
+ * @param {object} parent - Not used (GraphQL resolver convention).
+ * @param {string} _id - ID of the student test result to retrieve.
+ * @returns {Promise<Object>} - Student test result document or error if not found.
+ * @throws {ApolloError} - Throws error if validation fails or database query fails.
+ */
+async function GetOneStudentTestResult({ _id }) {
+  try {
+    // **************** validate studentTestResult's id
+    ValidateMongoObjectId(_id);
+
+    // **************** get studentTestResult's document
+    const studentTestResult = await StudentTestResultModel.findOne({ _id, status: { $ne: 'deleted' } }).lean();
+
+    // **************** check if studentTestResult is exist
+    if (!studentTestResult) {
+      throw new ApolloError("student test result doesn't exist or already deleted");
+    }
+    return studentTestResult;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'GetOneStudentTestResult',
+      path: '/modules/studentTestResult/studentTestResult.resolver.js',
+      parameter_input: JSON.stringify({ _id }),
     });
     throw new ApolloError(error.message);
   }
