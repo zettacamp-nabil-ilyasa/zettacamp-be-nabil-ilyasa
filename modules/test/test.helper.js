@@ -4,6 +4,8 @@ const Mongoose = require('mongoose');
 
 // *************** IMPORT MODULE ***************
 const TestModel = require('./test.model.js');
+const TaskModel = require('..task/task.model.js');
+const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***********************
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
@@ -19,13 +21,14 @@ async function GetTotalWeightOfTests(subjectId) {
     ValidateMongoObjectId(subjectId);
 
     // *************** cast subject_id to ObjectId
-    const subjectObjectId = Mongoose.Types.ObjectId(subjectId);
+    const subjectObjectId = new Mongoose.Types.ObjectId(subjectId);
 
     // *************** build aggregation query to get the weight of all tests referenced the same subject_id
-    const aggQuery = [{ $match: { subject_id: subjectObjectId } }, { $group: { $id: null, total_weight: { $sum: '$weight' } } }];
+    const aggQuery = [{ $match: { subject_id: subjectObjectId } }, { $group: { _id: null, total_weight: { $sum: '$weight' } } }];
 
     // *************** execute the query
-    const totalWeight = await TestModel.aggregate(aggQuery);
+    const summedWeight = await TestModel.aggregate(aggQuery);
+    const totalWeight = summedWeight[0]?.total_weight;
     return totalWeight;
   } catch (error) {
     await ErrorLogModel.create({
@@ -50,13 +53,48 @@ async function GetTotalWeightOfTests(subjectId) {
  */
 function TestPayloadComposer(inputObject, { checkSubjectId } = {}) {
   // *************** validate subject_id if checkSubjectId set to true
-  if (checkSubjectId) ValidateMongoObjectId(input.subject_id);
+  if (checkSubjectId) ValidateMongoObjectId(inputObject.subject_id);
 
   // *************** sanity check for mandatory fields
   if (!inputObject.name) throw new ApolloError('name is required for payload');
   if (!inputObject.weight) throw new ApolloError('weight is required for payload');
-  return { name: inputObject.name, weight: inputObject.weight, description: inputObject.description, notations: inputObject.notations };
+  const subjectPayload = {
+    name: inputObject.name,
+    weight: inputObject.weight,
+    description: inputObject.description,
+    notations: inputObject.notations,
+  };
+
+  // *************** validate subject_id if checkSubjectId set to true
+  if (checkSubjectId) {
+    ValidateMongoObjectId(inputObject.subject_id);
+    subjectPayload.subject_id = inputObject.subject_id;
+  }
+  return subjectPayload;
+}
+
+/**
+ * Create task for assign corrector
+ * @param {string} userId - Id of user
+ */
+async function CreateAssignCorrectorTask({ userId, testId }) {
+  try {
+    // *************** validate user_id
+    ValidateMongoObjectId(userId);
+
+    // *************** create task for assign corrector
+    const newAssignCorrectorTask = { user_id: userId, test_id: testId, type: 'assign_corrector', status: 'in_progress' };
+    await TaskModel.create(newAssignCorrectorTask);
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'CreateAssignCorrectorTask',
+      path: '/modules/test/test.helper.js',
+      parameter_input: JSON.stringify({ userId, testId }),
+    });
+    throw new ApolloError(error.message);
+  }
 }
 
 // *************** EXPORT MODULE ***************
-module.exports = { GetTotalWeightOfTests, TestPayloadComposer };
+module.exports = { GetTotalWeightOfTests, TestPayloadComposer, CreateAssignCorrectorTask };
