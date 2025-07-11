@@ -95,3 +95,43 @@ async function GetOneTask(parent, { _id }) {
     throw new ApolloError(error.message);
   }
 }
+
+/**
+ * Soft delete a task by marking its status as 'deleted'.
+ * Prevents deletion if task status is published.
+ * @async
+ * @param {object} parent - Not used (GraphQL resolver convention).
+ * @param {string} _id - ID of the task to delete.
+ * @returns {Promise<string>} - Deletion success message.
+ * @throws {ApolloError} - Throws error if task not found or status is not completed.
+ */
+async function DeleteTask(parent, { _id }) {
+  try {
+    // *************** validate _id
+    ValidateMongoObjectId(_id);
+
+    // *************** get task document
+    const toBeDeletedTaskDocument = await TaskModel.findOne({ _id, status: { $ne: 'deleted' } });
+    if (!toBeDeletedTaskDocument) {
+      throw new ApolloError('Task not found or already deleted');
+    }
+
+    if (toBeDeletedTaskDocument.status !== 'completed') {
+      throw new ApolloError('Only completed tasks can be deleted');
+    }
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'DeleteTest',
+      path: '/modules/test/test.resolver.js',
+      parameter_input: JSON.stringify({ _id }),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+// *************** EXPORT MODULE ***************
+module.exports = {
+  Query: { GetAllTaskss, GetOneTask },
+  Mutation: { DeleteTask },
+};
