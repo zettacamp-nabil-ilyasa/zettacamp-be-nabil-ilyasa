@@ -5,9 +5,21 @@ const { mergeResolvers } = require('@graphql-tools/merge');
 const UserResolvers = require('../modules/user/user.resolver.js');
 const SchoolResolvers = require('../modules/school/school.resolver.js');
 const StudentResolvers = require('../modules/student/student.resolver.js');
+const BlockResolvers = require('../modules/block/block.resolver.js');
+const SubjectResolvers = require('../modules/subject/subject.resolver.js');
+const TestResolvers = require('../modules/test/test.resolver.js');
+const StudentTestResultResolvers = require('../modules/studenTestResult/studentTestResult.resolver.js');
 
 // ***************  Merge all resolvers from modules
-const resolvers = mergeResolvers([UserResolvers, SchoolResolvers, StudentResolvers]);
+const resolvers = mergeResolvers([
+  UserResolvers,
+  SchoolResolvers,
+  StudentResolvers,
+  BlockResolvers,
+  SubjectResolvers,
+  TestResolvers,
+  StudentTestResultResolvers,
+]);
 
 // *************** EXPORT MODULE ***************
 module.exports = resolvers;

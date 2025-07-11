@@ -100,3 +100,57 @@ async function GetOneStudentTestResult({ _id }) {
     throw new ApolloError(error.message);
   }
 }
+
+/**
+ * Soft delete a student test result by marking its status as 'deleted'.
+ * Also deletes associated task.
+ * @async
+ * @param {object} parent - Not used (GraphQL resolver convention).
+ * @param {string} _id - ID of the student test result to delete.
+ * @returns {Promise<string>} - Deletion success message.
+ * @throws {ApolloError} - Throws error if student test result not found or the status is is not 'validated'.
+ */
+async function DeleteStudentTestResult({ _id }) {
+  try {
+    // **************** validate student test result's id
+    ValidateMongoObjectId(_id);
+
+    // **************** get the student test result document
+    const toBeDeletedStudentTestResultDocument = await StudentTestResultModel.findOne({ _id, status: { $ne: 'deleted' } }).lean();
+
+    // **************** check if the student test result is exist
+    if (!toBeDeletedStudentTestResultDocument) {
+      throw new ApolloError("student test result doesn't exist or already deleted");
+    }
+
+    // **************** check if the student test result's status is not validated
+    if (toBeDeletedStudentTestResultDocument.status !== 'validated') {
+      throw new ApolloError('only validated student test result that can be deleted');
+    }
+
+    // **************** soft-delete the student test result document by set status and deleted_at
+    await StudentTestResultModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_at: new Date() } });
+
+    // **************** also soft-delete task that stores the student test result's id
+    await TaskModel.updateOne(
+      { _id: toBeDeletedStudentTestResultDocument.task_id },
+      { $set: { status: 'deleted', deleted_at: new Date() } }
+    );
+
+    return 'student test result is succesfully deleted';
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'DeleteStudentTestResult',
+      path: '/modules/studentTestResult/studentTestResult.resolver.js',
+      parameter_input: JSON.stringify({ _id }),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+// *************** EXPORT MODULE ***************
+module.exports = {
+  Query: { GetAllStudentTestResults, GetOneStudentTestResult },
+  Mutation: { DeleteStudentTestResult },
+};
