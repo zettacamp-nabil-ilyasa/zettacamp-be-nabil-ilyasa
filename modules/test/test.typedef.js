@@ -28,11 +28,28 @@ const testTypeDefs = gql`
     notations: [Notation]
   }
 
+  input TestFilterInput {
+    status: String
+    subject_id: String
+  }
+
   enum TestStatus {
     published
     not_published
     deleted
   }
+
+  extend type Query{
+    GetAllTests(filter: TestFilterInput, pagination: PaginationInput): [Test]
+    GetOneTest(_id: ID!): Test
+  }
+
+  extend type Mutation{
+    CreateTest(TestInput): Test
+    UpdateTest(TestInput): Test
+    DeleteTest(_id: ID!): String
+  }
 `;
 
+// *************** EXPORT MODULE ***************
 module.exports = testTypeDefs;
