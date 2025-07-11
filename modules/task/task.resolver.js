@@ -119,6 +119,10 @@ async function DeleteTask(parent, { _id }) {
     if (toBeDeletedTaskDocument.status !== 'completed') {
       throw new ApolloError('Only completed tasks can be deleted');
     }
+
+    // *************** update status to deleted and set deleted_at
+    await TaskModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_at: new Date() } });
+    return 'task deleted successfully';
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
