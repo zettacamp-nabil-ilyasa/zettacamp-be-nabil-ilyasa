@@ -94,3 +94,42 @@ async function SetEnterMarksTaskToCompleted(taskId) {
   }
 }
 
+/**
+ * Create a validate_marks task assigned to a user.
+ * @async
+ * @param {Object} params - Parameters.
+ * @param {string} params.studentTestResultId - ID of the student test result.
+ * @param {string} params.userId - ID of the user (typically academic director, hardcoded for now).
+ * @returns {Promise<void>}
+ * @throws {ApolloError} - If creation fails.
+ */
+async function CreateValidateMarksTask({ studentTestResultId, userId, taskDocument }) {
+  try {
+    // *************** validate student test result id
+    ValidateMongoObjectId(studentTestResultId);
+
+    // *************** create validate marks task
+    const createdTask = await TaskModel.create({
+      type: 'validate_marks',
+      user_id: userId,
+      test_id: taskDocument.test_id,
+      student_id: taskDocument.student_id,
+      student_test_result_id: studentTestResultId,
+      status: 'in_progress',
+    });
+    if (!createdTask) {
+      throw new ApolloError('failed to create validate marks task');
+    }
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'CreateValidateMarksTask',
+      path: '/modules/studentTestResult/studentTestResult.helper.js',
+      parameter_input: JSON.stringify({ studentTestResultId, userId }),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+// *************** EXPORT MODULE ***************
+module.exports = { GetTestNotations, EnterMarksPayloadComposer, SetEnterMarksTaskToCompleted, CreateValidateMarksTask };
