@@ -1,7 +1,7 @@
 // *************** IMPORT LIBRARY ***************
 const { ApolloError } = require('apollo-server-express');
 
-// *************** IMPORT VALIDATOR ***********************
+// *************** IMPORT VALIDATOR ***************
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 
 /**
@@ -14,12 +14,12 @@ const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-vali
  * @param {Object} [option] - Optional parameter to control validation flow
  * @param {Object} [option.update] - Parameter to exclude subject_id from validation (for update mutation)
  */
-function ValidateTestInput(inputObject, { update } = {}) {
+function ValidateTestInput(inputObject, { validateSubjectId } = {}) {
   // *************** destructured input object
   const { name, description, weight, notations, subject_id } = inputObject;
 
   // *************** validate subject_id if checkSubjectId set to true
-  if (update) {
+  if (validateSubjectId) {
     ValidateMongoObjectId(subject_id);
   }
 
@@ -30,22 +30,23 @@ function ValidateTestInput(inputObject, { update } = {}) {
   if (!weight || typeof weight !== 'number') throw new ApolloError('weight is required and must be a number');
   if (weight < 0 || weight > 1) throw new ApolloError('weight must be a positive number and cannot be greater than 1');
 
-  // *************** validate notation if exist
-  if (notations.length) {
-    notations.forEach((notation) => {
-      // *************** validate notation_text if it exist
-      if (notation.notation_text && typeof notation.notation_text !== string) {
-        throw new ApolloError('notation_text must be a string');
-      }
-      // *************** validate max_point
-      if (!notation.max_point || typeof notation.max_point !== 'number') {
-        throw new ApolloError('max_point is required and must be a number');
-      }
-      if (notation.max_point <= 0 || notation.max_point > 20) {
-        throw new ApolloError('max point must be a number within range 1 to 20');
-      }
-    });
+  // *************** validate notation
+  if (!Array.isArray(notations) || !notations.length) {
+    throw new ApolloError('notations is required');
   }
+  notations.forEach((notation, index) => {
+    // *************** validate notation_text
+    if (!notation.notation_text || typeof notation.notation_text !== 'string') {
+      throw new ApolloError(`notation[${index}].notation_text is required and must be a string`);
+    }
+    // *************** validate max_point
+    if (!notation.max_points || typeof notation.max_points !== 'number') {
+      throw new ApolloError(`notation[${index}].max_points is required and must be a number`);
+    }
+    if (notation.max_points <= 0 || notation.max_points > 20) {
+      throw new ApolloError(`notation[${index}].max_points must be between 1 and 20`);
+    }
+  });
 
   // *************** validate description if it exist
   if (description && typeof description !== 'string') throw new ApolloError('description must be a string');
@@ -58,17 +59,20 @@ function ValidateTestInput(inputObject, { update } = {}) {
  * @param {String} filterInput.status - Status of test
  */
 function ValidateTestFilterInput(filterInput) {
-  if (filterInput.subject_id) {
-    ValidateMongoObjectId(subject_id);
+  // *************** validate subject_id if exist
+  if (filterInput?.subject_id) {
+    ValidateMongoObjectId(filterInput.subject_id);
   }
 
-  const testStatus = ['not_published', 'published'];
-
-  if (filterInput.status && typeof filterInput.status !== 'string') {
-    throw new ApolloError('status must be a string');
-  }
-  if (!testStatus.includes(filterInput.status)) {
-    throw new ApolloError(`status must be on of following: ${testStatus.join(', ')}`);
+  // *************** validate status if exist
+  if (filterInput?.status) {
+    if (typeof filterInput?.status !== 'string') {
+      throw new ApolloError('status must be a string');
+    }
+    const testStatus = ['not_published', 'published'];
+    if (!testStatus.includes(filterInput?.status)) {
+      throw new ApolloError(`status must be one of following: ${testStatus.join(', ')}`);
+    }
   }
 }
 
