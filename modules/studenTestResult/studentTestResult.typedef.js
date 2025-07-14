@@ -3,35 +3,38 @@ const { gql } = require('apollo-server-express');
 
 const studentTestResultTypeDefs = gql`
   type StudentTestResult {
-    student_id: String!
-    test_id: String!
-    task_id: String!
-    marks: [Mark]
-    average_mark: Number
+    _id: ID!
+    student_id: Student
+    test_id: Test
+    task_id: Task
+    marks: [Mark]!
+    average_mark: Float!
     status: StudentTestResultStatus!
     mark_entry_date: Date
     created_at: Date!
-    created_by: User
     updated_at: Date!
   }
 
   type Mark {
     notation_text: String
-    mark: Number
+    mark: Float
+  }
+
+  input MarkInput {
+    notation_text: String
+    mark: Float
   }
 
   enum StudentTestResultStatus {
     completed
-    needs_revision
+    need_revision
     validated
     deleted
   }
 
-  input StudentTestResultInput {
-    test_id: String
-    student_id: String
+  input EnterMarksInput {
     task_id: String
-    marks: [Mark]
+    marks: [MarkInput]
   }
 
   input StudentTestResultFilterInput {
@@ -40,14 +43,15 @@ const studentTestResultTypeDefs = gql`
   }
 
   extend type Query {
-    GetAllStudentTestResult(filter: StudentTestResultFilterInput, pagination: PaginationInput): [StudentTestResult]
+    GetAllStudentTestResults(filter: StudentTestResultFilterInput, pagination: PaginationInput): [StudentTestResult]
     GetOneStudentTestResult(_id: ID!): StudentTestResult
   }
 
   extend type Mutation {
+    EnterMarks(input: EnterMarksInput): StudentTestResult
     DeleteStudentTestResult(_id: ID!): String
   }
-
-  // *************** EXPORT MODULE ***************
-module.exports = studentTestResultTypeDefs;
 `;
+
+// *************** EXPORT MODULE ***************
+module.exports = studentTestResultTypeDefs;
