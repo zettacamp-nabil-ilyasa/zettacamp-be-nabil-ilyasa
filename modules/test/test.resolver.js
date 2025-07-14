@@ -137,6 +137,9 @@ async function CreateTest(parent, { input }) {
     // *************** compose test payload
     const newTest = TestPayloadComposer(input, { addSubjectId: true });
     const createdTest = await TestModel.create(newTest);
+
+    // *************** add test's id to subject's test_ids field
+    await SubjectModel.updateOne({ _id: input.subject_id }, { $addToSet: { test_ids: createdTest._id } });
     return createdTest;
   } catch (error) {
     await ErrorLogModel.create({
