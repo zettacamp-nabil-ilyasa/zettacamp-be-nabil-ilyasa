@@ -18,21 +18,21 @@ const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-vali
  */
 async function BatchSubjects(subjectIds) {
   try {
-    // **************** validate each subject id
+    // *************** validate each subject id
     subjectIds.forEach((subjectId) => {
       ValidateMongoObjectId(subjectId);
     });
 
-    // **************** get all active subjects with id within subjectIds and status is active
+    // *************** get all active subjects with id within subjectIds and status is active
     const subjects = await SubjectModel.find({ _id: { $in: subjectIds }, status: 'active' }).lean();
 
-    // **************** set subjects data to dataMap
+    // *************** set subjects data to dataMap
     const dataMap = new Map();
     subjects.forEach((subject) => {
       dataMap.set(String(subject._id), subject);
     });
 
-    // **************** return array of subject objects with order of subjectIds
+    // *************** return array of subject objects with order of subjectIds
     return subjectIds.map((subjectId) => dataMap.get(String(subjectId)));
   } catch (error) {
     await ErrorLogModel.create({

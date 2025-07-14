@@ -8,9 +8,9 @@ const subjectSchema = new Schema(
     name: { type: String, required: true, trim: true },
 
     // description of subject
-    description: String,
+    description: { type: String, trim: true },
 
-    // coefficient for calculation factor (not yet implemented)
+    // coefficient for calculation factor (currently unused)
     coefficient: { type: Number, required: true },
 
     // block associated with the subject
@@ -20,7 +20,7 @@ const subjectSchema = new Schema(
     test_ids: [{ type: Schema.Types.ObjectId, ref: 'test' }],
 
     // status of the subject
-    status: { type: String, enum: ['active', 'deleted'], default: 'active' },
+    status: { type: String, enum: ['active', 'deleted', 'archived'], default: 'active' },
 
     // user who created the subject
     created_by: { type: Schema.Types.ObjectId, ref: 'user' },

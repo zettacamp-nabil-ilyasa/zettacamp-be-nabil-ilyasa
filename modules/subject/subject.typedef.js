@@ -7,7 +7,7 @@ const subjectTypeDefs = gql`
     block_id: Block!
     name: String!
     description: String
-    coefficient: Int!
+    coefficient: Float!
     test_ids: [Test!]
     status: Status!
     created_at: Date!
@@ -20,17 +20,12 @@ const subjectTypeDefs = gql`
   input SubjectInput {
     name: String!
     description: String
-    coefficient: Int!
+    coefficient: Float!
     block_id: String
   }
 
   input SubjectFilterInput {
     block_id: String
-  }
-
-  input PaginationInput {
-    limit: Int
-    offset: Int
   }
 
   extend type Query {

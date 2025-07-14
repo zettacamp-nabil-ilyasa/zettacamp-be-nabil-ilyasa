@@ -8,7 +8,7 @@ const StudentResolvers = require('../modules/student/student.resolver.js');
 const BlockResolvers = require('../modules/block/block.resolver.js');
 const SubjectResolvers = require('../modules/subject/subject.resolver.js');
 const TestResolvers = require('../modules/test/test.resolver.js');
-const StudentTestResultResolvers = require('../modules/studenTestResult/studentTestResult.resolver.js');
+const StudentTestResultResolvers = require('../modules/studenTestResult/student_test_result.resolver.js');
 const TaskResolvers = require('../modules/task/task.resolver.js');
 
 // ***************  Merge all resolvers from modules

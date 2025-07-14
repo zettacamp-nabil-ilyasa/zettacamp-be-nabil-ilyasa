@@ -6,57 +6,58 @@ const SubjectModel = require('./subject.model.js');
 const BlockModel = require('../block/block.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
-// *************** IMPORT VALIDATOR ***********************
+// *************** IMPORT VALIDATOR ***************
 const { ValidateSubjectInput } = require('./subject.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
-// *************** IMPORT HELPER ***********************
+// *************** IMPORT HELPER ***************
 const { SubjectPayloadComposer } = require('./subject.helper.js');
 
-// **************** QUERY ****************
+// *************** QUERY ****************
 /**
  * Get all subjects with optional filtering by subject_id and pagination.
  * @async
  * @function GetAllSubjects
  * @param {Object} params - The parameter object
  * @param {Object} [filterInput] - Optional filter input
- * @param {string} [filterInput.subject_id] - Optional subject ID to filter subjects
+ * @param {string} [filterInput.block_id] - Optional subject ID to filter subjects
  * @param {Object} [paginationInput] - Optional pagination input
  * @param {number} [paginationInput.limit] - Number of subjects per page
  * @param {number} [paginationInput.offset] - Number of subjects to skip
  * @returns {Promise<Array<Object>>} Array of subject documents matching the query
  * @throws {ApolloError} If any error occurs during validation or database operation
  */
-async function GetAllSubjects({ filterInput, paginationInput }) {
+async function GetAllSubjects(parent, { filter, pagination }) {
   try {
-    // **************** construct base query
+    // *************** construct base query
     const query = { status: 'active' };
 
-    // **************** check if filter input provided
-    if (filterInput.block_id) {
-      // **************** validate subject's _id, ensure that it can be casted into valid ObjectId
-      ValidateMongoObjectId(filterInput.block_id);
+    // *************** check if filter input provided
+    if (filter?.block_id) {
+      // *************** validate subject's _id, ensure that it can be casted into valid ObjectId
+      ValidateMongoObjectId(filter.block_id);
 
-      // **************** add filter to query
-      query.block_id = filterInput.block_id;
+      // *************** add filter to query
+      query.block_id = filter.block_id;
     }
 
-    // **************** validate pagination's input
-    ValidatePaginationInput(paginationInput);
+    // *************** validate pagination's input
+    ValidatePaginationInput(pagination);
 
-    // **************** get subjects based on query
-    const subjects = await SubjectModel.find(query)
-      .skip(paginationInput.offset || 0)
-      .limit(paginationInput.limit || 20)
-      .lean();
+    // *************** set default limit and offset
+    const offset = pagination?.offset ?? 0;
+    const limit = pagination?.limit ?? 20;
+
+    // *************** get subjects based on query
+    const subjects = await SubjectModel.find(query).skip(offset).limit(limit).sort({ created_at: -1 }).lean();
     return subjects;
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'GetAllSubjects',
       path: '/modules/subject/subject.resolver.js',
-      parameter_input: JSON.stringify({ filterInput, paginationInput }),
+      parameter_input: JSON.stringify({ filter, pagination }),
     });
     throw new ApolloError(error.message);
   }
@@ -70,15 +71,15 @@ async function GetAllSubjects({ filterInput, paginationInput }) {
  * @returns {Promise<Object|null>} - Subject document or null if not found.
  * @throws {ApolloError} - Throws error if validation fails or database query fails.
  */
-async function GetOneSubject({ _id }) {
+async function GetOneSubject(parent, { _id }) {
   try {
-    // **************** validate subject's _id, ensure that it can be casted into valid ObjectId
+    // *************** validate subject's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
 
-    // **************** get the subject document
+    // *************** get the subject document
     const subject = await SubjectModel.findOne({ _id, status: 'active' }).lean();
 
-    // **************** check if subject document exist
+    // *************** check if subject document exist
     if (!subject) {
       throw new ApolloError("subject doesn't exist or already deleted");
     }
@@ -94,7 +95,7 @@ async function GetOneSubject({ _id }) {
   }
 }
 
-// **************** MUTATION ****************
+// *************** MUTATION ****************
 /**
  * Create a new subject after validating input.
  * @async
@@ -106,10 +107,10 @@ async function GetOneSubject({ _id }) {
  * @returns {Promise<Object>} - Created subject document.
  * @throws {ApolloError} - Throws error if validation or db operation fails.
  */
-async function CreateSubject({ input }) {
+async function CreateSubject(parent, { input }) {
   try {
     // *************** validation to ensure bad input is handled correctly
-    ValidateSubjectInput(input, { checksubjectId: true });
+    ValidateSubjectInput(input, { validateBlockId: true });
 
     // *************** check block existence in db
     const blockIsExist = await BlockModel.findOne({ _id: input.block_id, status: 'active' });
@@ -117,7 +118,7 @@ async function CreateSubject({ input }) {
       throw new ApolloError("block doesn't exist");
     }
     // *************** compose payload
-    const newSubject = SubjectPayloadComposer(input, { checkSubjectId: true });
+    const newSubject = SubjectPayloadComposer(input, { addBlockId: true });
 
     // *************** create subject with composed payload
     const createdSubject = await SubjectModel.create(newSubject);
@@ -145,7 +146,7 @@ async function CreateSubject({ input }) {
  * @returns {Promise<Object>} - Updated subject document.
  * @throws {ApolloError} - Throws error if validation or db operation fails.
  */
-async function UpdateSubject({ _id, input }) {
+async function UpdateSubject(parent, { _id, input }) {
   try {
     // *************** validate subject's id
     ValidateMongoObjectId(_id);
@@ -179,7 +180,7 @@ async function UpdateSubject({ _id, input }) {
  * @returns {Promise<string>} - Deletion success message.
  * @throws {ApolloError} - Throws error if unauthorized, subject not found, or subject is referenced.
  */
-async function DeleteSubject({ _id }) {
+async function DeleteSubject(parent, { _id }) {
   try {
     // *************** validate subject's id
     ValidateMongoObjectId(_id);
@@ -216,12 +217,12 @@ async function DeleteSubject({ _id }) {
 
 // *************** LOADERS ***************
 /**
- * Resolve the created_by field in a School document using DataLoader.
+ * Resolve the block_id field in a School document using DataLoader.
  * @async
  * @param {object} parent - The subject object containing block_id field.
  * @param {object} args - Not used (GraphQL resolver convention).
  * @param {object} context - Resolver context containing DataLoaders.
- * @param {object} context.loaders.user - DataLoader instance for users.
+ * @param {object} context.loaders.block - DataLoader instance for blocks.
  * @returns {Promise<Object|null>} - The subject document or null if not available.
  * @throws {ApolloError} - Throws error if loading fails.
  */
@@ -233,12 +234,43 @@ async function block_id(parent, args, context) {
     }
 
     // *************** load user
-    const loadedUser = await context.loaders.block.load(parent.block_id);
-    return loadedUser;
+    const loadedBlock = await context.loaders.block.load(parent.block_id);
+    return loadedBlock;
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'block_id',
+      path: '/modules/subject/subject.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
+ * Resolve the block_id field in a subject document using DataLoader.
+ * @async
+ * @param {object} parent - The subject object containing test_ids field.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context containing DataLoaders.
+ * @param {object} context.loaders.test - DataLoader instance for tests.
+ * @returns {Promise<Object|null>} - The test document or null if not available.
+ * @throws {ApolloError} - Throws error if loading fails.
+ */
+async function test_ids(parent, args, context) {
+  try {
+    // *************** check if subject has any test_ids
+    if (!parent?.test_ids) {
+      return null;
+    }
+
+    // *************** load user
+    const loadedTest = await context.loaders.test.loadMany(parent.test_ids);
+    return loadedTest;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'test_ids',
       path: '/modules/subject/subject.resolver.js',
       parameter_input: JSON.stringify({}),
     });
@@ -252,5 +284,6 @@ module.exports = {
   Mutation: { CreateSubject, UpdateSubject, DeleteSubject },
   Subject: {
     block_id,
+    test_ids,
   },
 };
