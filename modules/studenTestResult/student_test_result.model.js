@@ -1,0 +1,61 @@
+// *************** IMPORT LIBRARY ***************
+const Mongoose = require('mongoose');
+const Schema = Mongoose.Schema;
+
+const markSchema = new Schema({
+  // notation or text note for the mark
+  notation_text: { type: String, trim: true },
+
+  // mark or grade
+  mark: { type: Number, required: true },
+});
+
+const studentTestResultSchema = new Schema(
+  {
+    // student associated with the studenttestresult
+    student_id: { type: Schema.Types.ObjectId, required: true, ref: 'student' },
+
+    // test associated with the studenttestresult
+    test_id: { type: Schema.Types.ObjectId, required: true, ref: 'test' },
+
+    // task associated with the studenttestresult
+    task_id: { type: Schema.Types.ObjectId, required: true, ref: 'task' },
+
+    // array of mark containing notation_text and mark
+    marks: [markSchema],
+
+    // average of all marks in the studenttestresult
+    average_mark: { type: Number, required: true },
+
+    // status of the studenttestresult
+    status: { type: String, enum: ['completed', 'validated', 'need_revision', 'deleted'], required: true },
+
+    // date when the studenttestresult marked/graded
+    mark_entry_date: { type: Date },
+
+    // date when the studenttestresult validated
+    mark_validated_date: { type: Date },
+
+    // user who created the studenttestresult
+    created_by: { type: Schema.Types.ObjectId, ref: 'user' },
+
+    // user who updated the studenttestresult
+    updated_by: { type: Schema.Types.ObjectId, ref: 'user' },
+
+    // date when the studenttestresult is deleted
+    deleted_at: { type: Date },
+
+    // user who created the block
+    deleted_by: { type: Schema.Types.ObjectId, ref: 'user' },
+  },
+  {
+    // Timestamp set-up for created_at and updated_at
+    timestamps: {
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
+    },
+  }
+);
+
+// *************** EXPORT MODULE ***************
+module.exports = Mongoose.model('student_test_result', studentTestResultSchema);
