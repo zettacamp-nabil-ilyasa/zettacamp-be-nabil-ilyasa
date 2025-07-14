@@ -122,6 +122,9 @@ async function CreateSubject(parent, { input }) {
 
     // *************** create subject with composed payload
     const createdSubject = await SubjectModel.create(newSubject);
+
+    // *************** add subject's id to block's subject_ids field
+    await BlockModel.updateOne({ _id: input.block_id }, { $addToSet: { subject_ids: createdSubject._id } });
     return createdSubject;
   } catch (error) {
     await ErrorLogModel.create({
