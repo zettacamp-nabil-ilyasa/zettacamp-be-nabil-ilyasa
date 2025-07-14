@@ -123,7 +123,7 @@ List of students whose tests you will be correcting:
 ${studentList}
 
 Best regards,
-Zettabyte System
+Zettacamp-M2 System
 `,
     };
 
