@@ -109,6 +109,69 @@ async function GetOneStudentTestResult(parent, { _id }) {
 }
 
 /**
+ * Create a StudentTestResult document using data from input.
+ * Also updates the associated enter_marks task status to 'completed' and creates a validate_marks task for validation phase.
+ * @async
+ * @function EnterMarks
+ * @param {Object} parent - Not used (GraphQL resolver convention).
+ * @param {Object} params - Function parameters.
+ * @param {Object} params.input - The input object containing task_id and marks array.
+ * @param {string} params.input.task_id - The ID of the enter_marks task.
+ * @param {Array<Object>} params.input.marks - The array of mark objects to be recorded.
+ * @param {string} params.input.marks[].notation_text - The notation text associated with the mark.
+ * @param {number} params.input.marks[].mark - The mark given for a corresponding notation.
+ * @returns {Promise<Object>} The newly created StudentTestResult document.
+ * @throws {ApolloError} If validation fails, student test result already exists, or any DB operation fails.
+ */
+async function EnterMarks(parent, { input }) {
+  try {
+    // *************** find and validate task using input.task_id
+    const taskDocument = await FindAndValidateTask(input.task_id);
+
+    // *************** validate input
+    await ValidateMarks({ testId: taskDocument.test_id, marks: input.marks });
+
+    // *************** check if student test result with same task_id, test_id, and student_id already exist
+    const studentTestResult = await StudentTestResultModel.findOne({
+      task_id: input.task_id,
+      test_id: taskDocument.test_id,
+      student_id: taskDocument.student_id,
+    });
+    if (studentTestResult) {
+      throw new ApolloError('student test result already exist');
+    }
+
+    // *************** compose enter marks payload
+    const enteredMarks = EnterMarksPayloadComposer({ taskDocument, marks: input.marks });
+
+    // *************** create student test result
+    const createdStudentTestResult = await StudentTestResultModel.create(enteredMarks);
+    if (!createdStudentTestResult) {
+      throw new ApolloError('failed to create student test result');
+    }
+
+    // *************** set enter marks task to completed
+    await SetEnterMarksTaskToCompleted(input.task_id);
+
+    // *************** set static user id for task owner
+    const taskOwnerUserId = '6862150331861f37e4e3d209';
+
+    // *************** create validate marks task
+    await CreateValidateMarksTask({ studentTestResultId: createdStudentTestResult._id, userId: taskOwnerUserId, taskDocument });
+
+    return createdStudentTestResult;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'EnterMarks',
+      path: '/modules/studentTestResult/studentTestResult.resolver.js',
+      parameter_input: JSON.stringify({ input }),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
  * Soft delete a student test result by marking its status as 'deleted'.
  * Also deletes associated task.
  * @async
@@ -159,6 +222,7 @@ async function DeleteStudentTestResult(parent, { _id }) {
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllStudentTestResults, GetOneStudentTestResult },
+  Mutation: { EnterMarks, DeleteStudentTestResult },
   StudentTestResult: {
     task_id,
     test_id,
