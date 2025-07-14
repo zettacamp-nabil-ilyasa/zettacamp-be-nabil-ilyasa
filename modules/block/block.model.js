@@ -10,11 +10,11 @@ const blockSchema = new Schema(
     // description of the block
     description: { type: String, trim: true },
 
-    // subjects associated to the block
+    // list of subjects that belongs to the block
     subject_ids: [{ type: Schema.Types.ObjectId, ref: 'subject' }],
 
     // status of the block
-    status: { type: String, enum: ['active', 'deleted'], default: 'active' },
+    status: { type: String, enum: ['active', 'deleted', 'archived'], default: 'active', trim: true },
 
     // user who created the block
     created_by: { type: Schema.Types.ObjectId, ref: 'user' },
@@ -22,7 +22,7 @@ const blockSchema = new Schema(
     // user who updated the block
     updated_by: { type: Schema.Types.ObjectId, ref: 'user' },
 
-    // date when the block is deleted
+    // Timestamp when the block was marked as deleted
     deleted_at: { type: Date },
 
     // user who deleted the block
