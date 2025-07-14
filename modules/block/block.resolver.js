@@ -5,30 +5,39 @@ const { ApolloError } = require('apollo-server-express');
 const BlockModel = require('./block.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
-// *************** IMPORT VALIDATOR ***********************
+// *************** IMPORT VALIDATOR ***************
 const { ValidateBlockInput } = require('./block.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
+const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
-// *************** IMPORT HELPER ***********************
+// *************** IMPORT HELPER ***************
 const { BlockPayloadComposer } = require('./block.helper.js');
 
-// **************** QUERY ****************
+// *************** QUERY ****************
 /**
  * Get all active blocks from the database.
  * @async
  * @returns {Promise<Array<Object>>} - Array of block documents with status 'active'.
  * @throws {ApolloError} - Throws error if database query fails.
  */
-async function GetAllBlocks() {
+async function GetAllBlocks(parent, { pagination }) {
   try {
-    const blocks = await BlockModel.find({ status: 'active' }).lean();
+    // *************** validate limit and offset within paginationInput
+    ValidatePaginationInput(pagination);
+
+    // *************** set default limit and offset
+    const offset = pagination?.offset ?? 0;
+    const limit = pagination?.limit ?? 20;
+
+    // *************** apply pagination
+    const blocks = await BlockModel.find({ status: 'active' }).skip(offset).limit(limit).sort({ createdAt: -1 }).lean();
     return blocks;
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'GetAllBlocks',
       path: '/modules/block/block.resolver.js',
-      parameter_input: JSON.stringify({}),
+      parameter_input: JSON.stringify({ pagination }),
     });
     throw new ApolloError(error.message);
   }
