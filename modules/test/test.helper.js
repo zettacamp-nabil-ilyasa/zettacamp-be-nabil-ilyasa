@@ -58,7 +58,7 @@ function TestPayloadComposer(inputObject, { addSubjectId } = {}) {
   if (!inputObject.notations.length) throw new ApolloError('notations is required for payload');
 
   // *************** composed payload
-  const subjectPayload = {
+  const testPayload = {
     name: inputObject.name,
     weight: inputObject.weight,
     description: inputObject.description,
@@ -70,7 +70,7 @@ function TestPayloadComposer(inputObject, { addSubjectId } = {}) {
     ValidateMongoObjectId(inputObject.subject_id);
     subjectPayload.subject_id = inputObject.subject_id;
   }
-  return subjectPayload;
+  return testPayload;
 }
 
 /**
