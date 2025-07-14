@@ -9,11 +9,7 @@ const blockTypeDefs = gql`
     subject_ids: [Subject]
     status: Status!
     created_at: Date!
-    created_by: String
     updated_at: Date!
-    updated_by: String
-    deleted_at: Date
-    deleted_by: String
   }
 
   input BlockInput {
@@ -28,7 +24,7 @@ const blockTypeDefs = gql`
   }
 
   extend type Query {
-    GetAllBlocks: [Block]
+    GetAllBlocks(pagination: PaginationInput): [Block]
     GetOneBlock(_id: ID!): Block
   }
 
