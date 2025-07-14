@@ -1,0 +1,82 @@
+// *************** IMPORT LIBRARY ***************
+const { ApolloError } = require('apollo-server-express');
+
+// *************** IMPORT MODULE ***************
+const StudentTestResultModel = require('./student_test_result.model.js');
+const TaskModel = require('../task/task.model.js');
+const ErrorLogModel = require('../errorLog/error_log.model.js');
+
+// *************** IMPORT VALIDATOR ***************
+const { ValidateStudentTestResultFilterInput, ValidateMarks, FindAndValidateTask } = require('./studentTestResult.validators.js');
+const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
+const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
+
+// *************** IMPORT HELPER ***************
+const { EnterMarksPayloadComposer, CreateValidateMarksTask, SetEnterMarksTaskToCompleted } = require('./student_test_result.helper.js');
+
+// *************** QUERY ****************
+/**
+ * Get all studentTestResult with optional filtering by test_id, status, and pagination.
+ * @async
+ * @function GetAllStudentTestResult
+ * @param {Object} params - The parameter object
+ * @param {Object} [filterInput] - Optional filter input
+ * @param {string} [filterInput.test_id] - Optional test ID to filter studentTestResult
+ * @param {string} [filterInput.status] - Optional test ID to filter studentTestResult
+ * @param {Object} [paginationInput] - Optional pagination input
+ * @param {number} [paginationInput.limit] - Number of tests per page
+ * @param {number} [paginationInput.offset] - Number of tests to skip
+ * @returns {Promise<Array<Object>>} Array of test documents matching the query
+ * @throws {ApolloError} If any error occurs during validation or database operation
+ */
+async function GetAllStudentTestResults(parent, { filter, pagination }) {
+  try {
+    // *************** validate filterInput if provided
+    if (filter) {
+      ValidateStudentTestResultFilterInput(filter);
+    }
+
+    // *************** validate paginationInput if provided
+    if (pagination) {
+      ValidatePaginationInput(pagination);
+    }
+
+    // *************** build base query
+    const query = { status: { $ne: 'deleted' } };
+
+    // *************** add test_id filter if provided
+    if (filter?.test_id) {
+      query.test_id = filter.test_id;
+    }
+
+    // *************** add status filter if provided
+    if (filter?.status) {
+      query.status = filter.status;
+    }
+
+    // *************** set default limit and offset
+    const offset = pagination?.offset ?? 0;
+    const limit = pagination?.limit ?? 20;
+
+    // *************** execute query
+    const studentTestResults = await StudentTestResultModel.find(query)
+      .skip(offset || 0)
+      .limit(limit || 20)
+      .sort({ created_at: -1 })
+      .lean();
+    return studentTestResults;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'GetAllStudentTestResult',
+      path: '/modules/studentTestResult/studentTestResult.resolver.js',
+      parameter_input: JSON.stringify({ filterInput, paginationInput }),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+// *************** EXPORT MODULE ***************
+module.exports = {
+  Query: { GetAllStudentTestResults, GetOneStudentTestResult },
+};
