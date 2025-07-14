@@ -210,8 +210,12 @@ async function PublishTest(parent, { _id }) {
     throw new ApolloError('only not published test can be published');
   }
 
-  // *************** update test's status to published
-  const publishedTest = await TestModel.findOneAndUpdate({ _id }, { status: 'published' }, { new: true }).lean();
+  // *************** update test's status to published and published date
+  const publishedTest = await TestModel.findOneAndUpdate(
+    { _id },
+    { status: 'published', published_date: new Date() },
+    { new: true }
+  ).lean();
 
   // *************** check if update is successful
   if (!publishedTest) {

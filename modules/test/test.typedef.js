@@ -10,6 +10,7 @@ const testTypeDefs = gql`
     weight: Float!
     notations: [Notation]
     status: TestStatus!
+    published_date: Date
     created_at: Date!
     created_by: User!
     updated_at: Date!
