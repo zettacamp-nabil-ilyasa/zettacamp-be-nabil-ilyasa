@@ -17,4 +17,5 @@ function ValidateBlockInput(input) {
   if (description && typeof description !== 'string') throw new ApolloError('description must be a string');
 }
 
+// *************** EXPORT MODULE ***************
 module.exports = { ValidateBlockInput };
