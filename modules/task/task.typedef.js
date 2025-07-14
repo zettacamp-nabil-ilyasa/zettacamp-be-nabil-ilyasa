@@ -1,6 +1,7 @@
 const { gql } = require('apollo-server-express');
 const taskTypeDefs = gql`
   type Task {
+    _id: ID!
     test_id: String
     user_id: String
     student_id: String
@@ -16,11 +17,9 @@ const taskTypeDefs = gql`
     deleted_by: User
     completed_at: Date
   }
-  input TaskInput {
-    test_id: String
+
+  input AssignCorrectorInput {
     user_id: String
-    student_id: String
-    student_test_result_id: String
     due_date: Date
   }
 
@@ -40,6 +39,17 @@ const taskTypeDefs = gql`
     in_progress
     completed
     deleted
+  }
+
+  extend type Query {
+    GetAllTasks(filter: TaskFilter): [Task]
+    GetOneTask(_id: ID!): Task
+  }
+
+  extend type Mutation {
+    AssignCorrector(_id: ID!, input: AssignCorrectorInput): String
+    ValidateMarks(_id: ID!): String
+    DeleteTask(_id: ID!): Task
   }
 `;
 

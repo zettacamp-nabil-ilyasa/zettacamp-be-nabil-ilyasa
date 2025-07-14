@@ -46,8 +46,8 @@ const taskSchema = new Schema(
   {
     // Timestamp set-up for created_at and updated_at
     timestamps: {
-      createdAt: created_at,
-      updatedAt: updated_at,
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
     },
   }
 );
