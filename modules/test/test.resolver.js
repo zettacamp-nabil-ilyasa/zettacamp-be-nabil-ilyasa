@@ -187,7 +187,6 @@ async function UpdateTest(parent, { _id, input }) {
 
     // *************** compose test payload
     const editedTest = TestPayloadComposer(input);
-    console.log(editedTest);
     const updatedTest = await TestModel.findOneAndUpdate({ _id }, editedTest, { new: true }).lean();
     return updatedTest;
   } catch (error) {
@@ -201,6 +200,17 @@ async function UpdateTest(parent, { _id, input }) {
   }
 }
 
+/**
+ * Publish a test by updating its status and creating an `assign_corrector` task.
+ * @async
+ * @param {Object} parent - Unused GraphQL resolver parent argument.
+ * @param {Object} args - Resolver arguments.
+ * @param {string} args._id - The ID of the test to be published.
+ *
+ * @returns {Promise<Object>} The updated test document after being published.
+ *
+ * @throws {ApolloError} If the test is not found or already published, or if the update fails.
+ */
 async function PublishTest(parent, { _id }) {
   // *************** validate test's id
   ValidateMongoObjectId(_id);

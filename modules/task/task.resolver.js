@@ -104,6 +104,18 @@ async function GetOneTask(parent, { _id }) {
 }
 
 // *************** MUTATION ****************
+/**
+ * Assign a corrector to a test by completing an `assign_corrector` task.
+ * @async
+ * @param {Object} parent - Not used (GraphQL resolver convention).
+ * @param {Object} args - Resolver arguments.
+ * @param {string} args._id - The ID of the `assign_corrector` task to complete.
+ * @param {Object} args.input - The input payload for assigning the corrector.
+ * @param {string} args.input.user_id - The ID of the corrector being assigned.
+ * @param {string} [args.input.due_date] - Optional due date for the associated tasks.
+ * @returns {Promise<string>} A success message indicating the corrector was assigned.
+ * @throws {ApolloError} If any validation fails or if the task is invalid or already completed.
+ */
 async function AssignCorrector(parent, { _id, input }) {
   try {
     // *************** validate task's id
@@ -159,6 +171,16 @@ async function AssignCorrector(parent, { _id, input }) {
   }
 }
 
+/**
+ * Validate a student's marks in the student test result through a task.
+ * @async
+ * @function ValidateMarks
+ * @param {Object} parent - Not used (GraphQL resolver convention).
+ * @param {Object} args - Arguments object containing the task ID.
+ * @param {string} args._id - The ID of the validation task to be processed.
+ * @returns {Promise<string>} A success message if validation completes successfully.
+ * @throws {ApolloError} If the task is not found, validation fails, or any other error occurs.
+ */
 async function ValidateMarks(parent, { _id }) {
   try {
     // *************** validate task's id
@@ -226,8 +248,165 @@ async function DeleteTask(parent, { _id }) {
   }
 }
 
+// *************** LOADERS ***************
+/**
+ * Resolve the test_id field in a task document using DataLoader.
+ * @async
+ * @param {object} parent - The task object containing test_id field.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context containing DataLoaders.
+ * @param {object} context.loaders.test - DataLoader instance for test.
+ * @returns {Promise<Object|null>} - The test document or null if not available.
+ * @throws {ApolloError} - Throws error if loading fails.
+ */
+async function test_id(parent, args, context) {
+  try {
+    // *************** check if test_id exist
+    if (!parent.test_id) {
+      return null;
+    }
+    // *************** load test
+    const test = await context.loaders.test.load(parent.test_id);
+    return test;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'test_id',
+      path: '/modules/task/task.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
+ * Resolve the user_id field in a task document using DataLoader.
+ * @async
+ * @param {object} parent - The subject object containing block_id field.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context containing DataLoaders.
+ * @param {object} context.loaders.User - DataLoader instance for user.
+ * @returns {Promise<Object|null>} - The user document or null if not available.
+ * @throws {ApolloError} - Throws error if loading fails.
+ */
+async function user_id(parent, args, context) {
+  try {
+    // *************** check if user_id exist
+    if (!parent.user_id) {
+      return null;
+    }
+    // *************** load user
+    const user = await context.loaders.user.load(parent.user_id);
+    return user;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'user_id',
+      path: '/modules/task/task.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
+ * Resolve the student_id field in a task document using DataLoader.
+ * @async
+ * @param {object} parent - The task object containing student_id field.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context containing DataLoaders.
+ * @param {object} context.loaders.User - DataLoader instance for student.
+ * @returns {Promise<Object|null>} - The student document or null if not available.
+ * @throws {ApolloError} - Throws error if loading fails.
+ */
+async function student_id(parent, args, context) {
+  try {
+    // *************** check if student_id exist
+    if (!parent.student_id) {
+      return null;
+    }
+    // *************** load student
+    const student = await context.loaders.student.load(parent.student_id);
+    return student;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'student_id',
+      path: '/modules/task/task.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
+ * Resolve the corrector_id field in a task document using DataLoader.
+ * @async
+ * @param {object} parent - The task object containing corrector_id field.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context containing DataLoaders.
+ * @param {object} context.loaders.User - DataLoader instance for user.
+ * @returns {Promise<Object|null>} - The user document or null if not available.
+ * @throws {ApolloError} - Throws error if loading fails.
+ */
+async function corrector_id(parent, args, context) {
+  try {
+    // *************** check if corrector_id exist
+    if (!parent.corrector_id) {
+      return null;
+    }
+    // *************** load corrector
+    const corrector = await context.loaders.user.load(parent.corrector_id);
+    return corrector;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'corrector_id',
+      path: '/modules/task/task.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
+ * Resolve the user_id field in a task document using DataLoader.
+ * @async
+ * @param {object} parent - The task object containing student_test_result_id field.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context containing DataLoaders.
+ * @param {object} context.loaders.student_test_result - DataLoader instance for student_test_results.
+ * @returns {Promise<Object|null>} - The user document or null if not available.
+ * @throws {ApolloError} - Throws error if loading fails.
+ */
+async function student_test_result_id(parent, args, context) {
+  try {
+    // *************** check if student_test_result_id exist
+    if (!parent.student_test_result_id) {
+      return null;
+    }
+    // *************** load student test result
+    const studentTestResult = await context.loaders.studentTestResult.load(parent.student_test_result_id);
+    return studentTestResult;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'student_test_result_id',
+      path: '/modules/task/task.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllTasks, GetOneTask },
   Mutation: { DeleteTask, AssignCorrector, ValidateMarks },
+  Task: {
+    user_id,
+    student_id,
+    corrector_id,
+    student_test_result_id,
+  },
 };

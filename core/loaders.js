@@ -6,6 +6,7 @@ const { BlockLoader } = require('../modules/block/block.loader');
 const { SubjectLoader } = require('../modules/subject/subject.loader');
 const { TestLoader } = require('../modules/test/test.loader');
 const { TaskLoader } = require('../modules/task/task.loader');
+const { StudentTestResultLoader } = require('../modules/studenTestResult/student_test_result.loader');
 
 /**
  * Initialize and return DataLoader instances for batching and caching to prevent N+1 queries.
@@ -17,6 +18,7 @@ const { TaskLoader } = require('../modules/task/task.loader');
  * - {DataLoader} subject - DataLoader instance for subjects
  * - {DataLoader} test - DataLoader instance for tests
  * - {DataLoader} task - DataLoader instance for tasks
+ * - {DataLoader} studentTestResult - DataLoader instance for student test results
  * @returns {Object} An object containing DataLoader instances.
  */
 function InitializeDataloaders() {
@@ -28,6 +30,7 @@ function InitializeDataloaders() {
     subject: SubjectLoader(),
     test: TestLoader(),
     task: TaskLoader(),
+    studentTestResult: StudentTestResultLoader(),
   };
 }
 

@@ -2,11 +2,11 @@ const { gql } = require('apollo-server-express');
 const taskTypeDefs = gql`
   type Task {
     _id: ID!
-    test_id: String
-    user_id: String
-    student_id: String
-    corrector_id: String
-    student_test_result_id: String
+    test_id: Test
+    user_id: User
+    student_id: Student
+    corrector_id: User
+    student_test_result_id: StudentTestResult
     type: Type!
     status: TaskStatus!
     due_date: Date

@@ -68,7 +68,7 @@ function TestPayloadComposer(inputObject, { addSubjectId } = {}) {
   // *************** validate subject_id if checkSubjectId set to true
   if (addSubjectId) {
     ValidateMongoObjectId(inputObject.subject_id);
-    subjectPayload.subject_id = inputObject.subject_id;
+    testPayload.subject_id = inputObject.subject_id;
   }
   return testPayload;
 }
