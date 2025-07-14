@@ -53,7 +53,7 @@ function EnterMarksPayloadComposer({ taskDocument, marks }) {
     throw new ApolloError('task or marks not found');
   }
 
-  const averageMark = marks.reduce((acc, mark) => acc + mark.mark, 0) / marks.length;
+  const averageMark = Number(marks.reduce((acc, mark) => acc + mark.mark, 0) / marks.length).toFixed(2);
 
   return {
     task_id: taskDocument._id,
