@@ -7,9 +7,9 @@ const testTypeDefs = gql`
     subject_id: Subject!
     name: String!
     description: String
-    weight: Number!
+    weight: Float!
     notations: [Notation]
-    status: Status!
+    status: TestStatus!
     created_at: Date!
     created_by: User!
     updated_at: Date!
@@ -17,15 +17,20 @@ const testTypeDefs = gql`
 
   type Notation {
     notation_text: String
-    max_points: Number
+    max_points: Int
+  }
+
+  input NotationInput {
+    notation_text: String
+    max_points: Int
   }
 
   input TestInput {
     subject_id: String
     name: String!
     description: String
-    weight: Number!
-    notations: [Notation]
+    weight: Float!
+    notations: [NotationInput]
   }
 
   input TestFilterInput {
@@ -39,14 +44,15 @@ const testTypeDefs = gql`
     deleted
   }
 
-  extend type Query{
+  extend type Query {
     GetAllTests(filter: TestFilterInput, pagination: PaginationInput): [Test]
     GetOneTest(_id: ID!): Test
   }
 
-  extend type Mutation{
-    CreateTest(TestInput): Test
-    UpdateTest(TestInput): Test
+  extend type Mutation {
+    CreateTest(input: TestInput): Test
+    UpdateTest(_id: ID!, input: TestInput): Test
+    PublishTest(_id: ID!): Test
     DeleteTest(_id: ID!): String
   }
 `;

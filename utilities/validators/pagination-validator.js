@@ -9,22 +9,22 @@ const { ApolloError } = require('apollo-server-express');
  * @throws {ApolloError} If validation fails
  */
 function ValidatePaginationInput(paginationObjectInput = {}) {
-  const { limit, offset } = paginationObjectInput;
-
-  if (limit) {
-    if (typeof limit !== 'number' || isNaN(limit)) {
+  // *************** validate limit for pagination
+  if (paginationObjectInput?.limit !== undefined) {
+    if (typeof paginationObjectInput.limit !== 'number' || isNaN(paginationObjectInput.limit)) {
       throw new ApolloError('limit must be a number');
     }
-    if (limit <= 0 || limit > 100) {
+    if (paginationObjectInput.limit <= 0 || paginationObjectInput.limit > 100) {
       throw new ApolloError('limit must greater than 0 and less than 100');
     }
   }
 
-  if (offset) {
-    if (typeof offset !== 'number' || isNaN(offset)) {
+  // *************** validate offset for pagination
+  if (paginationObjectInput?.offset !== undefined) {
+    if (typeof paginationObjectInput.offset !== 'number' || isNaN(paginationObjectInput.offset)) {
       throw new ApolloError('offset must be a number');
     }
-    if (offset < 0) {
+    if (paginationObjectInput.offset < 0) {
       throw new ApolloError('offset cannot be a negative number');
     }
   }
