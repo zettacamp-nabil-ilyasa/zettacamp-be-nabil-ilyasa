@@ -219,6 +219,97 @@ async function DeleteStudentTestResult(parent, { _id }) {
   }
 }
 
+// *************** LOADERS ***************
+/**
+ * Resolve the task_id field in a student test result document using DataLoader.
+ * @async
+ * @param {object} parent - The student test result object containing task_id field.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context containing DataLoaders.
+ * @param {object} context.loaders.task - DataLoader instance for task.
+ * @returns {Promise<Object|null>} - The task document or null if not available.
+ * @throws {ApolloError} - Throws error if loading fails.
+ */
+async function task_id(parent, args, context) {
+  try {
+    // *************** check if task_id exist
+    if (!parent.task_id) {
+      return null;
+    }
+    // *************** load task
+    const task = await context.loaders.task.load(parent.task_id);
+    return task;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'task_id',
+      path: '/modules/studentTestResult/studentTestResult.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
+ * Resolve the test_id field in a student test result document using DataLoader.
+ * @async
+ * @param {object} parent - The student test result object containing test_id field.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context containing DataLoaders.
+ * @param {object} context.loaders.user - DataLoader instance for test.
+ * @returns {Promise<Object|null>} - The Test document or null if not available.
+ * @throws {ApolloError} - Throws error if loading fails.
+ */
+async function test_id(parent, args, context) {
+  try {
+    // *************** check if test_id exist
+    if (!parent.test_id) {
+      return null;
+    }
+    // *************** load test
+    const test = await context.loaders.test.load(parent.test_id);
+    return test;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'test_id',
+      path: '/modules/studentTestResult/studentTestResult.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
+ * Resolve the student_id field in a student test result document using DataLoader.
+ * @async
+ * @param {object} parent - The student test result object containing student_id field.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context containing DataLoaders.
+ * @param {object} context.loaders.user - DataLoader instance for users.
+ * @returns {Promise<Object|null>} - The student document or null if not available.
+ * @throws {ApolloError} - Throws error if loading fails.
+ */
+async function student_id(parent, args, context) {
+  try {
+    // *************** check if student_id exist
+    if (!parent.student_id) {
+      return null;
+    }
+    // *************** load student
+    const student = await context.loaders.student.load(parent.student_id);
+    return student;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'student_id',
+      path: '/modules/studentTestResult/studentTestResult.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllStudentTestResults, GetOneStudentTestResult },
