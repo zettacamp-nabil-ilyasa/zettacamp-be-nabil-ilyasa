@@ -40,6 +40,33 @@ async function GetTestNotations(testId) {
 }
 
 /**
+ * Compose payload object for creating a StudentTestResult document in enter marks mutation.
+ * @param {Object} params - Parameters.
+ * @param {Object} params.taskDocument - The task document related to enter_marks.
+ * @param {Array} params.marks - Array of mark objects.
+ * @returns {Object} - Formatted payload for creating StudentTestResult.
+ * @throws {ApolloError} - If task or marks are missing.
+ */
+function EnterMarksPayloadComposer({ taskDocument, marks }) {
+  // *************** sanity check
+  if (!taskDocument || !Array.isArray(marks) || !marks.length) {
+    throw new ApolloError('task or marks not found');
+  }
+
+  const averageMark = marks.reduce((acc, mark) => acc + mark.mark, 0) / marks.length;
+
+  return {
+    task_id: taskDocument._id,
+    test_id: taskDocument.test_id,
+    student_id: taskDocument.student_id,
+    marks: marks,
+    average_mark: averageMark,
+    status: 'completed',
+    mark_entry_date: new Date(),
+  };
+}
+
+/**
  * Set status of an enter_marks task to 'completed'.
  * @async
  * @param {string} taskId - The Id of the task to update.
