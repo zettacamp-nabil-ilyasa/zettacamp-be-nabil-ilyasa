@@ -6,15 +6,15 @@ const TestModel = require('./test.model.js');
 const SubjectModel = require('../subject/subject.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
-// *************** IMPORT VALIDATOR ***********************
+// *************** IMPORT VALIDATOR ***************
 const { ValidateTestInput, ValidateTestFilterInput } = require('./test.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
-// *************** IMPORT HELPER ***********************
-const { TestPayloadComposer, GetTotalWeightOfTests } = require('./test.helper.js');
+// *************** IMPORT HELPER ***************
+const { TestPayloadComposer, GetTotalWeightOfTests, CreateAssignCorrectorTask } = require('./test.helper.js');
 
-// **************** QUERY ****************
+// *************** QUERY ****************
 /**
  * Get all tests with optional filtering by subject_id, status and pagination.
  * @async
@@ -29,31 +29,36 @@ const { TestPayloadComposer, GetTotalWeightOfTests } = require('./test.helper.js
  * @returns {Promise<Array<Object>>} Array of test documents matching the query
  * @throws {ApolloError} If any error occurs during validation or database operation
  */
-async function GetAllTests({ filterInput, paginationInput }) {
+async function GetAllTests(parent, { filter, pagination }) {
   try {
-    // **************** construct base query
-    const query = { status: 'active' };
+    // *************** construct base query
+    const query = { status: { $ne: 'deleted' } };
 
-    // **************** validate filterInput
-    ValidateTestFilterInput(filterInput);
+    // *************** validate filterInput
+    ValidateTestFilterInput(filter);
 
-    // **************** build query for subject_id if it exist
-    if (filterInput.subject_id) {
-      query.subject_id = filterInput.subject_id;
+    // *************** build query for subject_id if it exist
+    if (filter?.subject_id) {
+      query.subject_id = filter.subject_id;
     }
 
-    // **************** build query for status if it exist
-    if (filterInput.status) {
-      query.status = filterInput.status;
+    // *************** build query for status if it exist
+    if (filter?.status) {
+      query.status = filter.status;
     }
 
-    // **************** validate pagination's input
-    ValidatePaginationInput(paginationInput);
+    // *************** validate pagination's input
+    ValidatePaginationInput(pagination);
 
-    // **************** get tests based on query
+    // *************** set default limit and offset
+    const offset = pagination?.offset ?? 0;
+    const limit = pagination?.limit ?? 20;
+
+    // *************** get tests based on query
     const tests = await TestModel.find(query)
-      .skip(paginationInput.offset || 0)
-      .limit(paginationInput.limit || 20)
+      .skip(offset || 0)
+      .limit(limit || 20)
+      .sort({ created_at: -1 })
       .lean();
     return tests;
   } catch (error) {
@@ -61,7 +66,7 @@ async function GetAllTests({ filterInput, paginationInput }) {
       error_stack: error.stack,
       function_name: 'GetAllSubjects',
       path: '/modules/test/test.resolver.js',
-      parameter_input: JSON.stringify({ filterInput, paginationInput }),
+      parameter_input: JSON.stringify({ filter, pagination }),
     });
     throw new ApolloError(error.message);
   }
@@ -72,18 +77,18 @@ async function GetAllTests({ filterInput, paginationInput }) {
  * @async
  * @param {Object} parent - Not used (GraphQL resolver convention).
  * @param {String} _id - ID of the test to retrieve.
- * @returns {Promise<Object|null>} - Subject document or null if not found.
+ * @returns {Promise<Object|null>} - Task document or null if not found.
  * @throws {ApolloError} - Throws error if validation fails or database query fails.
  */
-async function GetOneTest({ _id }) {
+async function GetOneTest(parent, { _id }) {
   try {
-    // **************** validate test's _id, ensure that it can be casted into valid ObjectId
+    // *************** validate test's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
 
-    // **************** get the test document
+    // *************** get the test document
     const test = await TestModel.findOne({ _id, status: { $ne: 'deleted' } }).lean();
 
-    // **************** check if test document exist
+    // *************** check if test document exist
     if (!test) {
       throw new ApolloError("test doesn't exist or already deleted");
     }
@@ -99,7 +104,7 @@ async function GetOneTest({ _id }) {
   }
 }
 
-// **************** MUTATION ****************
+// *************** MUTATION ****************
 /**
  * Create a new test after validating input.
  * @async
@@ -112,10 +117,10 @@ async function GetOneTest({ _id }) {
  * @returns {Promise<Object>} - Created test document.
  * @throws {ApolloError} - Throws error if validation or db operation fails.
  */
-async function CreateTest({ input }) {
+async function CreateTest(parent, { input }) {
   try {
     // *************** validation to ensure bad input is handled correctly
-    ValidateTestInput(input);
+    ValidateTestInput(input, { validateSubjectId: true });
 
     // *************** check referenced subject existence in db
     const subjectIsExist = await SubjectModel.findOne({ _id: input.subject_id });
@@ -124,13 +129,13 @@ async function CreateTest({ input }) {
     }
 
     // *************** check if combined tests weight is exceed 1
-    const currentWeight = GetTotalWeightOfTests(input.subject_id);
+    const currentWeight = await GetTotalWeightOfTests(input.subject_id);
     if (currentWeight + input.weight > 1) {
       throw new ApolloError('combined weight exceeding 1');
     }
 
     // *************** compose test payload
-    const newTest = TestPayloadComposer(input, { checkSubjectId: true });
+    const newTest = TestPayloadComposer(input, { addSubjectId: true });
     const createdTest = await TestModel.create(newTest);
     return createdTest;
   } catch (error) {
@@ -157,7 +162,7 @@ async function CreateTest({ input }) {
  * @returns {Promise<Object>} - Updated test document.
  * @throws {ApolloError} - Throws error if validation or db operation fails.
  */
-async function UpdateTest({ _id, input }) {
+async function UpdateTest(parent, { _id, input }) {
   try {
     // *************** validate test's id
     ValidateMongoObjectId(_id);
@@ -172,13 +177,14 @@ async function UpdateTest({ _id, input }) {
     }
 
     // *************** check if combined tests weight is exceed 1
-    const currentWeight = GetTotalWeightOfTests(toBeUpdatedTestDocument.subject_id);
-    if (currentWeight + input.weight > 1) {
+    const currentWeight = await GetTotalWeightOfTests(toBeUpdatedTestDocument.subject_id);
+    if (currentWeight - toBeUpdatedTestDocument.weight + input.weight > 1) {
       throw new ApolloError('combined weight exceeding 1');
     }
 
     // *************** compose test payload
-    const editedTest = TestPayloadComposer(input, { checkSubjectId: false });
+    const editedTest = TestPayloadComposer(input);
+    console.log(editedTest);
     const updatedTest = await TestModel.findOneAndUpdate({ _id }, editedTest, { new: true }).lean();
     return updatedTest;
   } catch (error) {
@@ -192,6 +198,33 @@ async function UpdateTest({ _id, input }) {
   }
 }
 
+async function PublishTest(parent, { _id }) {
+  // *************** validate test's id
+  ValidateMongoObjectId(_id);
+
+  // *************** get test document
+  const testDocument = await TestModel.findOne({ _id, status: 'not_published' });
+
+  // *************** check if test's status is not published
+  if (!testDocument) {
+    throw new ApolloError('only not published test can be published');
+  }
+
+  // *************** update test's status to published
+  const publishedTest = await TestModel.findOneAndUpdate({ _id }, { status: 'published' }, { new: true }).lean();
+
+  // *************** check if update is successful
+  if (!publishedTest) {
+    throw new ApolloError('failed to publish test');
+  }
+
+  // *************** create assign corrector task
+  const taskOwnerUserId = '6862150331861f37e4e3d209';
+  CreateAssignCorrectorTask({ userId: taskOwnerUserId, testId: _id });
+
+  return publishedTest;
+}
+
 /**
  * Soft delete a test by marking its status as 'deleted'.
  * Prevents deletion if test status is published.
@@ -201,7 +234,7 @@ async function UpdateTest({ _id, input }) {
  * @returns {Promise<string>} - Deletion success message.
  * @throws {ApolloError} - Throws error if unauthorized, subject not found, or subject is referenced.
  */
-async function DeleteTest({ _id }) {
+async function DeleteTest(parent, { _id }) {
   try {
     // *************** validate test's id
     ValidateMongoObjectId(_id);
@@ -212,7 +245,7 @@ async function DeleteTest({ _id }) {
       throw new ApolloError("test doesn't exist or already deleted");
     }
     // *************** check if status is published
-    if ((toBeDeletedTestDocument.status = 'published')) {
+    if (toBeDeletedTestDocument.status === 'published') {
       throw new ApolloError('test that have been published cannot be deleted');
     }
     // *************** update status to deleted and set deleted_at
@@ -266,8 +299,8 @@ async function subject_id(parent, args, context) {
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllTests, GetOneTest },
-  Mutation: { CreateTest, UpdateTest, DeleteTest },
-  Subject: {
+  Mutation: { CreateTest, UpdateTest, PublishTest, DeleteTest },
+  Test: {
     subject_id,
   },
 };

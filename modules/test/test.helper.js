@@ -4,10 +4,10 @@ const Mongoose = require('mongoose');
 
 // *************** IMPORT MODULE ***************
 const TestModel = require('./test.model.js');
-const TaskModel = require('..task/task.model.js');
+const TaskModel = require('../task/task.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
-// *************** IMPORT VALIDATOR ***********************
+// *************** IMPORT VALIDATOR ***************
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 
 /**
@@ -51,13 +51,13 @@ async function GetTotalWeightOfTests(subjectId) {
  * @param {String} inputObject.subject_id - Id of subject that referenced by test
  * @returns
  */
-function TestPayloadComposer(inputObject, { checkSubjectId } = {}) {
-  // *************** validate subject_id if checkSubjectId set to true
-  if (checkSubjectId) ValidateMongoObjectId(inputObject.subject_id);
-
+function TestPayloadComposer(inputObject, { addSubjectId } = {}) {
   // *************** sanity check for mandatory fields
   if (!inputObject.name) throw new ApolloError('name is required for payload');
   if (!inputObject.weight) throw new ApolloError('weight is required for payload');
+  if (!inputObject.notations.length) throw new ApolloError('notations is required for payload');
+
+  // *************** composed payload
   const subjectPayload = {
     name: inputObject.name,
     weight: inputObject.weight,
@@ -66,7 +66,7 @@ function TestPayloadComposer(inputObject, { checkSubjectId } = {}) {
   };
 
   // *************** validate subject_id if checkSubjectId set to true
-  if (checkSubjectId) {
+  if (addSubjectId) {
     ValidateMongoObjectId(inputObject.subject_id);
     subjectPayload.subject_id = inputObject.subject_id;
   }
@@ -75,12 +75,16 @@ function TestPayloadComposer(inputObject, { checkSubjectId } = {}) {
 
 /**
  * Create task for assign corrector
- * @param {string} userId - Id of user
+ * @param {string} userId - Id of user to be assigned
+ * @param {string} testId - Id of test to be assigned
  */
 async function CreateAssignCorrectorTask({ userId, testId }) {
   try {
     // *************** validate user_id
     ValidateMongoObjectId(userId);
+
+    // *************** validate test_id
+    ValidateMongoObjectId(testId);
 
     // *************** create task for assign corrector
     const newAssignCorrectorTask = { user_id: userId, test_id: testId, type: 'assign_corrector', status: 'in_progress' };

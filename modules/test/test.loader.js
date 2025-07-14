@@ -18,21 +18,21 @@ const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-vali
  */
 async function BatchTests(testIds) {
   try {
-    // **************** validate each test id
+    // *************** validate each test id
     testIds.forEach((testId) => {
       ValidateMongoObjectId(testId);
     });
 
-    // **************** get all active test with id within testIds and status is active
+    // *************** get all active test with id within testIds and status is active
     const tests = await TestModel.find({ _id: { $in: testIds }, status: { $ne: 'deleted' } }).lean();
 
-    // **************** set tests data to dataMap
+    // *************** set tests data to dataMap
     const dataMap = new Map();
     tests.forEach((test) => {
       dataMap.set(String(test._id), test);
     });
 
-    // **************** return array of test objects with order of testIds
+    // *************** return array of test objects with order of testIds
     return testIds.map((testId) => dataMap.get(String(testId)));
   } catch (error) {
     await ErrorLogModel.create({
