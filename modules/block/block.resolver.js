@@ -53,12 +53,12 @@ async function GetAllBlocks(parent, { pagination }) {
  */
 async function GetOneBlock({ _id }) {
   try {
-    // **************** validate block's _id, ensure that it can be casted into valid ObjectId
+    // *************** validate block's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
 
     const block = await BlockModel.findOne({ _id, status: 'active' }).lean();
 
-    // **************** check if block document found
+    // *************** check if block document found
     if (!block) {
       throw new ApolloError("block doesn't exist or already deleted");
     }
@@ -74,7 +74,7 @@ async function GetOneBlock({ _id }) {
   }
 }
 
-// **************** MUTATION ****************
+// *************** MUTATION ****************
 /**
  * Create a new block after validating input.
  * @async
@@ -130,7 +130,7 @@ async function UpdateBlock(parent, { _id, input }) {
     const editedBlock = BlockPayloadComposer(input);
 
     // *************** update block with composed payload
-    const updatedBlock = BlockModel.findOneAndUpdate({ _id }, { $set: editedBlock }, { new: true }).lean();
+    const updatedBlock = await BlockModel.findOneAndUpdate({ _id }, { $set: editedBlock }, { new: true }).lean();
     return updatedBlock;
   } catch (error) {
     await ErrorLogModel.create({
