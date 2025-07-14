@@ -18,21 +18,21 @@ const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-vali
  */
 async function BatchBlocks(blockIds) {
   try {
-    // **************** validate each block id
+    // *************** validate each block id
     blockIds.forEach((blockId) => {
       ValidateMongoObjectId(blockId);
     });
 
-    // **************** get all active blocks with id within blockIds and status is active
+    // *************** get all active blocks with id within blockIds and status is active
     const blocks = await BlockModel.find({ _id: { $in: blockIds }, status: 'active' }).lean();
 
-    // **************** set blocks data to dataMap
+    // *************** set blocks data to dataMap
     const dataMap = new Map();
     blocks.forEach((block) => {
       dataMap.set(String(block._id), block);
     });
 
-    // **************** return array of block objects with order of blockIds
+    // *************** return array of block objects with order of blockIds
     return blockIds.map((blockId) => dataMap.get(String(blockId)));
   } catch (error) {
     await ErrorLogModel.create({
