@@ -29,8 +29,8 @@ const blockTypeDefs = gql`
   }
 
   extend type Mutation {
-    CreateBlock(input: BlockInput): Block
-    UpdateBlock(_id: ID!, input: BlockInput): Block
+    CreateBlock(name: String!, description: String): Block
+    UpdateBlock(_id: ID!, blockName: String!, blockDescription: String): Block
     DeleteBlock(_id: ID!): String
   }
 `;

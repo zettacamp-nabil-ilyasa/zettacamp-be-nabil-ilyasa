@@ -18,11 +18,6 @@ const taskTypeDefs = gql`
     completed_at: Date
   }
 
-  input AssignCorrectorInput {
-    user_id: String
-    due_date: Date
-  }
-
   input TaskFilter {
     status: TaskStatus
     type: Type
@@ -47,7 +42,7 @@ const taskTypeDefs = gql`
   }
 
   extend type Mutation {
-    AssignCorrector(_id: ID!, input: AssignCorrectorInput): String
+    AssignCorrector(_id: ID!, userId: ID, dueDate: Date): String
     ValidateMarks(_id: ID!): String
     DeleteTask(_id: ID!): Task
   }

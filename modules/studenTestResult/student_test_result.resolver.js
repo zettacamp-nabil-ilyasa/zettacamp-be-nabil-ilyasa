@@ -7,12 +7,17 @@ const TaskModel = require('../task/task.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateStudentTestResultFilterInput, ValidateMarks, FindAndValidateTask } = require('./studentTestResult.validators.js');
+const { ValidateStudentTestResultFilterInput, ValidateEnterMarksInput } = require('./studentTestResult.validators.js');
 const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 
 // *************** IMPORT HELPER ***************
-const { EnterMarksPayloadComposer, CreateValidateMarksTask, SetEnterMarksTaskToCompleted } = require('./student_test_result.helper.js');
+const {
+  EnterMarksPayloadComposer,
+  CreateValidateMarksTask,
+  SetEnterMarksTaskToCompleted,
+  CompareTestNotationsAndMarks,
+} = require('./student_test_result.helper.js');
 
 // *************** QUERY ****************
 /**
@@ -59,18 +64,14 @@ async function GetAllStudentTestResults(parent, { filter, pagination }) {
     const limit = pagination?.limit ?? 20;
 
     // *************** execute query
-    const studentTestResults = await StudentTestResultModel.find(query)
-      .skip(offset || 0)
-      .limit(limit || 20)
-      .sort({ created_at: -1 })
-      .lean();
+    const studentTestResults = await StudentTestResultModel.find(query).skip(offset).limit(limit).sort({ created_at: -1 }).lean();
     return studentTestResults;
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'GetAllStudentTestResult',
       path: '/modules/studentTestResult/studentTestResult.resolver.js',
-      parameter_input: JSON.stringify({ filterInput, paginationInput }),
+      parameter_input: JSON.stringify({ filter, pagination }),
     });
     throw new ApolloError(error.message);
   }
@@ -115,25 +116,32 @@ async function GetOneStudentTestResult(parent, { _id }) {
  * @function EnterMarks
  * @param {Object} parent - Not used (GraphQL resolver convention).
  * @param {Object} params - Function parameters.
- * @param {Object} params.input - The input object containing task_id and marks array.
- * @param {string} params.input.task_id - The ID of the enter_marks task.
- * @param {Array<Object>} params.input.marks - The array of mark objects to be recorded.
- * @param {string} params.input.marks[].notation_text - The notation text associated with the mark.
- * @param {number} params.input.marks[].mark - The mark given for a corresponding notation.
+ * @param {string} params.taskId - The ID of the enter_marks task.
+ * @param {Array<Object>} params.studentMarks - The array of mark objects to be recorded.
+ * @param {string} params.studentMarks[].notation_text - The notation text associated with the mark.
+ * @param {number} params.studentMarks[].mark - The mark given for a corresponding notation.
  * @returns {Promise<Object>} The newly created StudentTestResult document.
  * @throws {ApolloError} If validation fails, student test result already exists, or any DB operation fails.
  */
-async function EnterMarks(parent, { input }) {
+async function EnterMarks(parent, { taskId, studentMarks }) {
   try {
-    // *************** find and validate task using input.task_id
-    const taskDocument = await FindAndValidateTask(input.task_id);
-
     // *************** validate input
-    await ValidateMarks({ testId: taskDocument.test_id, marks: input.marks });
+    ValidateEnterMarksInput({ task_id: taskId, studentMarks });
+
+    // *************** get task document, ensure that there is an in_progress enter_marks task
+    const taskDocument = await TaskModel.findOne({ _id: taskId, type: 'enter_marks', status: 'in_progress' }).lean();
+
+    // *************** check if the task is really exist
+    if (!taskDocument) {
+      throw new ApolloError('an in_progress enter_marks task does not exist');
+    }
+
+    // *************** compare test notations and marks, ensure that each notation has a corresponding mark
+    CompareTestNotationsAndMarks({ marks: studentMarks, testId: taskDocument.test_id });
 
     // *************** check if student test result with same task_id, test_id, and student_id already exist
     const studentTestResult = await StudentTestResultModel.findOne({
-      task_id: input.task_id,
+      task_id: taskId,
       test_id: taskDocument.test_id,
       student_id: taskDocument.student_id,
     });
@@ -142,18 +150,18 @@ async function EnterMarks(parent, { input }) {
     }
 
     // *************** compose enter marks payload
-    const enteredMarks = EnterMarksPayloadComposer({ taskDocument, marks: input.marks });
+    const enteredMarks = EnterMarksPayloadComposer({ taskDocument, studentMarks });
 
-    // *************** create student test result
+    // *************** create student test result using the payload
     const createdStudentTestResult = await StudentTestResultModel.create(enteredMarks);
     if (!createdStudentTestResult) {
       throw new ApolloError('failed to create student test result');
     }
 
     // *************** set enter marks task to completed
-    await SetEnterMarksTaskToCompleted(input.task_id);
+    await SetEnterMarksTaskToCompleted(taskId);
 
-    // *************** set static user id for task owner
+    // *************** set static user id for validate_marks task owner
     const taskOwnerUserId = '6862150331861f37e4e3d209';
 
     // *************** create validate marks task
@@ -165,7 +173,7 @@ async function EnterMarks(parent, { input }) {
       error_stack: error.stack,
       function_name: 'EnterMarks',
       path: '/modules/studentTestResult/studentTestResult.resolver.js',
-      parameter_input: JSON.stringify({ input }),
+      parameter_input: JSON.stringify({ taskId, studentMarks }),
     });
     throw new ApolloError(error.message);
   }
@@ -193,7 +201,7 @@ async function DeleteStudentTestResult(parent, { _id }) {
       throw new ApolloError("student test result doesn't exist or already deleted");
     }
 
-    // *************** check if the student test result's status is not validated
+    // *************** check if the student test result's status is not validated, only validated student test result can be deleted
     if (toBeDeletedStudentTestResultDocument.status !== 'validated') {
       throw new ApolloError('only validated student test result that can be deleted');
     }
@@ -201,7 +209,7 @@ async function DeleteStudentTestResult(parent, { _id }) {
     // *************** soft-delete the student test result document by set status and deleted_at
     await StudentTestResultModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_at: new Date() } });
 
-    // *************** also soft-delete task that stores the student test result's id
+    // *************** also soft-delete validate_marks task that stores the student test result's id
     await TaskModel.updateOne(
       { _id: toBeDeletedStudentTestResultDocument.task_id },
       { $set: { status: 'deleted', deleted_at: new Date() } }

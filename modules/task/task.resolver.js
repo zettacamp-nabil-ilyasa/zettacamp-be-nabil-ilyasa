@@ -110,25 +110,27 @@ async function GetOneTask(parent, { _id }) {
  * @param {Object} parent - Not used (GraphQL resolver convention).
  * @param {Object} args - Resolver arguments.
  * @param {string} args._id - The ID of the `assign_corrector` task to complete.
- * @param {Object} args.input - The input payload for assigning the corrector.
- * @param {string} args.input.user_id - The ID of the corrector being assigned.
- * @param {string} [args.input.due_date] - Optional due date for the associated tasks.
+ * @param {Object} args - The data for assigning the corrector.
+ * @param {string} user_id - The ID of the corrector being assigned.
+ * @param {string} [due_date] - Optional due date for the associated tasks.
  * @returns {Promise<string>} A success message indicating the corrector was assigned.
  * @throws {ApolloError} If any validation fails or if the task is invalid or already completed.
  */
-async function AssignCorrector(parent, { _id, input }) {
+async function AssignCorrector(parent, { _id, userId, dueDate }) {
   try {
     // *************** validate task's id
     ValidateMongoObjectId(_id);
 
     // *************** validate assigned corrector's id
-    ValidateMongoObjectId(input.user_id);
+    ValidateMongoObjectId(userId);
 
     // *************** validate due date
-    ValidateDueDate(input.due_date);
+    ValidateDueDate(dueDate);
 
-    // *************** get task document
+    // *************** get an in-progress assign_corrector task
     const taskDocument = await TaskModel.findOne({ _id, type: 'assign_corrector', status: 'in_progress' }).lean();
+
+    // *************** check if task document really exist to ensure the Test Lifecycle flow is properly followed
     if (!taskDocument) {
       throw new ApolloError('assign_corrector task not found');
     }
@@ -138,26 +140,26 @@ async function AssignCorrector(parent, { _id, input }) {
       throw new ApolloError('Corrector already assigned');
     }
 
-    // *************** update task document to completed
+    // *************** compose task payload, set status to completed and assign userId to corrector
     const updateAssignCorrectorTask = {
-      corrector_id: input.user_id,
+      corrector_id: userId,
       status: 'completed',
       completed_at: new Date(),
     };
 
     // *************** add due_date if provided
-    if (input.due_date) {
-      updateAssignCorrectorTask.due_date = new Date(input.due_date);
+    if (dueDate) {
+      updateAssignCorrectorTask.due_date = new Date(dueDate);
     }
 
     // *************** update assign corrector task document to completed
     await TaskModel.updateOne({ _id }, { $set: updateAssignCorrectorTask });
 
-    // *************** call helper to create enter marks tasks
-    await CreateEnterMarksTasks({ testId: taskDocument.test_id, userId: input.user_id, dueDate: input.due_date });
+    // *************** call helper to create enter marks tasks to continue the Test Lifecycle
+    await CreateEnterMarksTasks({ testId: taskDocument.test_id, userId, dueDate });
 
     // *************** call helper to send email notification to corrector
-    await SendGridNotificationTrigger({ userId: input.user_id, testId: taskDocument.test_id, dueDate: input.due_date });
+    await SendGridNotificationTrigger({ userId, testId: taskDocument.test_id, dueDate });
 
     return 'Corrector assigned successfully';
   } catch (error) {
@@ -165,7 +167,7 @@ async function AssignCorrector(parent, { _id, input }) {
       error_stack: error.stack,
       function_name: 'AssignCorrector',
       path: '/modules/task/task.resolver.js',
-      parameter_input: JSON.stringify({ _id, input }),
+      parameter_input: JSON.stringify({ _id, userId, dueDate }),
     });
     throw new ApolloError(error.message);
   }
@@ -186,8 +188,10 @@ async function ValidateMarks(parent, { _id }) {
     // *************** validate task's id
     ValidateMongoObjectId(_id);
 
-    // *************** get task document
+    // *************** get an in-progress validate_marks task
     const taskDocument = await TaskModel.findOne({ _id, type: 'validate_marks', status: 'in_progress' }).lean();
+
+    // *************** check if task document really exist to ensure the Test Lifecycle flow is properly followed
     if (!taskDocument) {
       throw new ApolloError('validate marks task not found');
     }
@@ -225,11 +229,12 @@ async function DeleteTask(parent, { _id }) {
     ValidateMongoObjectId(_id);
 
     // *************** get task document
-    const toBeDeletedTaskDocument = await TaskModel.findOne({ _id, status: { $ne: 'deleted' } });
+    const toBeDeletedTaskDocument = await TaskModel.findOne({ _id, status: { $ne: 'deleted' } }).lean();
     if (!toBeDeletedTaskDocument) {
       throw new ApolloError('Task not found or already deleted');
     }
 
+    // *************** check if task status is completed, only completed tasks can be deleted
     if (toBeDeletedTaskDocument.status !== 'completed') {
       throw new ApolloError('Only completed tasks can be deleted');
     }
@@ -407,6 +412,7 @@ module.exports = {
     user_id,
     student_id,
     corrector_id,
+    test_id,
     student_test_result_id,
   },
 };

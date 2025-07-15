@@ -7,7 +7,7 @@ const SubjectModel = require('../subject/subject.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateTestInput, ValidateTestFilterInput } = require('./test.validators.js');
+const { ValidateTestInputForCreate, ValidateTestInputForUpdate, ValidateTestFilterInput } = require('./test.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
@@ -64,7 +64,7 @@ async function GetAllTests(parent, { filter, pagination }) {
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
-      function_name: 'GetAllSubjects',
+      function_name: 'GetAllTests',
       path: '/modules/test/test.resolver.js',
       parameter_input: JSON.stringify({ filter, pagination }),
     });
@@ -120,10 +120,10 @@ async function GetOneTest(parent, { _id }) {
 async function CreateTest(parent, { input }) {
   try {
     // *************** validation to ensure bad input is handled correctly
-    ValidateTestInput(input, { validateSubjectId: true });
+    ValidateTestInputForCreate(input);
 
     // *************** check referenced subject existence in db
-    const subjectIsExist = await SubjectModel.findOne({ _id: input.subject_id });
+    const subjectIsExist = await SubjectModel.findOne({ _id: input.subject_id }).lean();
     if (!subjectIsExist) {
       throw new ApolloError("referenced subject doesn't exist");
     }
@@ -171,10 +171,10 @@ async function UpdateTest(parent, { _id, input }) {
     ValidateMongoObjectId(_id);
 
     // *************** validate input to ensure bad input is handled correctly
-    ValidateTestInput(input);
+    ValidateTestInputForUpdate(input);
 
     // *************** get test document
-    const toBeUpdatedTestDocument = await TestModel.findOne({ _id, status: { $ne: 'deleted' } });
+    const toBeUpdatedTestDocument = await TestModel.findOne({ _id, status: { $ne: 'deleted' } }).lean();
     if (!toBeUpdatedTestDocument) {
       throw new ApolloError("test doesn't exist or already deleted");
     }
@@ -216,7 +216,7 @@ async function PublishTest(parent, { _id }) {
   ValidateMongoObjectId(_id);
 
   // *************** get test document
-  const testDocument = await TestModel.findOne({ _id, status: 'not_published' });
+  const testDocument = await TestModel.findOne({ _id, status: 'not_published' }).lean();
 
   // *************** check if test's status is not published
   if (!testDocument) {
@@ -237,7 +237,7 @@ async function PublishTest(parent, { _id }) {
 
   // *************** create assign corrector task
   const taskOwnerUserId = '6862150331861f37e4e3d209';
-  CreateAssignCorrectorTask({ userId: taskOwnerUserId, testId: _id });
+  await CreateAssignCorrectorTask({ userId: taskOwnerUserId, testId: _id });
 
   return publishedTest;
 }
@@ -257,7 +257,7 @@ async function DeleteTest(parent, { _id }) {
     ValidateMongoObjectId(_id);
 
     // *************** get test document
-    const toBeDeletedTestDocument = await TestModel.findOne({ _id, status: { $ne: 'deleted' } });
+    const toBeDeletedTestDocument = await TestModel.findOne({ _id, status: { $ne: 'deleted' } }).lean();
     if (!toBeDeletedTestDocument) {
       throw new ApolloError("test doesn't exist or already deleted");
     }

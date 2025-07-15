@@ -35,23 +35,23 @@ async function CreateEnterMarksTasks({ testId, userId, dueDate }) {
     const students = await StudentModel.find({ status: 'active' }).lean();
 
     // *************** create task for enter marks for all students
-    const enterMarksTasks = students.map((student) => ({
+    const enterMarksTasksPayload = students.map((student) => ({
+      type: 'enter_marks',
+      status: 'in_progress',
       test_id: testId,
       user_id: userId,
       student_id: student._id,
-      type: 'enter_marks',
-      status: 'in_progress',
-      due_date: dueDate ? new Date(dueDate) : null,
+      due_date: dueDate,
     }));
 
     // *************** insert tasks to db
-    await TaskModel.insertMany(enterMarksTasks);
+    await TaskModel.insertMany(enterMarksTasksPayload);
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'CreateEnterMarksTasks',
       path: '/modules/task/task.helper.js',
-      parameter_input: JSON.stringify({}),
+      parameter_input: JSON.stringify({ testId, userId, dueDate }),
     });
     throw new ApolloError(error.message);
   }
@@ -74,37 +74,37 @@ async function SendGridNotificationTrigger({ userId, testId, dueDate }) {
     // *************** validate test's id
     ValidateMongoObjectId(testId);
 
-    // *************** get user document
+    // *************** get user document and check if it exists
     const user = await UserModel.findOne({ _id: userId, status: 'active' }).lean();
     if (!user) {
       throw new ApolloError('user not found');
     }
 
-    // *************** get test document
+    // *************** get test document and check if it exists
     const test = await TestModel.findOne({ _id: testId, status: 'published' }).lean();
     if (!test) {
-      throw new ApolloError('test not founnd');
+      throw new ApolloError('test not found');
     }
 
-    // *************** get subject document
+    // *************** get subject document and check if it exists
     const subject = await SubjectModel.findOne({ _id: test.subject_id, status: 'active' }).lean();
     if (!subject) {
       throw new ApolloError('subject not found');
     }
 
-    // *************** get students document
+    // *************** get all active students for the student list
     const students = await StudentModel.find({ status: 'active' }).lean();
 
     // *************** compose student list
     const studentList = students.map((s) => `- ${s.first_name} ${s.last_name}`).join('\n');
 
-    // *************** set API key
+    // *************** set API key, check if environment variables are set
     if (!process.env.SENDGRID_API_KEY || !process.env.SENDER_EMAIL) {
       throw new ApolloError('missing environtment variables: SENDGRID_API_KEY or SENDER_EMAIL ');
     }
     SendGridMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-    // *************** compose message
+    // *************** compose message for the email notification
     const message = {
       to: user.email,
       from: process.env.SENDER_EMAIL,
@@ -117,7 +117,7 @@ You have been assigned to correct the test:
 Name: ${test.name}
 Subject: ${subject.name}
 Description: ${test.description}
-Due Date: ${dueDate ? new Date(dueDate).toLocaleDateString() : 'N/A'}
+Due Date: ${dueDate ? new Date(dueDate).toISOString().split('T')[0] : 'N/A'}
 
 List of students whose tests you will be correcting:
 ${studentList}
@@ -157,7 +157,7 @@ async function MarkStudentTestResultAsValidated(studentTestResultId) {
       { _id: studentTestResultId },
       { $set: { status: 'validated' } }
     );
-    if (!validatedStudentTestResult.modifiedCount) {
+    if (validatedStudentTestResult.modifiedCount === 0) {
       throw new ApolloError('student test result not found or already validated');
     }
   } catch (error) {

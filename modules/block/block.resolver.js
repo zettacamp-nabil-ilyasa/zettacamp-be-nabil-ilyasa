@@ -68,7 +68,7 @@ async function GetOneBlock({ _id }) {
       error_stack: error.stack,
       function_name: 'GetOneBlock',
       path: '/modules/block/block.resolver.js',
-      parameter_input: JSON.stringify({}),
+      parameter_input: JSON.stringify({ _id }),
     });
     throw new ApolloError(error.message);
   }
@@ -79,19 +79,18 @@ async function GetOneBlock({ _id }) {
  * Create a new block after validating input.
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
- * @param {object} input - Block input fields.
- * @param {string} input.name - Name of block.
- * @param {string} [input.description] - Description of block.
+ * @param {string} blockName - Name of block.
+ * @param {string} [blockDescription] - Description of block.
  * @returns {Promise<Object>} - Created block document.
  * @throws {ApolloError} - Throws error if validation or db operation fails.
  */
-async function CreateBlock(parent, { input }) {
+async function CreateBlock(parent, { blockName, blockDescription }) {
   try {
     // *************** validation to ensure bad input is handled correctly
-    ValidateBlockInput(input);
+    ValidateBlockInput({ blockName, blockDescription });
 
     // *************** compose payload
-    const newBlock = BlockPayloadComposer(input);
+    const newBlock = BlockPayloadComposer({ blockName, blockDescription });
 
     // *************** create block with composed payload
     const createdBlock = await BlockModel.create(newBlock);
@@ -101,7 +100,7 @@ async function CreateBlock(parent, { input }) {
       error_stack: error.stack,
       function_name: 'CreateBlock',
       path: '/modules/block/block.resolver.js',
-      parameter_input: JSON.stringify({ input }),
+      parameter_input: JSON.stringify({ blockName, blockDescription }),
     });
     throw new ApolloError(error.message);
   }
@@ -112,22 +111,21 @@ async function CreateBlock(parent, { input }) {
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {string} _id - ID of the block to update.
- * @param {object} input - BLock input fields.
- * @param {string} input.name - Name of block.
- * @param {string} input.description - Description of block.
+ * @param {string} blockName - Name of block.
+ * @param {string} blockDescription - Description of block.
  * @returns {Promise<Object>} - Updated block document.
  * @throws {ApolloError} - Throws error if validation or db operation fails.
  */
-async function UpdateBlock(parent, { _id, input }) {
+async function UpdateBlock(parent, { _id, blockName, blockDescription }) {
   try {
     // *************** validate the block's id
     ValidateMongoObjectId(_id);
 
     // *************** validation to ensure bad input is handled correctly
-    ValidateBlockInput(input);
+    ValidateBlockInput({ blockName, blockDescription });
 
     // *************** compose payload
-    const editedBlock = BlockPayloadComposer(input);
+    const editedBlock = BlockPayloadComposer({ blockName, blockDescription });
 
     // *************** update block with composed payload
     const updatedBlock = await BlockModel.findOneAndUpdate({ _id }, { $set: editedBlock }, { new: true }).lean();
@@ -137,7 +135,7 @@ async function UpdateBlock(parent, { _id, input }) {
       error_stack: error.stack,
       function_name: 'UpdateBlock',
       path: '/modules/block/block.resolver.js',
-      parameter_input: JSON.stringify({ _id, input }),
+      parameter_input: JSON.stringify({ _id, blockName, blockDescription }),
     });
     throw new ApolloError(error.message);
   }
@@ -210,7 +208,7 @@ async function subject_ids(parent, args, context) {
       error_stack: error.stack,
       function_name: 'subject_ids',
       path: '/modules/block/block.resolver.js',
-      parameter_input: JSON.stringify({ _id }),
+      parameter_input: JSON.stringify({}),
     });
     throw new ApolloError(error.message);
   }

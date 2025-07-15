@@ -3,18 +3,17 @@ const { ApolloError } = require('apollo-server-express');
 
 /**
  * Compose payload for block mutation
- * @param {Object} inputObject - The input object of Block
- * @param {String} inputObject.name - The name of Block
- * @param {String} inputObject.description - The description of Block
+ * @param {String} blockName - The name of Block
+ * @param {String} blockDescription - The description of Block
  * @returns {Object} - The composed payload for Block mutation
  */
-function BlockPayloadComposer(inputObject) {
+function BlockPayloadComposer({ blockName, blockDescription }) {
   // *************** sanity check
-  if (!inputObject.name) {
+  if (!blockName) {
     throw new ApolloError('name is required for payload');
   }
   // *************** return composed payload
-  return { name: inputObject.name, description: inputObject.description };
+  return { name: blockName, description: blockDescription };
 }
 
 // *************** EXPORT MODULE ***************

@@ -32,11 +32,6 @@ const studentTestResultTypeDefs = gql`
     deleted
   }
 
-  input EnterMarksInput {
-    task_id: String
-    marks: [MarkInput]
-  }
-
   input StudentTestResultFilterInput {
     test_id: String
     status: String
@@ -48,7 +43,7 @@ const studentTestResultTypeDefs = gql`
   }
 
   extend type Mutation {
-    EnterMarks(input: EnterMarksInput): StudentTestResult
+    EnterMarks(taskId: ID!, studentMarks: [MarkInput!]): StudentTestResult
     DeleteStudentTestResult(_id: ID!): String
   }
 `;

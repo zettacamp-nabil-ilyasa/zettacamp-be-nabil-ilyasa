@@ -138,7 +138,7 @@ async function UpdateSchool(parent, { _id, input }) {
     ValidateSchoolInput(input);
 
     // *************** get the school document
-    const toBeUpdatedSchoolDocument = await SchoolModel.findOne({ _id, status: 'active' });
+    const toBeUpdatedSchoolDocument = await SchoolModel.findOne({ _id, status: 'active' }).lean();
 
     // *************** sanity check for the school document
     if (!toBeUpdatedSchoolDocument) {

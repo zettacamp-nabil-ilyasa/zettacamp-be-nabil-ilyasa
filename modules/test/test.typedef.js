@@ -26,12 +26,19 @@ const testTypeDefs = gql`
     max_points: Int
   }
 
-  input TestInput {
-    subject_id: String
+  input TestInputForCreate {
+    subject_id: String!
     name: String!
     description: String
     weight: Float!
     notations: [NotationInput]
+  }
+
+  input TestInputForUpdate {
+    name: String!
+    description: String
+    weight: Float!
+    notations: [NotationInput]!
   }
 
   input TestFilterInput {
@@ -51,8 +58,8 @@ const testTypeDefs = gql`
   }
 
   extend type Mutation {
-    CreateTest(input: TestInput): Test
-    UpdateTest(_id: ID!, input: TestInput): Test
+    CreateTest(input: TestInputForCreate): Test
+    UpdateTest(_id: ID!, input: TestInputForUpdate): Test
     PublishTest(_id: ID!): Test
     DeleteTest(_id: ID!): String
   }

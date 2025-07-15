@@ -7,7 +7,7 @@ const BlockModel = require('../block/block.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateSubjectInput } = require('./subject.validators.js');
+const { ValidateSubjectInputForCreate, ValidateSubjectInputForUpdate } = require('./subject.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
@@ -110,10 +110,10 @@ async function GetOneSubject(parent, { _id }) {
 async function CreateSubject(parent, { input }) {
   try {
     // *************** validation to ensure bad input is handled correctly
-    ValidateSubjectInput(input, { validateBlockId: true });
+    ValidateSubjectInputForCreate(input);
 
     // *************** check block existence in db
-    const blockIsExist = await BlockModel.findOne({ _id: input.block_id, status: 'active' });
+    const blockIsExist = await BlockModel.findOne({ _id: input.block_id, status: 'active' }).lean();
     if (!blockIsExist) {
       throw new ApolloError("block doesn't exist");
     }
@@ -155,7 +155,7 @@ async function UpdateSubject(parent, { _id, input }) {
     ValidateMongoObjectId(_id);
 
     // *************** validation to ensure bad input is handled correctly
-    ValidateSubjectInput(input);
+    ValidateSubjectInputForUpdate(input);
 
     // *************** compose payload
     const editedSubject = SubjectPayloadComposer(input);

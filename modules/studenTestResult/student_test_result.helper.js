@@ -10,30 +10,41 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 
 /**
- * Retrieve notations from a published test.
+ * Compare test notations and marks.
+ * Ensure that each notation has a corresponding mark
  * @async
+ * @param {Object} marks - Array of mark objects.
  * @param {string} testId - The id of the test document.
  * @returns {Promise<Array>} - Array of notation objects.
  * @throws {ApolloError} - If test not found or error occurs during DB operation.
  */
-async function GetTestNotations(testId) {
+async function CompareTestNotationsAndMarks({ marks, testId }) {
   try {
     // *************** validate test's id
     ValidateMongoObjectId(testId);
 
-    // *************** get test document
+    // *************** get published test, ensure that only published test can be compared for enter marks process
     const testDocument = await TestModel.findOne({ _id: testId, status: 'published' });
     if (!testDocument) {
-      throw new ApolloError('test not found');
+      throw new ApolloError('published test not found');
     }
 
-    return testDocument.notations;
+    // *************** ensure that each notation has a corresponding mark
+    if (marks.length !== testDocument.notations.length) {
+      throw new ApolloError('marks and notations do not match');
+    }
+
+    marks.forEach((mark, index) => {
+      if (mark.mark > testDocument.notations[index].max_points) {
+        throw new ApolloError(`mismatch between marks and notations in index ${index}`);
+      }
+    });
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
-      function_name: 'GetTestNotations',
+      function_name: 'CompareTestNotationsAndMarks',
       path: '/modules/studentTestResult/studentTestResult.helper.js',
-      parameter_input: JSON.stringify({ testId }),
+      parameter_input: JSON.stringify({ marks, testId }),
     });
     throw new ApolloError(error.message);
   }
@@ -43,23 +54,25 @@ async function GetTestNotations(testId) {
  * Compose payload object for creating a StudentTestResult document in enter marks mutation.
  * @param {Object} params - Parameters.
  * @param {Object} params.taskDocument - The task document related to enter_marks.
- * @param {Array} params.marks - Array of mark objects.
+ * @param {Array} params.studentMarks - Array of mark objects.
  * @returns {Object} - Formatted payload for creating StudentTestResult.
  * @throws {ApolloError} - If task or marks are missing.
  */
-function EnterMarksPayloadComposer({ taskDocument, marks }) {
+function EnterMarksPayloadComposer({ taskDocument, studentMarks }) {
   // *************** sanity check
-  if (!taskDocument || !Array.isArray(marks) || !marks.length) {
+  if (!taskDocument || !Array.isArray(studentMarks) || !studentMarks.length) {
     throw new ApolloError('task or marks not found');
   }
 
-  const averageMark = Number(marks.reduce((acc, mark) => acc + mark.mark, 0) / marks.length).toFixed(2);
+  // *************** calculate average mark, ensure that average mark only has 2 decimal
+  const averageMark = Math.round((studentMarks.reduce((acc, studentMark) => acc + studentMark.mark, 0) / studentMarks.length) * 100) / 100;
 
+  // *************** compose payload
   return {
     task_id: taskDocument._id,
     test_id: taskDocument.test_id,
     student_id: taskDocument.student_id,
-    marks: marks,
+    marks: studentMarks,
     average_mark: averageMark,
     status: 'completed',
     mark_entry_date: new Date(),
@@ -132,4 +145,4 @@ async function CreateValidateMarksTask({ studentTestResultId, userId, taskDocume
 }
 
 // *************** EXPORT MODULE ***************
-module.exports = { GetTestNotations, EnterMarksPayloadComposer, SetEnterMarksTaskToCompleted, CreateValidateMarksTask };
+module.exports = { CompareTestNotationsAndMarks, EnterMarksPayloadComposer, SetEnterMarksTaskToCompleted, CreateValidateMarksTask };

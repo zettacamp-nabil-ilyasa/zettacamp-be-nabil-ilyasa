@@ -12,6 +12,7 @@ const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-vali
 
 /**
  * Get total weight of all tests that referenced the same subject_id
+ * @async
  * @param {string} subjectId - Id of subject referenced by test
  * @returns {number} - Sum of tests weight
  */
@@ -28,7 +29,7 @@ async function GetTotalWeightOfTests(subjectId) {
 
     // *************** execute the query
     const summedWeight = await TestModel.aggregate(aggQuery);
-    const totalWeight = summedWeight[0]?.total_weight;
+    const totalWeight = summedWeight[0]?.total_weight ?? 0;
     return totalWeight;
   } catch (error) {
     await ErrorLogModel.create({
@@ -75,6 +76,7 @@ function TestPayloadComposer(inputObject, { addSubjectId } = {}) {
 
 /**
  * Create task for assign corrector
+ * @async
  * @param {string} userId - Id of user to be assigned
  * @param {string} testId - Id of test to be assigned
  */
