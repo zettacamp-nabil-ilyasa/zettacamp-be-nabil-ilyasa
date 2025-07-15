@@ -53,5 +53,14 @@ function ValidateSubjectInputForUpdate(inputObject) {
   if (description && typeof description !== 'string') throw new ApolloError('description must be a string');
 }
 
+/**
+ * Validate subject filter input
+ * @param {Object} filterInput - The input containing filter
+ * @param {String} filterInput.block_id - The block id used as filter
+ */
+function ValidateSubjectFilterInput(filterInput) {
+  if (filterInput?.block_id) ValidateMongoObjectId(filterInput.block_id);
+}
+
 // *************** EXPORT MODULE ***************
-module.exports = { ValidateSubjectInputForCreate, ValidateSubjectInputForUpdate };
+module.exports = { ValidateSubjectInputForCreate, ValidateSubjectInputForUpdate, ValidateSubjectFilterInput };

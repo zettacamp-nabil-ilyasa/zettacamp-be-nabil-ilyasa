@@ -7,7 +7,7 @@ const BlockModel = require('../block/block.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateSubjectInputForCreate, ValidateSubjectInputForUpdate } = require('./subject.validators.js');
+const { ValidateSubjectInputForCreate, ValidateSubjectInputForUpdate, ValidateSubjectFilterInput } = require('./subject.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
@@ -30,20 +30,20 @@ const { SubjectPayloadComposer } = require('./subject.helper.js');
  */
 async function GetAllSubjects(parent, { filter, pagination }) {
   try {
+    // *************** validate filter's input
+    ValidateSubjectFilterInput(filter);
+
+    // *************** validate pagination's input
+    ValidatePaginationInput(pagination);
+
     // *************** construct base query
     const query = { status: 'active' };
 
     // *************** check if filter input provided
     if (filter?.block_id) {
-      // *************** validate subject's _id, ensure that it can be casted into valid ObjectId
-      ValidateMongoObjectId(filter.block_id);
-
       // *************** add filter to query
       query.block_id = filter.block_id;
     }
-
-    // *************** validate pagination's input
-    ValidatePaginationInput(pagination);
 
     // *************** set default limit and offset
     const offset = pagination?.offset ?? 0;

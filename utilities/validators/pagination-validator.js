@@ -10,7 +10,7 @@ const { ApolloError } = require('apollo-server-express');
  */
 function ValidatePaginationInput(paginationObjectInput = {}) {
   // *************** validate limit for pagination
-  if (paginationObjectInput?.limit !== undefined) {
+  if (paginationObjectInput?.limit) {
     if (typeof paginationObjectInput.limit !== 'number' || isNaN(paginationObjectInput.limit)) {
       throw new ApolloError('limit must be a number');
     }
@@ -20,7 +20,7 @@ function ValidatePaginationInput(paginationObjectInput = {}) {
   }
 
   // *************** validate offset for pagination
-  if (paginationObjectInput?.offset !== undefined) {
+  if (paginationObjectInput?.offset) {
     if (typeof paginationObjectInput.offset !== 'number' || isNaN(paginationObjectInput.offset)) {
       throw new ApolloError('offset must be a number');
     }

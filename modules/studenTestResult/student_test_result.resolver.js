@@ -37,14 +37,10 @@ const {
 async function GetAllStudentTestResults(parent, { filter, pagination }) {
   try {
     // *************** validate filterInput if provided
-    if (filter) {
-      ValidateStudentTestResultFilterInput(filter);
-    }
+    ValidateStudentTestResultFilterInput(filter);
 
     // *************** validate paginationInput if provided
-    if (pagination) {
-      ValidatePaginationInput(pagination);
-    }
+    ValidatePaginationInput(pagination);
 
     // *************** build base query
     const query = { status: { $ne: 'deleted' } };

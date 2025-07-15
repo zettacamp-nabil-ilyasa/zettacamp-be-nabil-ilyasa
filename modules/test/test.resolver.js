@@ -31,11 +31,14 @@ const { TestPayloadComposer, GetTotalWeightOfTests, CreateAssignCorrectorTask } 
  */
 async function GetAllTests(parent, { filter, pagination }) {
   try {
-    // *************** construct base query
-    const query = { status: { $ne: 'deleted' } };
-
     // *************** validate filterInput
     ValidateTestFilterInput(filter);
+
+    // *************** validate pagination's input
+    ValidatePaginationInput(pagination);
+
+    // *************** construct base query
+    const query = { status: { $ne: 'deleted' } };
 
     // *************** build query for subject_id if it exist
     if (filter?.subject_id) {
@@ -47,19 +50,12 @@ async function GetAllTests(parent, { filter, pagination }) {
       query.status = filter.status;
     }
 
-    // *************** validate pagination's input
-    ValidatePaginationInput(pagination);
-
     // *************** set default limit and offset
     const offset = pagination?.offset ?? 0;
     const limit = pagination?.limit ?? 20;
 
     // *************** get tests based on query
-    const tests = await TestModel.find(query)
-      .skip(offset || 0)
-      .limit(limit || 20)
-      .sort({ created_at: -1 })
-      .lean();
+    const tests = await TestModel.find(query).skip(offset).limit(limit).sort({ created_at: -1 }).lean();
     return tests;
   } catch (error) {
     await ErrorLogModel.create({
