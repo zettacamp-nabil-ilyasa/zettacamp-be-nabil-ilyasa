@@ -2,6 +2,9 @@
 const Mongoose = require('mongoose');
 const Schema = Mongoose.Schema;
 
+// *************** IMPORT MODULE ***************
+const { syllabusStatus } = require('../../shared/strings');
+
 const subjectSchema = new Schema(
   {
     // name of subject
@@ -20,7 +23,7 @@ const subjectSchema = new Schema(
     test_ids: [{ type: Schema.Types.ObjectId, ref: 'test' }],
 
     // status of the subject
-    status: { type: String, enum: ['active', 'deleted', 'archived'], default: 'active' },
+    status: { type: String, enum: syllabusStatus, default: 'active' },
 
     // user who created the subject
     created_by: { type: Schema.Types.ObjectId, ref: 'user' },

@@ -2,13 +2,8 @@
 const Mongoose = require('mongoose');
 const Schema = Mongoose.Schema;
 
-const notationSchema = new Schema({
-  // notation or text not regarding the max_point
-  notation_text: { type: String, required: true, trim: true },
-
-  // maximum point that can be achieved
-  max_points: { type: Number, required: true },
-});
+// *************** IMPORT MODULE ***************
+const { testStatus } = require('../../shared/strings');
 
 const testSchema = new Schema(
   {
@@ -19,7 +14,15 @@ const testSchema = new Schema(
     description: { type: String, trim: true },
 
     // array of notation object consisted of notation_text and max_point
-    notations: [notationSchema],
+    notations: [
+      {
+        // notation or text related to the max_point
+        notation_text: { type: String, required: true, trim: true },
+
+        // maximum point that can be achieved
+        max_points: { type: Number, required: true },
+      },
+    ],
 
     // the weight or proportion of the test
     weight: { type: Number, required: true },
@@ -28,7 +31,7 @@ const testSchema = new Schema(
     subject_id: { type: Schema.Types.ObjectId, ref: 'subject' },
 
     // status of the test
-    status: { type: String, enum: ['not_published', 'published', 'deleted'], default: 'not_published' },
+    status: { type: String, enum: testStatus, default: 'not_published' },
 
     // the date when the test is published
     published_date: { type: Date },

@@ -2,6 +2,9 @@
 const Mongoose = require('mongoose');
 const Schema = Mongoose.Schema;
 
+// *************** IMPORT MODULE ***************
+const { taskType, taskStatus } = require('../../shared/strings');
+
 const taskSchema = new Schema(
   {
     // test associated with the task
@@ -20,10 +23,10 @@ const taskSchema = new Schema(
     corrector_id: { type: Schema.Types.ObjectId, ref: 'user' },
 
     // type of the task, marks the test lifecycle flow
-    type: { type: String, enum: ['assign_corrector', 'validate_marks', 'enter_marks'], required: true },
+    type: { type: String, enum: taskType, required: true },
 
     // status of the task, marks the task lifecycle
-    status: { type: String, enum: ['pending', 'in_progress', 'completed', 'deleted'], required: true },
+    status: { type: String, enum: taskStatus, required: true },
 
     // due date to complete the task
     due_date: { type: Date },
