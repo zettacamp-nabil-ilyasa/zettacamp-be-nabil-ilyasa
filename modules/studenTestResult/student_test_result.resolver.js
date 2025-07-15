@@ -113,20 +113,20 @@ async function GetOneStudentTestResult(parent, { _id }) {
  * @function EnterMarks
  * @param {Object} parent - Not used (GraphQL resolver convention).
  * @param {Object} params - Function parameters.
- * @param {string} params.taskId - The ID of the enter_marks task.
- * @param {Array<Object>} params.studentMarks - The array of mark objects to be recorded.
- * @param {string} params.studentMarks[].notation_text - The notation text associated with the mark.
- * @param {number} params.studentMarks[].mark - The mark given for a corresponding notation.
+ * @param {string} params.task_id - The ID of the enter_marks task.
+ * @param {Array<Object>} params.marks - The array of mark objects to be recorded.
+ * @param {string} params.marks[].notation_text - The notation text associated with the mark.
+ * @param {number} params.marks[].mark - The mark given for a corresponding notation.
  * @returns {Promise<Object>} The newly created StudentTestResult document.
  * @throws {ApolloError} If validation fails, student test result already exists, or any DB operation fails.
  */
-async function EnterMarks(parent, { taskId, studentMarks }) {
+async function EnterMarks(parent, { task_id, marks }) {
   try {
     // *************** validate input
-    ValidateEnterMarksInput({ taskId, studentMarks });
+    ValidateEnterMarksInput({ taskId: task_id, studentMarks: marks });
 
     // *************** get task document, ensure that there is an in_progress enter_marks task
-    const taskDocument = await TaskModel.findOne({ _id: taskId, type: 'enter_marks', status: 'in_progress' }).lean();
+    const taskDocument = await TaskModel.findOne({ _id: task_id, type: 'enter_marks', status: 'in_progress' }).lean();
 
     // *************** check if the task is really exist
     if (!taskDocument) {
@@ -134,20 +134,20 @@ async function EnterMarks(parent, { taskId, studentMarks }) {
     }
 
     // *************** compare test notations and marks, ensure that each notation has a corresponding mark
-    await CompareTestNotationsAndMarks({ marks: studentMarks, testId: taskDocument.test_id });
+    await CompareTestNotationsAndMarks({ marks, testId: taskDocument.test_id });
 
     // *************** check if student test result with same task_id, test_id, and student_id already exist
     const studentTestResult = await StudentTestResultModel.findOne({
-      task_id: taskId,
+      task_id,
       test_id: taskDocument.test_id,
       student_id: taskDocument.student_id,
-    });
+    }).lean();
     if (studentTestResult) {
       throw new ApolloError('student test result already exist');
     }
 
     // *************** compose enter marks payload
-    const enteredMarks = EnterMarksPayloadComposer({ taskDocument, studentMarks });
+    const enteredMarks = EnterMarksPayloadComposer({ taskDocument, studentMarks: marks });
 
     // *************** create student test result using the payload
     const createdStudentTestResult = await StudentTestResultModel.create(enteredMarks);
@@ -156,7 +156,7 @@ async function EnterMarks(parent, { taskId, studentMarks }) {
     }
 
     // *************** set enter marks task to completed
-    await SetEnterMarksTaskToCompleted(taskId);
+    await SetEnterMarksTaskToCompleted(task_id);
 
     // *************** create validate marks task
     await CreateValidateMarksTask({ studentTestResultId: createdStudentTestResult._id, userId: taskOwnerUserId, taskDocument });
@@ -167,9 +167,9 @@ async function EnterMarks(parent, { taskId, studentMarks }) {
       error_stack: error.stack,
       function_name: 'EnterMarks',
       path: '/modules/studentTestResult/studentTestResult.resolver.js',
-      parameter_input: JSON.stringify({ taskId, studentMarks }),
+      parameter_input: JSON.stringify({ task_id, marks }),
     });
-    throw new ApolloError(error.message);
+    throw new ApolloError(error.stack);
   }
 }
 
@@ -180,20 +180,20 @@ async function EnterMarks(parent, { taskId, studentMarks }) {
  * @function UpdateEnteredMarks
  * @param {Object} parent - Not used (GraphQL resolver convention).
  * @param {Object} params - Function parameters.
- * @param {string} params.taskId - The ID of a validate_marks task.
- * @param {Array<Object>} params.studentMarks - The array of mark objects to be recorded.
- * @param {string} params.studentMarks[].notation_text - The notation text associated with the mark.
- * @param {number} params.studentMarks[].mark - The mark given for a corresponding notation.
+ * @param {string} params.task_id - The ID of a validate_marks task.
+ * @param {Array<Object>} params.marks - The array of mark objects to be recorded.
+ * @param {string} params.marks[].notation_text - The notation text associated with the mark.
+ * @param {number} params.marks[].mark - The mark given for a corresponding notation.
  * @returns {Promise<Object>} The newly created StudentTestResult document.
  * @throws {ApolloError} If validation fails, student test result already exists, or any DB operation fails.
  */
-async function UpdateEnteredMarks(parent, { _id, taskId, studentMarks }) {
+async function UpdateEnteredMarks(parent, { _id, task_id, marks }) {
   try {
     // *************** validate student test result's id
     ValidateMongoObjectId(_id);
 
     // *************** validate input
-    ValidateEnterMarksInput({ taskId, studentMarks });
+    ValidateEnterMarksInput({ taskId: task_id, studentMarks: marks });
 
     // *************** get student test result
     const toBeUpdatedStudentTestResult = await StudentTestResultModel.findOne({ _id, status: 'completed' }).lean();
@@ -204,18 +204,23 @@ async function UpdateEnteredMarks(parent, { _id, taskId, studentMarks }) {
     }
 
     // *************** get task document, ensure that there is an in_progress validate_marks task
-    const taskDocument = await TaskModel.findOne({ _id: taskId, type: 'validate_marks', status: 'in_progress' }).lean();
+    const taskDocument = await TaskModel.findOne({ _id: task_id, type: 'validate_marks', status: 'in_progress' }).lean();
 
     // *************** check if the task is really exist
     if (!taskDocument) {
       throw new ApolloError('an in_progress validate_marks task does not exist');
     }
 
+    // *************** ensure that task is referencing the student test result (actually related to the student test result)
+    if (_id !== String(taskDocument.student_test_result_id)) {
+      throw new ApolloError('the task is not related with the StudentTestResult');
+    }
+
     // *************** compare test notations and marks, ensure that each notation has a corresponding mark
-    await CompareTestNotationsAndMarks({ marks: studentMarks, testId: taskDocument.test_id });
+    await CompareTestNotationsAndMarks({ marks, testId: taskDocument.test_id });
 
     // *************** compose enter marks payload
-    const enteredMarks = EnterMarksPayloadComposer({ taskDocument, studentMarks });
+    const enteredMarks = EnterMarksPayloadComposer({ taskDocument, studentMarks: marks });
 
     // *************** update student test result using the payload
     const updatedStudentTestResult = await StudentTestResultModel.findOneAndUpdate({ _id }, enteredMarks, { new: true });
@@ -226,7 +231,7 @@ async function UpdateEnteredMarks(parent, { _id, taskId, studentMarks }) {
       error_stack: error.stack,
       function_name: 'UpdateEnteredMarks',
       path: '/modules/studentTestResult/studentTestResult.resolver.js',
-      parameter_input: JSON.stringify({ _id, taskId, studentMarks }),
+      parameter_input: JSON.stringify({ _id, task_id, marks }),
     });
     throw new ApolloError(error.message);
   }

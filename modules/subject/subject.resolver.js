@@ -164,7 +164,7 @@ async function UpdateSubject(parent, { _id, input }) {
     }
 
     // *************** check if block_id is changed, changing block_id is not allowed
-    if (input.block_id !== toBeUpdatedSubjectDocument.block_id) {
+    if (input.block_id !== String(toBeUpdatedSubjectDocument.block_id)) {
       throw new ApolloError('block_id cannot be changed');
     }
 

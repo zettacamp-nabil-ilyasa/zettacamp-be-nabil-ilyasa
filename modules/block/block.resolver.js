@@ -51,7 +51,7 @@ async function GetAllBlocks(parent, { pagination }) {
  * @returns {Promise<Object|null>} - Block document or null if not found.
  * @throws {ApolloError} - Throws error if validation fails or database query fails.
  */
-async function GetOneBlock({ _id }) {
+async function GetOneBlock(parent, { _id }) {
   try {
     // *************** validate block's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
@@ -84,13 +84,13 @@ async function GetOneBlock({ _id }) {
  * @returns {Promise<Object>} - Created block document.
  * @throws {ApolloError} - Throws error if validation or db operation fails.
  */
-async function CreateBlock(parent, { blockName, blockDescription }) {
+async function CreateBlock(parent, { name, description }) {
   try {
     // *************** validation to ensure bad input is handled correctly
-    ValidateBlockInput({ blockName, blockDescription });
+    ValidateBlockInput({ blockName: name, blockDescription: description });
 
     // *************** compose payload
-    const newBlock = BlockPayloadComposer({ blockName, blockDescription });
+    const newBlock = BlockPayloadComposer({ blockName: name, blockDescription: description });
 
     // *************** create block with composed payload
     const createdBlock = await BlockModel.create(newBlock);
@@ -100,7 +100,7 @@ async function CreateBlock(parent, { blockName, blockDescription }) {
       error_stack: error.stack,
       function_name: 'CreateBlock',
       path: '/modules/block/block.resolver.js',
-      parameter_input: JSON.stringify({ blockName, blockDescription }),
+      parameter_input: JSON.stringify({ name, description }),
     });
     throw new ApolloError(error.message);
   }
@@ -116,16 +116,16 @@ async function CreateBlock(parent, { blockName, blockDescription }) {
  * @returns {Promise<Object>} - Updated block document.
  * @throws {ApolloError} - Throws error if validation or db operation fails.
  */
-async function UpdateBlock(parent, { _id, blockName, blockDescription }) {
+async function UpdateBlock(parent, { _id, name, description }) {
   try {
     // *************** validate the block's id
     ValidateMongoObjectId(_id);
 
     // *************** validation to ensure bad input is handled correctly
-    ValidateBlockInput({ blockName, blockDescription });
+    ValidateBlockInput({ blockName: name, blockDescription: description });
 
     // *************** compose payload
-    const editedBlock = BlockPayloadComposer({ blockName, blockDescription });
+    const editedBlock = BlockPayloadComposer({ blockName: name, blockDescription: description });
 
     // *************** update block with composed payload
     const updatedBlock = await BlockModel.findOneAndUpdate({ _id }, { $set: editedBlock }, { new: true }).lean();

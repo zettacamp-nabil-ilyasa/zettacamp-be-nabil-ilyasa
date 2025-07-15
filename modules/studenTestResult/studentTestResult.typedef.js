@@ -43,8 +43,8 @@ const studentTestResultTypeDefs = gql`
   }
 
   extend type Mutation {
-    EnterMarks(taskId: ID!, studentMarks: [MarkInput!]): StudentTestResult
-    UpdateEnteredMarks(_id: ID!, taskId: ID!, studentMarks: [MarkInput!]): StudentTestResult
+    EnterMarks(task_id: ID!, marks: [MarkInput!]): StudentTestResult
+    UpdateEnteredMarks(_id: ID!, task_id: ID!, marks: [MarkInput!]): StudentTestResult
     DeleteStudentTestResult(_id: ID!): String
   }
 `;

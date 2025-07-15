@@ -177,7 +177,7 @@ async function UpdateTest(parent, { _id, input }) {
     }
 
     // *************** check if subject_id is changed, changing subject_id is not allowed
-    if (input.subject_id !== toBeUpdatedTestDocument.subject_id) {
+    if (input.subject_id !== String(toBeUpdatedTestDocument.subject_id)) {
       throw new ApolloError('subject_id cannot be changed');
     }
 
