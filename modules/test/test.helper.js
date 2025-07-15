@@ -52,25 +52,21 @@ async function GetTotalWeightOfTests(subjectId) {
  * @param {String} inputObject.subject_id - Id of subject that referenced by test
  * @returns
  */
-function TestPayloadComposer(inputObject, { addSubjectId } = {}) {
+function TestPayloadComposer(inputObject) {
   // *************** sanity check for mandatory fields
   if (!inputObject.name) throw new ApolloError('name is required for payload');
   if (!inputObject.weight) throw new ApolloError('weight is required for payload');
   if (!inputObject.notations.length) throw new ApolloError('notations is required for payload');
+  if (!inputObject.subject_id) throw new ApolloError('subject_id is required for payload');
 
   // *************** composed payload
   const testPayload = {
+    subject_id: inputObject.subject_id,
     name: inputObject.name,
     weight: inputObject.weight,
     description: inputObject.description,
     notations: inputObject.notations,
   };
-
-  // *************** validate subject_id if checkSubjectId set to true
-  if (addSubjectId) {
-    ValidateMongoObjectId(inputObject.subject_id);
-    testPayload.subject_id = inputObject.subject_id;
-  }
   return testPayload;
 }
 

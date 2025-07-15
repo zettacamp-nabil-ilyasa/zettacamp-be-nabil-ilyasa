@@ -13,7 +13,8 @@ function BlockPayloadComposer({ blockName, blockDescription }) {
     throw new ApolloError('name is required for payload');
   }
   // *************** return composed payload
-  return { name: blockName, description: blockDescription };
+  const blockPayload = { name: blockName, description: blockDescription };
+  return blockPayload;
 }
 
 // *************** EXPORT MODULE ***************

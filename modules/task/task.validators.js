@@ -1,32 +1,31 @@
 // *************** IMPORT LIBRARY ***************
 const { ApolloError } = require('apollo-server-express');
 
-const allowedTaskStatus = ['pending', 'in_progress', 'completed'];
-const allowedTaskTypes = ['assign_corrector', 'validate_marks', 'enter_marks'];
+const { allowedTaskStatus, allowedTaskTypes } = require('../../shared/strings');
 
 /**
- *
- * @param {Object} inputObject - Object containing filter data
- * @param {Object} inputObject.type - Type of task
- * @param {Object} inputObject.status - Status of task
+ * Validate task filter input
+ * @param {Object} filterInput - Object containing filter data
+ * @param {Object} filterInput.type - Type of task
+ * @param {Object} filterInput.status - Status of task
  */
-function ValidateTaskFilterInput(inputObject) {
+function ValidateTaskFilterInput(filterInput) {
   // *************** validate type, ensure it is a string and is one of allowed types
-  if (inputObject?.type) {
-    if (typeof inputObject.type !== 'string') {
+  if (filterInput?.type) {
+    if (typeof filterInput.type !== 'string') {
       throw new ApolloError('type must be a string');
     }
-    if (!allowedTaskTypes.includes(inputObject.type)) {
+    if (!allowedTaskTypes.includes(filterInput.type)) {
       throw new ApolloError(`type should be one of following: ${allowedTaskTypes.join(', ')}`);
     }
   }
 
   // *************** validate status, ensure it is a string and is one of allowed statuses
-  if (inputObject?.status) {
-    if (typeof inputObject.status !== 'string') {
+  if (filterInput?.status) {
+    if (typeof filterInput.status !== 'string') {
       throw new ApolloError('status must be a string');
     }
-    if (!allowedTaskStatus.includes(inputObject.status)) {
+    if (!allowedTaskStatus.includes(filterInput.status)) {
       throw new ApolloError(`status should be one of following: ${allowedTaskStatus.join(', ')}`);
     }
   }

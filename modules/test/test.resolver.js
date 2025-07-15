@@ -5,9 +5,10 @@ const { ApolloError } = require('apollo-server-express');
 const TestModel = require('./test.model.js');
 const SubjectModel = require('../subject/subject.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
+const { taskOwnerUserId } = require('../../shared/strings.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateTestInputForCreate, ValidateTestInputForUpdate, ValidateTestFilterInput } = require('./test.validators.js');
+const { ValidateTestInput, ValidateTestFilterInput } = require('./test.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
@@ -116,7 +117,7 @@ async function GetOneTest(parent, { _id }) {
 async function CreateTest(parent, { input }) {
   try {
     // *************** validation to ensure bad input is handled correctly
-    ValidateTestInputForCreate(input);
+    ValidateTestInput(input);
 
     // *************** check referenced subject existence in db
     const subjectIsExist = await SubjectModel.findOne({ _id: input.subject_id }).lean();
@@ -125,13 +126,13 @@ async function CreateTest(parent, { input }) {
     }
 
     // *************** check if combined tests weight is exceed 1
-    const currentWeight = await GetTotalWeightOfTests(input.subject_id);
-    if (currentWeight + input.weight > 1) {
+    const currentCombinedWeights = await GetTotalWeightOfTests(input.subject_id);
+    if (currentCombinedWeights + input.weight > 1) {
       throw new ApolloError('combined weight exceeding 1');
     }
 
     // *************** compose test payload
-    const newTest = TestPayloadComposer(input, { addSubjectId: true });
+    const newTest = TestPayloadComposer(input);
     const createdTest = await TestModel.create(newTest);
 
     // *************** add test's id to subject's test_ids field
@@ -167,7 +168,7 @@ async function UpdateTest(parent, { _id, input }) {
     ValidateMongoObjectId(_id);
 
     // *************** validate input to ensure bad input is handled correctly
-    ValidateTestInputForUpdate(input);
+    ValidateTestInput(input);
 
     // *************** get test document
     const toBeUpdatedTestDocument = await TestModel.findOne({ _id, status: { $ne: 'deleted' } }).lean();
@@ -175,9 +176,14 @@ async function UpdateTest(parent, { _id, input }) {
       throw new ApolloError("test doesn't exist or already deleted");
     }
 
+    // *************** check if subject_id is changed, changing subject_id is not allowed
+    if (input.subject_id !== toBeUpdatedTestDocument.subject_id) {
+      throw new ApolloError('subject_id cannot be changed');
+    }
+
     // *************** check if combined tests weight is exceed 1
-    const currentWeight = await GetTotalWeightOfTests(toBeUpdatedTestDocument.subject_id);
-    if (currentWeight - toBeUpdatedTestDocument.weight + input.weight > 1) {
+    const currentCombinedWeights = await GetTotalWeightOfTests(input.subject_id);
+    if (currentCombinedWeights - toBeUpdatedTestDocument.weight + input.weight > 1) {
       throw new ApolloError('combined weight exceeding 1');
     }
 
@@ -232,7 +238,6 @@ async function PublishTest(parent, { _id }) {
   }
 
   // *************** create assign corrector task
-  const taskOwnerUserId = '6862150331861f37e4e3d209';
   await CreateAssignCorrectorTask({ userId: taskOwnerUserId, testId: _id });
 
   return publishedTest;

@@ -171,5 +171,17 @@ async function MarkStudentTestResultAsValidated(studentTestResultId) {
   }
 }
 
+function AssignCorrectorPayloadComposer(userId) {
+  if (!userId) {
+    throw new ApolloError('user_id for corrector is required');
+  }
+  const assignCorrectorPayload = {
+    corrector_id: userId,
+    status: 'completed',
+    completed_at: new Date(),
+  };
+  return assignCorrectorPayload;
+}
+
 // *************** EXPORT MODULE ***************
-module.exports = { CreateEnterMarksTasks, SendGridNotificationTrigger, MarkStudentTestResultAsValidated };
+module.exports = { CreateEnterMarksTasks, SendGridNotificationTrigger, MarkStudentTestResultAsValidated, AssignCorrectorPayloadComposer };

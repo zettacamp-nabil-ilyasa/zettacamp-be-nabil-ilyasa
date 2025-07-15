@@ -11,7 +11,12 @@ const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-vali
 const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
 // *************** IMPORT HELPER ***************
-const { CreateEnterMarksTasks, SendGridNotificationTrigger, MarkStudentTestResultAsValidated } = require('./task.helper.js');
+const {
+  CreateEnterMarksTasks,
+  SendGridNotificationTrigger,
+  MarkStudentTestResultAsValidated,
+  AssignCorrectorPayloadComposer,
+} = require('./task.helper.js');
 
 // *************** QUERY ****************
 /**
@@ -140,20 +145,16 @@ async function AssignCorrector(parent, { _id, userId, dueDate }) {
       throw new ApolloError('Corrector already assigned');
     }
 
-    // *************** compose task payload, set status to completed and assign userId to corrector
-    const updateAssignCorrectorTask = {
-      corrector_id: userId,
-      status: 'completed',
-      completed_at: new Date(),
-    };
+    // *************** compose task payload, set status to completed and assign userId as corrector
+    const updatedAssignCorrectorTask = AssignCorrectorPayloadComposer(userId);
 
     // *************** add due_date if provided
     if (dueDate) {
-      updateAssignCorrectorTask.due_date = new Date(dueDate);
+      updatedAssignCorrectorTask.due_date = new Date(dueDate);
     }
 
     // *************** update assign corrector task document to completed
-    await TaskModel.updateOne({ _id }, { $set: updateAssignCorrectorTask });
+    await TaskModel.updateOne({ _id }, { $set: updatedAssignCorrectorTask });
 
     // *************** call helper to create enter marks tasks to continue the Test Lifecycle
     await CreateEnterMarksTasks({ testId: taskDocument.test_id, userId, dueDate });

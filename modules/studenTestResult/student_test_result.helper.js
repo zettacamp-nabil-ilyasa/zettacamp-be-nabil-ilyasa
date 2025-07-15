@@ -65,10 +65,10 @@ function EnterMarksPayloadComposer({ taskDocument, studentMarks }) {
   }
 
   // *************** calculate average mark, ensure that average mark only has 2 decimal
-  const averageMark = Math.round((studentMarks.reduce((acc, studentMark) => acc + studentMark.mark, 0) / studentMarks.length) * 100) / 100;
+  const averageMark = Number((studentMarks.reduce((acc, studentMark) => acc + studentMark.mark, 0) / studentMarks.length).toFixed(2));
 
   // *************** compose payload
-  return {
+  const studentTestResultPayload = {
     task_id: taskDocument._id,
     test_id: taskDocument.test_id,
     student_id: taskDocument.student_id,
@@ -77,6 +77,8 @@ function EnterMarksPayloadComposer({ taskDocument, studentMarks }) {
     status: 'completed',
     mark_entry_date: new Date(),
   };
+
+  return studentTestResultPayload;
 }
 
 /**

@@ -7,7 +7,7 @@ const BlockModel = require('../block/block.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateSubjectInputForCreate, ValidateSubjectInputForUpdate, ValidateSubjectFilterInput } = require('./subject.validators.js');
+const { ValidateSubjectInput, ValidateSubjectFilterInput } = require('./subject.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
@@ -110,7 +110,7 @@ async function GetOneSubject(parent, { _id }) {
 async function CreateSubject(parent, { input }) {
   try {
     // *************** validation to ensure bad input is handled correctly
-    ValidateSubjectInputForCreate(input);
+    ValidateSubjectInput(input);
 
     // *************** check block existence in db
     const blockIsExist = await BlockModel.findOne({ _id: input.block_id, status: 'active' }).lean();
@@ -118,7 +118,7 @@ async function CreateSubject(parent, { input }) {
       throw new ApolloError("block doesn't exist");
     }
     // *************** compose payload
-    const newSubject = SubjectPayloadComposer(input, { addBlockId: true });
+    const newSubject = SubjectPayloadComposer(input);
 
     // *************** create subject with composed payload
     const createdSubject = await SubjectModel.create(newSubject);
@@ -155,7 +155,18 @@ async function UpdateSubject(parent, { _id, input }) {
     ValidateMongoObjectId(_id);
 
     // *************** validation to ensure bad input is handled correctly
-    ValidateSubjectInputForUpdate(input);
+    ValidateSubjectInput(input);
+
+    // *************** get the subject document
+    const toBeUpdatedSubjectDocument = await SubjectModel.findOne({ _id, status: 'active' }).lean();
+    if (!toBeUpdatedSubjectDocument) {
+      throw new ApolloError("subject doesn't exist or already deleted");
+    }
+
+    // *************** check if block_id is changed, changing block_id is not allowed
+    if (input.block_id !== toBeUpdatedSubjectDocument.block_id) {
+      throw new ApolloError('block_id cannot be changed');
+    }
 
     // *************** compose payload
     const editedSubject = SubjectPayloadComposer(input);

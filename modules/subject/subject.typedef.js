@@ -17,17 +17,11 @@ const subjectTypeDefs = gql`
     deleted_by: User
   }
 
-  input SubjectInputForCreate {
+  input SubjectInput {
     name: String!
     description: String
     coefficient: Float!
-    block_id: String
-  }
-
-  input SubjectInputForUpdate {
-    name: String!
-    description: String
-    coefficient: Float!
+    block_id: String!
   }
 
   input SubjectFilterInput {
@@ -40,8 +34,8 @@ const subjectTypeDefs = gql`
   }
 
   extend type Mutation {
-    CreateSubject(input: SubjectInputForCreate): Subject
-    UpdateSubject(_id: ID!, input: SubjectInputForUpdate): Subject
+    CreateSubject(input: SubjectInput): Subject
+    UpdateSubject(_id: ID!, input: SubjectInput): Subject
     DeleteSubject(_id: ID!): String
   }
 `;
