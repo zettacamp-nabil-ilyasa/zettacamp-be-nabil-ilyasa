@@ -6,6 +6,11 @@ const { gql } = require('apollo-server-express');
 const UserTypeDefs = require('../modules/user/user.typedef.js');
 const SchoolTypeDefs = require('../modules/school/school.typedef.js');
 const StudentTypeDefs = require('../modules/student/student.typedef.js');
+const BlockTypeDefs = require('../modules/block/block.typedef.js');
+const SubjectTypeDefs = require('../modules/subject/subject.typedef.js');
+const TestTypeDefs = require('../modules/test/test.typedef.js');
+const StudentTestResultTypeDefs = require('../modules/studenTestResult/studentTestResult.typedef.js');
+const TaskTypeDefs = require('../modules/task/task.typedef.js');
 
 // *************** base typedef
 const baseTypeDefs = gql`
@@ -16,12 +21,27 @@ const baseTypeDefs = gql`
     deleted
   }
 
+  input PaginationInput {
+    limit: Int
+    offset: Int
+  }
+
   type Query
   type Mutation
 `;
 
 // *************** merge base typedef with all typedefs from modules
-const typeDefs = mergeTypeDefs([baseTypeDefs, UserTypeDefs, SchoolTypeDefs, StudentTypeDefs]);
+const typeDefs = mergeTypeDefs([
+  baseTypeDefs,
+  UserTypeDefs,
+  SchoolTypeDefs,
+  StudentTypeDefs,
+  BlockTypeDefs,
+  SubjectTypeDefs,
+  TestTypeDefs,
+  StudentTestResultTypeDefs,
+  TaskTypeDefs,
+]);
 
 // *************** EXPORT MODULE ***************
 module.exports = typeDefs;

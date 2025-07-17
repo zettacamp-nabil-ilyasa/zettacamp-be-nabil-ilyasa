@@ -18,21 +18,21 @@ const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-vali
  */
 async function BatchStudents(studentIds) {
   try {
-    // **************** validate each student id
+    // *************** validate each student id
     studentIds.forEach((studentId) => {
       ValidateMongoObjectId(studentId);
     });
 
-    // **************** get all active students with id within studentIds and status is not deleted
+    // *************** get all active students with id within studentIds and status is not deleted
     const students = await StudentModel.find({ _id: { $in: studentIds }, status: 'active' }).lean();
 
-    // **************** set students data to dataMap
+    // *************** set students data to dataMap
     const dataMap = new Map();
     students.forEach((student) => {
       dataMap.set(String(student._id), student);
     });
 
-    // **************** return array of student objects with order of studentIds
+    // *************** return array of student objects with order of studentIds
     return studentIds.map((studentId) => dataMap.get(String(studentId)));
   } catch (error) {
     await ErrorLogModel.create({

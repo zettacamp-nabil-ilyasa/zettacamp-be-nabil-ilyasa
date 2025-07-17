@@ -5,11 +5,11 @@ const { ApolloError } = require('apollo-server-express');
 const SchoolModel = require('./school.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
-// *************** IMPORT VALIDATOR ***********************
+// *************** IMPORT VALIDATOR ***************
 const { ValidateSchoolInput, ValidateUniqueSchoolLongName } = require('./school.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 
-// **************** QUERY ****************
+// *************** QUERY ****************
 /**
  * Get all active schools from the database.
  * @async
@@ -41,12 +41,12 @@ async function GetAllSchools() {
  */
 async function GetOneSchool(parent, { _id }) {
   try {
-    // **************** validate school's _id, ensure that it can be casted into valid ObjectId
+    // *************** validate school's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
 
     const school = await SchoolModel.findOne({ _id: _id, status: 'active' }).lean();
 
-    // **************** throw error if there's no school to return
+    // *************** throw error if there's no school to return
     if (!school) {
       throw new ApolloError('school not found or already deleted');
     }
@@ -62,7 +62,7 @@ async function GetOneSchool(parent, { _id }) {
   }
 }
 
-// **************** MUTATION ****************
+// *************** MUTATION ****************
 /**
  * Create a new school after validating input and checking for duplicates.
  * @async
@@ -138,7 +138,7 @@ async function UpdateSchool(parent, { _id, input }) {
     ValidateSchoolInput(input);
 
     // *************** get the school document
-    const toBeUpdatedSchoolDocument = await SchoolModel.findOne({ _id, status: 'active' });
+    const toBeUpdatedSchoolDocument = await SchoolModel.findOne({ _id, status: 'active' }).lean();
 
     // *************** sanity check for the school document
     if (!toBeUpdatedSchoolDocument) {
@@ -185,26 +185,26 @@ async function UpdateSchool(parent, { _id, input }) {
  */
 async function DeleteSchool(parent, { _id }) {
   try {
-    // **************** validate school's _id, ensure that it can be casted into valid ObjectId
+    // *************** validate school's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
 
-    // **************** get the School document
+    // *************** get the School document
     const toBeDeletedSchoolDocument = await SchoolModel.findOne({ _id, status: 'active' }).lean();
 
-    // **************** sanity check for the school document, check if the school is exist and not already deleted
+    // *************** sanity check for the school document, check if the school is exist and not already deleted
     if (!toBeDeletedSchoolDocument) {
       throw new ApolloError("school doesn't exist or already deleted");
     }
 
-    // **************** check if school is referenced by student using the school document
+    // *************** check if school is referenced by student using the school document
     if (toBeDeletedSchoolDocument.students?.length) {
       throw new ApolloError('School that is referenced by Student cannot be deleted');
     }
 
-    // **************** set static User id for deleted_by
+    // *************** set static User id for deleted_by
     const deletedByUserId = '6862150331861f37e4e3d209';
 
-    // **************** soft-delete School by updating it with composed object
+    // *************** soft-delete School by updating it with composed object
     await SchoolModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: deletedByUserId, deleted_at: new Date() } });
     return 'School deleted successfully';
   } catch (error) {

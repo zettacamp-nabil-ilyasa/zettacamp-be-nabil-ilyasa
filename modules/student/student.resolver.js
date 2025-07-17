@@ -42,12 +42,12 @@ async function GetAllStudents() {
  */
 async function GetOneStudent(parent, { _id }) {
   try {
-    // **************** validate student's _id, ensure that it can be casted into valid ObjectId
+    // *************** validate student's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
 
     const student = await StudentModel.findOne({ _id: _id, status: 'active' }).lean();
 
-    // **************** throw error if there's no student to returned
+    // *************** throw error if there's no student to returned
     if (!student) {
       throw new ApolloError('student not found or already deleted');
     }
@@ -137,23 +137,23 @@ async function UpdateStudent(parent, { _id, input }) {
     // *************** validate student's id
     ValidateMongoObjectId(_id);
 
-    // **************** validation to ensure bad input is handled correctly
+    // *************** validation to ensure bad input is handled correctly
     ValidateStudentInput(input);
 
-    // **************** get the student document
+    // *************** get the student document
     const toBeUpdatedStudentDocument = await StudentModel.findOne({ _id, status: 'active' }).lean();
 
-    // **************** sanity check for the student document
+    // *************** sanity check for the student document
     if (!toBeUpdatedStudentDocument) {
       throw new ApolloError('student does not exist');
     }
-    // **************** check if email changed using the student document
+    // *************** check if email changed using the student document
     if (input.email !== toBeUpdatedStudentDocument.email) {
-      // **************** if email changed, also check if email already used by another student
+      // *************** if email changed, also check if email already used by another student
       await ValidateUniqueStudentEmail(input.email);
     }
 
-    // **************** compose new object from input
+    // *************** compose new object from input
     let editedStudent = {
       email: input.email,
       first_name: input.first_name,
@@ -161,7 +161,7 @@ async function UpdateStudent(parent, { _id, input }) {
       date_of_birth: input.date_of_birth,
     };
 
-    // **************** update student with composed object
+    // *************** update student with composed object
     const updatedStudent = await StudentModel.findOneAndUpdate({ _id }, { $set: editedStudent }, { new: true }).lean();
     return updatedStudent;
   } catch (error) {
@@ -185,24 +185,24 @@ async function UpdateStudent(parent, { _id, input }) {
  */
 async function DeleteStudent(parent, { _id }) {
   try {
-    // **************** validate student's _id, ensure that it can be casted into valid ObjectId
+    // *************** validate student's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
 
-    // **************** set static User id for deleted_by
+    // *************** set static User id for deleted_by
     const deletedByUserId = '6862150331861f37e4e3d209';
 
-    // **************** soft delete student by updating it with composed object
+    // *************** soft delete student by updating it with composed object
     const softDeletedStudent = await StudentModel.updateOne(
       { _id, status: 'active' },
       { $set: { status: 'deleted', deleted_by: deletedByUserId, deleted_at: new Date() } }
     );
 
-    // **************** sanity check for the next db operation, check if the student is exist and not already deleted
+    // *************** sanity check for the next db operation, check if the student is exist and not already deleted
     if (softDeletedStudent.matchedCount === 0) {
       throw new ApolloError("student doesn't exist or already deleted");
     }
 
-    // **************** remove student_id from student array in school document
+    // *************** remove student_id from student array in school document
     await SchoolModel.updateOne({ students: _id }, { $pull: { students: _id } });
     return 'Student deleted successfully';
   } catch (error) {
