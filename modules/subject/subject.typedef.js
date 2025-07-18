@@ -10,7 +10,7 @@ const subjectTypeDefs = gql`
     coefficient: Float!
     pass_conditions: [SubjectPassCondition]
     test_ids: [Test!]
-    status: Status!
+    status: SyllabusStatus!
     created_at: Date!
     created_by: User!
     updated_at: Date!

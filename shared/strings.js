@@ -12,6 +12,8 @@ const mathOperatorEnum = ['greater_than', 'greater_or_equal_than', 'less_than', 
 const logicalOperatorEnum = ['and', 'or'];
 const blockSyllabusType = ['block', 'subject', 'test'];
 const subjectSyllabusType = ['subject', 'test'];
+const gradingResult = ['pass', 'fail'];
+const calculationResultStatus = ['active', 'deleted', 'archived'];
 
 // *************** EXPORT MODULE ***************
 module.exports = {
@@ -29,4 +31,6 @@ module.exports = {
   logicalOperatorEnum,
   blockSyllabusType,
   subjectSyllabusType,
+  gradingResult,
+  calculationResultStatus,
 };

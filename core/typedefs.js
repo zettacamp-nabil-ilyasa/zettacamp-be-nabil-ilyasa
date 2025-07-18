@@ -22,6 +22,12 @@ const baseTypeDefs = gql`
     archived
   }
 
+  enum SyllabusStatus {
+    active
+    deleted
+    archived
+  }
+
   enum ParameterEnum {
     mark
     average_of_marks

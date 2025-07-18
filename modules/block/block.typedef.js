@@ -8,7 +8,7 @@ const blockTypeDefs = gql`
     description: String
     pass_conditions: [BlockPassCondition]
     subject_ids: [Subject]
-    status: Status!
+    status: SyllabusStatus!
     created_at: Date!
     updated_at: Date!
   }
