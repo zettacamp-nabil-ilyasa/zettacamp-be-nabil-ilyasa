@@ -17,8 +17,20 @@ function BlockPayloadComposer({ blockName, blockDescription }) {
   return blockPayload;
 }
 
+/**
+ * Compose array of payload object from pass conditions input
+ * @param {Array<Object>} passConditionsInput - an array of object containing pass/fail criteria
+ * @param {String} parameter - pass condition's parameter to be used for conditional checking
+ * @param {Number} parameter_value - pass condition's parameter_value to be used as comparator
+ * @param {String} syllabus_type - pass condition's syllabus_type
+ * @param {String} subject_id - id of Subject used within pass_conditions
+ * @param {String} test_id - id of Test used within pass_conditions
+ *@param  {String} math_operator - string representation of math_operator
+ * @param {String} logical_operator - string representation of logical operator
+ * @throws {ApolloError} - if sanity check fails
+ */
 function BlockPassConditionsPayloadComposer(passConditionsInput) {
-  let passConditionPayload = [];
+  let passConditionsPayload = [];
   passConditionsInput.forEach((passCondition, index) => {
     // *************** sanity check for parameter
     if (!passCondition.parameter) throw new ApolloError(`pass condition's parameter in ${index} is required`);
@@ -49,7 +61,14 @@ function BlockPassConditionsPayloadComposer(passConditionsInput) {
       if (!passCondition.test_id) throw new ApolloError(`pass condition's test_id in ${index} is required`);
       payloadObject.test_id = passCondition.test_id;
     }
+
+    // *************** insert payload into array
+    passConditionsPayload.push(payloadObject);
   });
+
+  // *************** verify result's length
+  if (passConditionsPayload.length !== passConditionsInput.length) throw new ApolloError('missmatch between payload result and input');
+  return passConditionsPayload;
 }
 
 // *************** EXPORT MODULE ***************
