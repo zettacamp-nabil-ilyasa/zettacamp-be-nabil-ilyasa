@@ -80,7 +80,7 @@ function ValidateTestFilterInput(filterInput) {
  * @param {Number} testPassConditionsInput.parameter_value - value to be compared to in pass criteria checking
  * @param {Object} testPassConditionsInput.math_operator - string representation of math operator
  */
-function ValidateTestPassConditionsInput(testPassConditionsInput) {
+function ValidateTestPassConditionInput(testPassConditionsInput) {
   // *************** validate parameter_value
   if (!testPassConditionsInput.parameter_value || typeof testPassConditionsInput.parameter_value !== 'number') {
     throw new ApolloError("pass condition's parameter_value is required and must be a number");
@@ -96,4 +96,4 @@ function ValidateTestPassConditionsInput(testPassConditionsInput) {
 }
 
 // *************** EXPORT MODULE ***************
-module.exports = { ValidateTestInput, ValidateTestFilterInput, ValidateTestPassConditionsInput };
+module.exports = { ValidateTestInput, ValidateTestFilterInput, ValidateTestPassConditionInput };
