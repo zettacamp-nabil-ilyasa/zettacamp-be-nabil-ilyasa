@@ -155,16 +155,26 @@ async function UpdateBlock(parent, { _id, name, description }) {
  * @param {String}logical_operator - string representation of logical operator
  */
 async function AddBlockPassConditions(parent, { _id, input }) {
-  // *************** validate block's id
-  ValidateMongoObjectId(_id);
+  try {
+    // *************** validate block's id
+    ValidateMongoObjectId(_id);
 
-  // *************** validate block's pass_conditions input
-  ValidateBlockPassConditionsInput(input);
+    // *************** validate block's pass_conditions input
+    ValidateBlockPassConditionsInput(input);
 
-  // *************** compose payload
-  const blockPassConditionsPayload = BlockPassConditionsPayloadComposer(input);
-  const addedPassConditions = await BlockModel.findOneAndUpdate({ _id }, blockPassConditionsPayload, { new: true });
-  return addedPassConditions;
+    // *************** compose payload
+    const blockPassConditionsPayload = BlockPassConditionsPayloadComposer(input);
+    const addedPassConditions = await BlockModel.findOneAndUpdate({ _id }, blockPassConditionsPayload, { new: true });
+    return addedPassConditions;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'AddBlockPassConditions',
+      path: '/modules/block/block.resolver.js',
+      parameter_input: JSON.stringify({ _id, input }),
+    });
+    throw new ApolloError(error.message);
+  }
 }
 
 /**
