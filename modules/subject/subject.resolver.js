@@ -12,7 +12,7 @@ const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-vali
 const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
 // *************** IMPORT HELPER ***************
-const { SubjectPayloadComposer } = require('./subject.helper.js');
+const { SubjectPayloadComposer, SubjectPassConditionsPayloadComposer } = require('./subject.helper.js');
 
 // *************** QUERY ****************
 /**
@@ -183,6 +183,32 @@ async function UpdateSubject(parent, { _id, input }) {
     });
     throw new ApolloError(error.message);
   }
+}
+
+/**
+ * Add pass_conditions field into a specific subject
+ * @param {Object} parent - Not used (GraphQL resolver convention).
+ * @param {String} _id - _id of the block
+ * @param {Array<Object>} input - an array of object containing pass/fail criteria
+ * @param {String} input.parameter - pass condition's parameter to be used for conditional checking
+ * @param {Number} input.parameter_value - pass condition's parameter_value to be used as comparator
+ * @param {String} input.syllabus_type - pass condition's syllabus_type
+ * @param {String} input.subject_id - id of Subject used within pass_conditions
+ * @param {String} input.test_id - id of Test used within pass_conditions
+ *@param  {String} input.math_operator - string representation of math_operator
+ * @param {String} input.logical_operator - string representation of logical operator
+ */
+async function AddSubjectPassConditions(parent, { _id, input }) {
+  // *************** validate block's id
+  ValidateMongoObjectId(_id);
+
+  // *************** validate block's pass_conditions input
+  ValidateSubjectPassConditionsInput(input);
+
+  // *************** compose payload
+  const subjectPassConditionsPayload = SubjectPassConditionsPayloadComposer(input);
+  const addedPassConditions = await SubjectModel.findOneAndUpdate({ _id }, subjectPassConditionsPayload, { new: true });
+  return addedPassConditions;
 }
 
 /**
