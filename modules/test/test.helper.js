@@ -78,7 +78,7 @@ function TestPayloadComposer(inputObject) {
  * @param {Object} passCondition.math_operator - string representation of math operator
  * @returns
  */
-function TestPassConditionsPayloadComposer(passCondition) {
+function TestPassConditionPayloadComposer(passCondition) {
   // *************** sanity check parameter_value
   if (!passCondition.parameter_value) throw new ApolloError('parameter_value is required');
 
@@ -122,4 +122,4 @@ async function CreateAssignCorrectorTask({ userId, testId }) {
 }
 
 // *************** EXPORT MODULE ***************
-module.exports = { GetTotalWeightOfTests, TestPayloadComposer, CreateAssignCorrectorTask, TestPassConditionsPayloadComposer };
+module.exports = { GetTotalWeightOfTests, TestPayloadComposer, CreateAssignCorrectorTask, TestPassConditionPayloadComposer };
