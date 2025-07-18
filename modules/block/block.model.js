@@ -3,7 +3,7 @@ const Mongoose = require('mongoose');
 const Schema = Mongoose.Schema;
 
 // *************** IMPORT MODULE ***************
-const { syllabusStatus } = require('../../shared/strings');
+const { syllabusStatus, parameterEnum, blockSyllabusType, MathOperatorEnum, logicalOperatorEnum } = require('../../shared/strings');
 
 const blockSchema = new Schema(
   {
@@ -15,6 +15,32 @@ const blockSchema = new Schema(
 
     // list of subjects that belongs to the block
     subject_ids: [{ type: Schema.Types.ObjectId, ref: 'subject' }],
+
+    // pass/fail criteria for the block
+    pass_conditions: [
+      {
+        // parameter for pass condition checking (e.g: mark or average_of_marks)
+        parameter: { type: String, enum: parameterEnum, trim: true },
+
+        // number to be compared to as pass/fail criteria (e.g: 70 or 80 or 60)
+        parameter_value: { type: Number },
+
+        // syllabus used for the condition checking
+        syllabus_type: { type: String, enum: blockSyllabusType, trim: true },
+
+        // id of subject, only use if subject is choosed in syllabus_type
+        subject_id: { type: Schema.Types.ObjectId, ref: 'subject' },
+
+        // id of subject, only use if test is choosed in syllabus_type
+        test_id: { type: Schema.Types.ObjectId, ref: 'test' },
+
+        // math operator for the conditional checking (e.g: greater_than, less_than, etc)
+        math_operator: { type: String, enum: MathOperatorEnum, trim: true },
+
+        // logical operator to bind the conditional checking of multiple elements within pass_condition (e.g: and, or)
+        logical_operator: { type: String, enum: logicalOperatorEnum, trim: true },
+      },
+    ],
 
     // status of the block
     status: { type: String, enum: syllabusStatus, default: 'active', trim: true },

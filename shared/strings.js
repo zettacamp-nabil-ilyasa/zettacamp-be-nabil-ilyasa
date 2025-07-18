@@ -7,6 +7,10 @@ const allowedTaskStatus = ['pending', 'in_progress', 'completed'];
 const allowedTaskTypes = ['assign_corrector', 'validate_marks', 'enter_marks'];
 const allowedStudentTestResultStatus = ['completed', 'need_revision', 'validated'];
 const taskOwnerUserId = '6862150331861f37e4e3d209';
+const parameterEnum = ['mark', 'average_of_marks'];
+const MathOperatorEnum = ['greater_than', 'greater_or_equal_than', 'less_than', 'less_or_equal_than', 'equal'];
+const logicalOperatorEnum = ['and', 'or'];
+const blockSyllabusType = ['block', 'subject', 'test'];
 
 // *************** EXPORT MODULE ***************
 module.exports = {
@@ -19,4 +23,8 @@ module.exports = {
   allowedTaskTypes,
   taskOwnerUserId,
   allowedStudentTestResultStatus,
+  parameterEnum,
+  MathOperatorEnum,
+  logicalOperatorEnum,
+  blockSyllabusType,
 };
