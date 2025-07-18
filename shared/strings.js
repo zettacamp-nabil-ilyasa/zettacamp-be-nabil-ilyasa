@@ -11,6 +11,7 @@ const parameterEnum = ['mark', 'average_of_marks'];
 const MathOperatorEnum = ['greater_than', 'greater_or_equal_than', 'less_than', 'less_or_equal_than', 'equal'];
 const logicalOperatorEnum = ['and', 'or'];
 const blockSyllabusType = ['block', 'subject', 'test'];
+const subjectSyllabusType = ['subject', 'test'];
 
 // *************** EXPORT MODULE ***************
 module.exports = {
@@ -27,4 +28,5 @@ module.exports = {
   MathOperatorEnum,
   logicalOperatorEnum,
   blockSyllabusType,
+  subjectSyllabusType,
 };
