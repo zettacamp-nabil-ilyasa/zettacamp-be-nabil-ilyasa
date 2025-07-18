@@ -8,7 +8,7 @@ const UserModel = require('../user/user.model.js');
 const TestModel = require('../test/test.model.js');
 const SubjectModel = require('../subject/subject.model.js');
 const StudentModel = require('../student/student.model.js');
-const StudentTestResultModel = require('../studenTestResult/student_test_result.model.js');
+const StudentTestResultModel = require('../studentTestResult/student_test_result.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***************

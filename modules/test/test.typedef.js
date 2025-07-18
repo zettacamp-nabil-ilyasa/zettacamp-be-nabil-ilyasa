@@ -23,7 +23,7 @@ const testTypeDefs = gql`
   }
 
   type TestPassCondition {
-    parameter_value: Number
+    parameter_value: Float
     math_operator: MathOperatorEnum
   }
 
@@ -46,7 +46,7 @@ const testTypeDefs = gql`
   }
 
   input AddTestPassConditionInput {
-    parameter_value: Number
+    parameter_value: Float
     math_operator: MathOperatorEnum
   }
 

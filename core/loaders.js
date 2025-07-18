@@ -6,7 +6,7 @@ const { BlockLoader } = require('../modules/block/block.loader');
 const { SubjectLoader } = require('../modules/subject/subject.loader');
 const { TestLoader } = require('../modules/test/test.loader');
 const { TaskLoader } = require('../modules/task/task.loader');
-const { StudentTestResultLoader } = require('../modules/studenTestResult/student_test_result.loader');
+const { StudentTestResultLoader } = require('../modules/studentTestResult/student_test_result.loader');
 
 /**
  * Initialize and return DataLoader instances for batching and caching to prevent N+1 queries.

@@ -17,22 +17,22 @@ const calculationResultTypeDefs = gql`
   type BlockResult {
     block_id: Block
     block_result: GradingResultEnum
-    total_marks: Number
+    total_marks: Float
     subject_results: [SubjectResult]
   }
 
   type SubjectResult {
     subject_id: Subject
     subject_result: GradingResultEnum
-    total_mark: Number
+    total_mark: Float
     test_results: [TestResult]
   }
 
   type TestResult {
     test_id: Test
     test_result: GradingResultEnum
-    average_mark: Number
-    weighted_mark: Number
+    average_mark: Float
+    weighted_mark: Float
   }
 
   input CalculationResultInput {
@@ -44,22 +44,22 @@ const calculationResultTypeDefs = gql`
   input BlockResultInput {
     block_id: Block
     block_result: GradingResultEnum
-    total_marks: Number
+    total_marks: Float
     subject_results: [SubjectResultInput]
   }
 
   type SubjectResultInput {
     subject_id: Subject
     subject_result: GradingResultEnum
-    total_mark: Number
+    total_mark: Float
     test_results: [TestResultInput]
   }
 
   type TestResultInput {
     test_id: Test
     test_result: GradingResultEnum
-    average_mark: Number
-    weighted_mark: Number
+    average_mark: Float
+    weighted_mark: Float
   }
 
   enum GradingResultEnum {

@@ -9,7 +9,7 @@ const StudentTypeDefs = require('../modules/student/student.typedef.js');
 const BlockTypeDefs = require('../modules/block/block.typedef.js');
 const SubjectTypeDefs = require('../modules/subject/subject.typedef.js');
 const TestTypeDefs = require('../modules/test/test.typedef.js');
-const StudentTestResultTypeDefs = require('../modules/studenTestResult/studentTestResult.typedef.js');
+const StudentTestResultTypeDefs = require('../modules/studentTestResult/studentTestResult.typedef.js');
 const TaskTypeDefs = require('../modules/task/task.typedef.js');
 
 // *************** base typedef

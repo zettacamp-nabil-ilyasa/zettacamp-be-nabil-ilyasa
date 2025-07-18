@@ -20,7 +20,7 @@ const subjectTypeDefs = gql`
 
   type SubjectPassCondition {
     parameter: ParameterEnum
-    parameter_value: Number
+    parameter_value: Float
     syllabus_type: SubjectSyllabusTypeEnum
     test_id: Test
     math_operator: MathOperatorEnum
@@ -33,7 +33,7 @@ const subjectTypeDefs = gql`
 
   input SubjectPassConditionInput {
     parameter: ParameterEnum
-    parameter_value: Number
+    parameter_value: Float
     syllabus_type: SubjectSyllabusTypeEnum
     test_id: String
     math_operator: MathOperatorEnum
@@ -64,7 +64,7 @@ const subjectTypeDefs = gql`
   extend type Mutation {
     CreateSubject(input: SubjectInput): Subject
     UpdateSubject(_id: ID!, input: SubjectInput): Subject
-    AddSubjectPassCondition(_id: ID!, input: AddSubjectPassConditionsInput): Subject
+    AddSubjectPassConditions(_id: ID!, input: AddSubjectPassConditionsInput): Subject
     DeleteSubject(_id: ID!): String
   }
 `;

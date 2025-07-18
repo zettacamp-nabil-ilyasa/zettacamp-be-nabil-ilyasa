@@ -3,7 +3,7 @@ const Mongoose = require('mongoose');
 const Schema = Mongoose.Schema;
 
 // *************** IMPORT MODULE ***************
-const { syllabusStatus, logicalOperatorEnum, mathOperatorEnum } = require('../../shared/strings');
+const { syllabusStatus, subjectSyllabusType, logicalOperatorEnum, mathOperatorEnum, parameterEnum } = require('../../shared/strings');
 
 const subjectSchema = new Schema(
   {

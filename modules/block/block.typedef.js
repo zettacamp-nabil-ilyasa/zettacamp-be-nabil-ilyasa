@@ -15,7 +15,7 @@ const blockTypeDefs = gql`
 
   type BlockPassCondition {
     parameter: ParameterEnum
-    parameter_value: Number
+    parameter_value: Float
     syllabus_type: BlockSyllabusTypeEnum
     subject_id: Subject
     test_id: Test
@@ -25,7 +25,7 @@ const blockTypeDefs = gql`
 
   input BlockPassConditionInput {
     parameter: ParameterEnum
-    parameter_value: Number
+    parameter_value: Float
     syllabus_type: BlockSyllabusTypeEnum
     subject_id: String
     test_id: String
