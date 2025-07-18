@@ -7,7 +7,7 @@ const BlockModel = require('../block/block.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateSubjectInput, ValidateSubjectFilterInput } = require('./subject.validators.js');
+const { ValidateSubjectInput, ValidateSubjectFilterInput, ValidateSubjectPassConditionsInput } = require('./subject.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
@@ -199,16 +199,26 @@ async function UpdateSubject(parent, { _id, input }) {
  * @param {String} input.logical_operator - string representation of logical operator
  */
 async function AddSubjectPassConditions(parent, { _id, input }) {
-  // *************** validate block's id
-  ValidateMongoObjectId(_id);
+  try {
+    // *************** validate block's id
+    ValidateMongoObjectId(_id);
 
-  // *************** validate block's pass_conditions input
-  ValidateSubjectPassConditionsInput(input);
+    // *************** validate subject's pass_conditions input
+    ValidateSubjectPassConditionsInput(input);
 
-  // *************** compose payload
-  const subjectPassConditionsPayload = SubjectPassConditionsPayloadComposer(input);
-  const addedPassConditions = await SubjectModel.findOneAndUpdate({ _id }, subjectPassConditionsPayload, { new: true });
-  return addedPassConditions;
+    // *************** compose payload
+    const subjectPassConditionsPayload = SubjectPassConditionsPayloadComposer(input);
+    const addedPassConditions = await SubjectModel.findOneAndUpdate({ _id }, subjectPassConditionsPayload, { new: true });
+    return addedPassConditions;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'UpdateSubject',
+      path: '/modules/subject/subject.resolver.js',
+      parameter_input: JSON.stringify({ _id, input }),
+    });
+    throw new ApolloError(error.message);
+  }
 }
 
 /**
@@ -321,7 +331,7 @@ async function test_ids(parent, args, context) {
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllSubjects, GetOneSubject },
-  Mutation: { CreateSubject, UpdateSubject, DeleteSubject },
+  Mutation: { CreateSubject, UpdateSubject, AddSubjectPassConditions, DeleteSubject },
   Subject: {
     block_id,
     test_ids,
