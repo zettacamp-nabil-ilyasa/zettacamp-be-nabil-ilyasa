@@ -21,6 +21,24 @@ const baseTypeDefs = gql`
     deleted
   }
 
+  enum ParameterEnum {
+    mark
+    average_of_marks
+  }
+
+  enum MathOperatorEnum {
+    greater_than
+    greater_or_equal_than
+    less_than
+    less_or_equal_than
+    equal
+  }
+
+  enum LogicalOperatorEnum {
+    and
+    or
+  }
+
   input PaginationInput {
     limit: Int
     offset: Int
