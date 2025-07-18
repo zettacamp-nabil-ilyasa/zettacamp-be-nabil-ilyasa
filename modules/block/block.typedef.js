@@ -56,7 +56,7 @@ const blockTypeDefs = gql`
   extend type Mutation {
     CreateBlock(name: String!, description: String): Block
     UpdateBlock(_id: ID!, name: String!, description: String): Block
-    AddBlockPassCondition(_id: ID!, input: AddBlockPassConditionInput): Block
+    AddBlockPassConditions(_id: ID!, input: AddBlockPassConditionInput): Block
     DeleteBlock(_id: ID!): String
   }
 `;

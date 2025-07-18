@@ -3,6 +3,7 @@ const { ApolloError } = require('apollo-server-express');
 
 // *************** IMPORT MODULE ***************
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator');
+const { mathOperatorEnum } = require('../../shared/strings');
 
 /**
  *
@@ -16,7 +17,7 @@ function ValidateBlockInput({ blockName, blockDescription }) {
   if (blockDescription && typeof blockDescription !== 'string') throw new ApolloError('description must be a string');
 }
 /**
- *
+ * Validate pass conditions input
  * @param {Array<Object>} blockPassConditionsInput - an array of object containing pass/fail criteria
  * @param {String} parameter - pass condition's parameter to be used for conditional checking
  * @param {Number}parameter_value - pass condition's parameter_value to be used as comparator
@@ -25,7 +26,7 @@ function ValidateBlockInput({ blockName, blockDescription }) {
  * @param {String}test_id - id of Test used within pass_conditions
  *@param  {String}math_operator - string representation of math_operator
  * @param {String}logical_operator - string representation of logical operator
- *
+ * @throws {ApolloError} - if validation fails
  */
 function ValidateBlockPassConditionsInput(blockPassConditionsInput) {
   if (!Array.isArray(blockPassConditionsInput))
@@ -48,6 +49,9 @@ function ValidateBlockPassConditionsInput(blockPassConditionsInput) {
       // *************** validate pass condition's math_operator
       if (!passCondition.math_operator || typeof passCondition.math_operator !== 'string') {
         throw new ApolloError(`pass condition's math_operator in ${index} must be a string`);
+      }
+      if (!mathOperatorEnum.includes(passCondition.math_operator)) {
+        throw new ApolloError(`pass condition's math_operator must be one of following: ${mathOperatorEnum.join(', ')}`);
       }
 
       // *************** apply some rules for parameter 'mark'

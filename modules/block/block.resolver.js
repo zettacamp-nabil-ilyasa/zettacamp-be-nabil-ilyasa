@@ -6,12 +6,12 @@ const BlockModel = require('./block.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateBlockInput } = require('./block.validators.js');
+const { ValidateBlockInput, ValidateBlockPassConditionsInput } = require('./block.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
 // *************** IMPORT HELPER ***************
-const { BlockPayloadComposer } = require('./block.helper.js');
+const { BlockPayloadComposer, BlockPassConditionsPayloadComposer } = require('./block.helper.js');
 
 // *************** QUERY ****************
 /**
@@ -135,10 +135,36 @@ async function UpdateBlock(parent, { _id, name, description }) {
       error_stack: error.stack,
       function_name: 'UpdateBlock',
       path: '/modules/block/block.resolver.js',
-      parameter_input: JSON.stringify({ _id, blockName, blockDescription }),
+      parameter_input: JSON.stringify({ _id, name, description }),
     });
     throw new ApolloError(error.message);
   }
+}
+
+/**
+ * Add pass_conditions field into a specific block
+ * @param {Object} parent - Not used (GraphQL resolver convention).
+ * @param {String} _id - _id of the block
+ * @param {Array<Object>} blockPassConditionsInput - an array of object containing pass/fail criteria
+ * @param {String} parameter - pass condition's parameter to be used for conditional checking
+ * @param {Number}parameter_value - pass condition's parameter_value to be used as comparator
+ * @param {String}syllabus_type - pass condition's syllabus_type
+ * @param {String}subject_id - id of Subject used within pass_conditions
+ * @param {String}test_id - id of Test used within pass_conditions
+ *@param  {String}math_operator - string representation of math_operator
+ * @param {String}logical_operator - string representation of logical operator
+ */
+async function AddBlockPassConditions(parent, { _id, input }) {
+  // *************** validate block's id
+  ValidateMongoObjectId(_id);
+
+  // *************** validate block's pass_conditions input
+  ValidateBlockPassConditionsInput(input);
+
+  // *************** compose payload
+  const blockPassConditionsPayload = BlockPassConditionsPayloadComposer(input);
+  const addedPassConditions = await BlockModel.findOneAndUpdate({ _id }, blockPassConditionsPayload, { new: true });
+  return addedPassConditions;
 }
 
 /**
@@ -217,7 +243,7 @@ async function subject_ids(parent, args, context) {
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllBlocks, GetOneBlock },
-  Mutation: { CreateBlock, UpdateBlock, DeleteBlock },
+  Mutation: { CreateBlock, UpdateBlock, AddBlockPassConditions, DeleteBlock },
   Block: {
     subject_ids,
   },
