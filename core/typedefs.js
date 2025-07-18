@@ -19,6 +19,7 @@ const baseTypeDefs = gql`
   enum Status {
     active
     deleted
+    archived
   }
 
   enum ParameterEnum {
