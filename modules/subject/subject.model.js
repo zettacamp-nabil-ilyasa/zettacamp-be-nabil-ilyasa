@@ -3,7 +3,7 @@ const Mongoose = require('mongoose');
 const Schema = Mongoose.Schema;
 
 // *************** IMPORT MODULE ***************
-const { syllabusStatus } = require('../../shared/strings');
+const { syllabusStatus, logicalOperatorEnum, mathOperatorEnum } = require('../../shared/strings');
 
 const subjectSchema = new Schema(
   {
@@ -35,7 +35,7 @@ const subjectSchema = new Schema(
         test_id: { type: Schema.Types.ObjectId, ref: 'test' },
 
         // math operator for the conditional checking (e.g: greater_than, less_than, etc)
-        math_operator: { type: String, enum: MathOperatorEnum, trim: true },
+        math_operator: { type: String, enum: mathOperatorEnum, trim: true },
 
         // logical operator to bind the conditional checking of multiple elements within pass_condition (e.g: and, or)
         logical_operator: { type: String, enum: logicalOperatorEnum, trim: true },

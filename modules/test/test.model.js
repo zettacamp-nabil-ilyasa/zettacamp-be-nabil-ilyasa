@@ -3,7 +3,7 @@ const Mongoose = require('mongoose');
 const Schema = Mongoose.Schema;
 
 // *************** IMPORT MODULE ***************
-const { testStatus } = require('../../shared/strings');
+const { testStatus, mathOperatorEnum } = require('../../shared/strings');
 
 const testSchema = new Schema(
   {
@@ -29,6 +29,15 @@ const testSchema = new Schema(
 
     // subject associated with the test
     subject_id: { type: Schema.Types.ObjectId, ref: 'subject' },
+
+    // pass/fail criteria for the block
+    pass_condition: {
+      // number to be compared to as pass/fail criteria (e.g: 70 or 80 or 60)
+      parameter_value: { type: Number },
+
+      // math operator for the conditional checking (e.g: greater_than, less_than, etc)
+      math_operator: { type: String, enum: mathOperatorEnum },
+    },
 
     // status of the test
     status: { type: String, enum: testStatus, default: 'not_published' },
