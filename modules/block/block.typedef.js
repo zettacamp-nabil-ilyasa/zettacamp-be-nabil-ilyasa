@@ -38,11 +38,11 @@ const blockTypeDefs = gql`
     description: String
   }
 
-  input AddBlockPassConditionInput{
+  input AddBlockPassConditionInput {
     pass_conditions: [AddBlockPassConditionInput]
   }
 
-  enum BlockSyllabusTypeEnum{
+  enum BlockSyllabusTypeEnum {
     block
     subject
     test
@@ -56,7 +56,7 @@ const blockTypeDefs = gql`
   extend type Mutation {
     CreateBlock(name: String!, description: String): Block
     UpdateBlock(_id: ID!, name: String!, description: String): Block
-    AddBlockPassCondition(_id: ID!, input: AddBlockPassConditionInput)
+    AddBlockPassCondition(_id: ID!, input: AddBlockPassConditionInput): Block
     DeleteBlock(_id: ID!): String
   }
 `;
