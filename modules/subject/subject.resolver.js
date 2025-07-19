@@ -208,7 +208,11 @@ async function AddSubjectPassConditions(parent, { _id, input }) {
 
     // *************** compose payload
     const subjectPassConditionsPayload = SubjectPassConditionsPayloadComposer(input);
-    const addedPassConditions = await SubjectModel.findOneAndUpdate({ _id }, subjectPassConditionsPayload, { new: true });
+    const addedPassConditions = await SubjectModel.findOneAndUpdate(
+      { _id },
+      { $set: { pass_conditions: subjectPassConditionsPayload } },
+      { new: true }
+    );
     return addedPassConditions;
   } catch (error) {
     await ErrorLogModel.create({
@@ -328,6 +332,31 @@ async function test_ids(parent, args, context) {
   }
 }
 
+/**
+ * Resolve the test_id field in pass_conditions field in subject document using DataLoader.
+ * @async
+ * @param {object} parent - The passcondition object containing test_id field.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context containing DataLoaders.
+ * @param {object} context.loaders.test - DataLoader instance for tests.
+ * @returns {Promise<Object|null>} - The test document or null if not available.
+ * @throws {ApolloError} - Throws error if loading fails.
+ */
+async function test_id(parent, _, context) {
+  try {
+    if (!parent?.test_id) return null;
+    return await context.loaders.test.load(parent.test_id);
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'test_id',
+      path: '/modules/subject/subject.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllSubjects, GetOneSubject },
@@ -335,5 +364,8 @@ module.exports = {
   Subject: {
     block_id,
     test_ids,
+  },
+  SubjectPassCondition: {
+    test_id,
   },
 };

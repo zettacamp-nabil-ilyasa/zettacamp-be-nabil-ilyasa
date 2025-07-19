@@ -297,7 +297,7 @@ async function test_id(parent, _, context) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'test_id',
-      path: '/modules/block/passCondition.resolver.js',
+      path: '/modules/block/block.resolver.js',
       parameter_input: JSON.stringify({}),
     });
     throw new ApolloError(error.message);
