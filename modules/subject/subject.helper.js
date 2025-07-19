@@ -65,11 +65,15 @@ function SubjectPassConditionsPayloadComposer(passConditionsInput) {
       math_operator: passCondition.math_operator,
     };
 
-    // *************** make sure to include subject_id if syllabus type is 'subject'
-    if (passCondition.syllabus_type === 'subject') {
-      // *************** make sure to include test_id if syllabus type is 'test'
-    } else if (passCondition.syllabus_type === 'test') {
-      if (!passCondition.test_id) throw new ApolloError(`pass condition's test_id in ${index} is required`);
+    // *************** sanity check for logical_operator of the object with index more than 0
+    if (passConditionsInput.length > 1 && index >= 1) {
+      if (!passCondition.logical_operator) throw new ApolloError(`logical operator is required in ${index}`);
+      payloadObject.logical_operator = passCondition.logical_operator;
+    }
+
+    // *************** make sure to include test_id if syllabus type is 'test'
+    if (passCondition.parameter === 'mark' && passCondition.syllabus_type === 'test') {
+      if (!passCondition.test_id) throw new ApolloError(`pass condition's test_id in ${index} is required for 'mark' parameter`);
       payloadObject.test_id = passCondition.test_id;
     }
 

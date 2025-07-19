@@ -57,13 +57,14 @@ function BlockPassConditionsPayloadComposer(passConditionsInput) {
       payloadObject.logical_operator = passCondition.logical_operator;
     }
 
-    // *************** make sure to include subject_id if syllabus type is 'subject'
-    if (passCondition.syllabus_type === 'subject') {
+    // *************** make sure to include subject_id if syllabus type is 'subject' and parameter is  'average_of_single'
+    if (passCondition.parameter === 'average_of_single' && passCondition.syllabus_type === 'subject') {
       if (!passCondition.subject_id) throw new ApolloError(`pass condition's subject_id in ${index} is required`);
       payloadObject.subject_id = passCondition.subject_id;
+    }
 
-      // *************** make sure to include test_id if syllabus type is 'test'
-    } else if (passCondition.syllabus_type === 'test') {
+    // *************** make sure to include test_id if syllabus type is 'test' and parameter is 'mark'
+    if (passCondition.syllabus_type === 'test') {
       if (!passCondition.test_id) throw new ApolloError(`pass condition's test_id in ${index} is required`);
       payloadObject.test_id = passCondition.test_id;
     }
