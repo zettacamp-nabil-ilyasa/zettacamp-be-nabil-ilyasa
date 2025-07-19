@@ -23,7 +23,7 @@ const blockTypeDefs = gql`
     logical_operator: LogicalOperatorEnum
   }
 
-  input BlockPassConditionInput {
+  input AddBlockPassConditionInput {
     parameter: ParameterEnum
     parameter_value: Float
     syllabus_type: BlockSyllabusTypeEnum
@@ -36,10 +36,6 @@ const blockTypeDefs = gql`
   input BlockInput {
     name: String!
     description: String
-  }
-
-  input AddBlockPassConditionInput {
-    pass_conditions: [AddBlockPassConditionInput]
   }
 
   enum BlockSyllabusTypeEnum {
@@ -56,7 +52,7 @@ const blockTypeDefs = gql`
   extend type Mutation {
     CreateBlock(name: String!, description: String): Block
     UpdateBlock(_id: ID!, name: String!, description: String): Block
-    AddBlockPassConditions(_id: ID!, input: AddBlockPassConditionInput): Block
+    AddBlockPassConditions(_id: ID!, input: [AddBlockPassConditionInput]): Block
     DeleteBlock(_id: ID!): String
   }
 `;

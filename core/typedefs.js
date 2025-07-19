@@ -29,8 +29,9 @@ const baseTypeDefs = gql`
   }
 
   enum ParameterEnum {
+    average_of_all
+    average_of_single
     mark
-    average_of_marks
   }
 
   enum MathOperatorEnum {
