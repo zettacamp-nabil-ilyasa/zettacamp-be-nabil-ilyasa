@@ -164,7 +164,11 @@ async function AddBlockPassConditions(parent, { _id, input }) {
 
     // *************** compose payload
     const blockPassConditionsPayload = BlockPassConditionsPayloadComposer(input);
-    const addedPassConditions = await BlockModel.findOneAndUpdate({ _id }, blockPassConditionsPayload, { new: true });
+    const addedPassConditions = await BlockModel.findOneAndUpdate(
+      { _id },
+      { $set: { pass_conditions: blockPassConditionsPayload } },
+      { new: true }
+    );
     return addedPassConditions;
   } catch (error) {
     await ErrorLogModel.create({
@@ -250,11 +254,65 @@ async function subject_ids(parent, args, context) {
   }
 }
 
+/**
+ * Resolve the subject_id field in pass_conditions field in block document using DataLoader.
+ * @async
+ * @param {object} parent - The passcondition object containing subject_id field.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context containing DataLoaders.
+ * @param {object} context.loaders.subject - DataLoader instance for subjects.
+ * @returns {Promise<Object|null>} - The subject document or null if not available.
+ * @throws {ApolloError} - Throws error if loading fails.
+ */
+async function subject_id(parent, _, context) {
+  try {
+    if (!parent?.subject_id) return null;
+    return await context.loaders.subject.load(parent.subject_id);
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'subject_id',
+      path: '/modules/block/passCondition.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
+ * Resolve the test_id field in pass_conditions field in block document using DataLoader.
+ * @async
+ * @param {object} parent - The passcondition object containing test_id field.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context containing DataLoaders.
+ * @param {object} context.loaders.test - DataLoader instance for tests.
+ * @returns {Promise<Object|null>} - The test document or null if not available.
+ * @throws {ApolloError} - Throws error if loading fails.
+ */
+async function test_id(parent, _, context) {
+  try {
+    if (!parent?.test_id) return null;
+    return await context.loaders.test.load(parent.test_id);
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'test_id',
+      path: '/modules/block/passCondition.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllBlocks, GetOneBlock },
   Mutation: { CreateBlock, UpdateBlock, AddBlockPassConditions, DeleteBlock },
   Block: {
     subject_ids,
+  },
+  BlockPassCondition: {
+    subject_id,
+    test_id,
   },
 };
