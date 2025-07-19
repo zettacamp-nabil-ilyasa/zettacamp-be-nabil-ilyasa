@@ -51,6 +51,12 @@ function BlockPassConditionsPayloadComposer(passConditionsInput) {
       math_operator: passCondition.math_operator,
     };
 
+    // *************** sanity check for logical_operator of the object with index more than 0
+    if (passConditionsInput.length > 1 && index >= 1) {
+      if (!passCondition.logical_operator) throw new ApolloError(`logical operator is required in ${index}`);
+      payloadObject.logical_operator = passCondition.logical_operator;
+    }
+
     // *************** make sure to include subject_id if syllabus type is 'subject'
     if (passCondition.syllabus_type === 'subject') {
       if (!passCondition.subject_id) throw new ApolloError(`pass condition's subject_id in ${index} is required`);
