@@ -5,7 +5,7 @@ const subjectTypeDefs = gql`
   type Subject {
     _id: ID!
     block_id: Block!
-    name: String!
+    name: String
     description: String
     coefficient: Float!
     pass_conditions: [SubjectPassCondition]
@@ -25,10 +25,6 @@ const subjectTypeDefs = gql`
     test_id: Test
     math_operator: MathOperatorEnum
     logical_operator: LogicalOperatorEnum
-  }
-
-  input AddSubjectPassConditionsInput {
-    pass_condition: [SubjectPassConditionInput]
   }
 
   input SubjectPassConditionInput {
@@ -53,7 +49,7 @@ const subjectTypeDefs = gql`
 
   enum SubjectSyllabusTypeEnum {
     subject
-    type
+    test
   }
 
   extend type Query {
@@ -64,7 +60,7 @@ const subjectTypeDefs = gql`
   extend type Mutation {
     CreateSubject(input: SubjectInput): Subject
     UpdateSubject(_id: ID!, input: SubjectInput): Subject
-    AddSubjectPassConditions(_id: ID!, input: AddSubjectPassConditionsInput): Subject
+    AddSubjectPassConditions(_id: ID!, input: [SubjectPassConditionInput]): Subject
     DeleteSubject(_id: ID!): String
   }
 `;
