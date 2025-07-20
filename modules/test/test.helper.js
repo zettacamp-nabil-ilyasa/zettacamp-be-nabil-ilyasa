@@ -88,7 +88,7 @@ function TestPassConditionPayloadComposer(passCondition) {
   // *************** compose pass_condition payload
   const testPassConditionPayload = {
     parameter_value: passCondition.parameter_value,
-    math_operator: math_operator,
+    math_operator: passCondition.math_operator,
   };
   return testPassConditionPayload;
 }
