@@ -225,9 +225,13 @@ async function AddTestPassCondition(parent, { _id, input }) {
 
     // *************** compose payload
     const testPassConditionsPayload = TestPassConditionPayloadComposer(input);
-    const addedPassConditions = await TestModel.findOneAndUpdate({ _id }, testPassConditionsPayload, { new: true });
+    const addedPassConditions = await TestModel.findOneAndUpdate(
+      { _id },
+      { $set: { pass_condition: testPassConditionsPayload } },
+      { new: true }
+    );
     return addedPassConditions;
-  } catch {
+  } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'AddTestPassConditions',
