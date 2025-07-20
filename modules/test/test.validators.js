@@ -90,9 +90,6 @@ function ValidateTestPassConditionInput(testPassConditionsInput) {
   if (!testPassConditionsInput.math_operator || typeof testPassConditionsInput.math_operator !== 'string') {
     throw new ApolloError("pass condition's parameter_value is required and must be a string");
   }
-  if (!mathOperatorEnum.includes(testPassConditionsInput.math_operator)) {
-    throw new ApolloError(`math_operator must be one of following: ${mathOperatorEnum.join(', ')}`);
-  }
 }
 
 // *************** EXPORT MODULE ***************
