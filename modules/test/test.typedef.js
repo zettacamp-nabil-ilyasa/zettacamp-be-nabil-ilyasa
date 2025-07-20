@@ -5,7 +5,7 @@ const testTypeDefs = gql`
   type Test {
     _id: ID!
     subject_id: Subject!
-    name: String!
+    name: String
     description: String
     weight: Float!
     notations: [Notation]
