@@ -3,7 +3,6 @@ const { ApolloError } = require('apollo-server-express');
 
 // *************** IMPORT MODULE ***************
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator');
-const { mathOperatorEnum, logicalOperatorEnum, parameterEnum, blockSyllabusType } = require('../../shared/strings');
 
 /**
  *
@@ -74,25 +73,21 @@ function ValidateBlockPassConditionsInput(blockPassConditionsInput) {
           `pass condition's 'average_of_single' cannot be used for syllabus_type other than 'block' and 'subject' in index[${index}]`
         );
       }
+    }
 
-      // *************** validate rules for pass condition's parameter 'average_of_single'
-      if (passCondition.parameter === 'average_of_all') {
-        if (passCondition.syllabus_type !== 'subject' && passCondition.syllabus_type !== 'test') {
-          throw new ApolloError(
-            `pass condition's 'average_of_all' cannot be used for syllabus_type other than 'subject' and 'test' in index[${index}]`
-          );
-        }
-      }
-
-      // *************** throw error if syllabus_type is test
-      if (passCondition.syllabus_type === 'test') {
-        throw new ApolloError(`pass condition's 'mark' cannot be used for syllabus_type 'test' in index[${index}]`);
+    // *************** validate rules for pass condition's parameter 'average_of_all'
+    if (passCondition.parameter === 'average_of_all') {
+      if (passCondition.syllabus_type !== 'subject' && passCondition.syllabus_type !== 'test') {
+        throw new ApolloError(
+          `pass condition's 'average_of_all' cannot be used for syllabus_type other than 'subject' and 'test' in index[${index}]`
+        );
       }
     }
+
     // *************** validate logical operator if blockPassConditionsInput have more than one element
     if (blockPassConditionsInput.length > 1 && index >= 1) {
       if (!passCondition.logical_operator || typeof passCondition.logical_operator !== 'string') {
-        throw new ApolloError('logical operator in index[${index}] is required for multiple pass condition');
+        throw new ApolloError(`logical operator in index[${index}] is required for multiple pass condition`);
       }
     }
   });
