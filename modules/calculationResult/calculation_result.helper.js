@@ -76,7 +76,7 @@ async function CalculateResult(studentId) {
     // *************** start another loop for payload's subject results
     for (const [subjectId, subjectData] of Object.entries(blockData.subjects)) {
       let totalWeightedMarks = 0;
-      const testResults = [];
+      const testResultsForCalculationResultPayload = [];
 
       // *************** start another loop for test processing within subject
       for (const result of subjectData.results) {
@@ -87,12 +87,13 @@ async function CalculateResult(studentId) {
         totalWeightedMarks += weightedMark;
 
         // *************** push test results to outer variable
-        testResults.push({
+        testResultsForCalculationResultPayload.push({
           test_id: result.test_id._id,
           test_result: '',
           average_mark: result.average_mark,
           weighted_mark: weightedMark,
         });
+        const testScopeEvaluatedCondition = CalculateTestResult({ testPassCondition: result.test_id.pass_condition, weightedMark });
       }
       // *************** calculate subject's total mark
       const subjectTotalMark = (totalWeightedMarks / subjectData.results.length) * subjectData.subject.coefficient;
@@ -246,7 +247,16 @@ function CalculateSubjectResult({ subjectPassConditions, calculationResultPayloa
   return subjectResult;
 }
 
-function CalculateTestResult(testPassConditions) {}
+function CalculateTestResult({ testPassCondition, weightedMark }) {
+  const testResult = [];
+  const result = MathOperatorParser({
+    mathOperator: testPassCondition.math_operator,
+    parameterValue: testPassCondition.parameterValue,
+    valueToCompare: weightedMark,
+  });
+  testResult.push(result);
+  return testResult;
+}
 
 function MathOperatorParser({ mathOperator, parameterValue, valueToCompare }) {
   let result = false;
