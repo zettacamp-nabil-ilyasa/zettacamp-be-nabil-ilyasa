@@ -85,18 +85,11 @@ function ValidateSubjectPassConditionsInput(subjectPassConditionsInput) {
       }
     }
 
-    // *************** validate rules for pass condition's parameter 'average_of_single'
+    // *************** validate rules for pass condition's parameter 'average_of'
     if (passCondition.parameter === 'average_of_single' && passCondition.syllabus_type !== 'subject') {
       throw new ApolloError(
         `pass condition's 'average_of_single' cannot be used for syllabus_type other than 'subject' in index[${index}]`
       );
-    }
-
-    // *************** validate rules for pass condition's parameter 'average_of_all'
-    if (passCondition.parameter === 'average_of_all') {
-      if (passCondition.syllabus_type !== 'test') {
-        throw new ApolloError(`pass condition's 'average_of_all' cannot be used for syllabus_type other than 'test' in index[${index}]`);
-      }
     }
 
     // *************** validate logical operator if subjectPassConditionsInput have more than one element
