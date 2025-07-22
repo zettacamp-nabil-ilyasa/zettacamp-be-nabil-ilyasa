@@ -11,6 +11,7 @@ const SubjectTypeDefs = require('../modules/subject/subject.typedef.js');
 const TestTypeDefs = require('../modules/test/test.typedef.js');
 const StudentTestResultTypeDefs = require('../modules/studentTestResult/studentTestResult.typedef.js');
 const TaskTypeDefs = require('../modules/task/task.typedef.js');
+const CalculationResultTypeDefs = require('../modules/calculationResult/calculation_result.typedef.js');
 
 // *************** base typedef
 const baseTypeDefs = gql`
@@ -67,6 +68,7 @@ const typeDefs = mergeTypeDefs([
   TestTypeDefs,
   StudentTestResultTypeDefs,
   TaskTypeDefs,
+  CalculationResultTypeDefs,
 ]);
 
 // *************** EXPORT MODULE ***************

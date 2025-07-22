@@ -75,7 +75,7 @@ const calculationResultTypeDefs = gql`
 
   type extend query{
     GetAllCalculationResults(): [CalculationResult]
-    GetAllCalculationResults(_id: ID!): CalculationResult
+    GetOneCalculationResults(_id: ID!): CalculationResult
   }
 `;
 

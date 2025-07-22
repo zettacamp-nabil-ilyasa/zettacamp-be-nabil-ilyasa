@@ -10,6 +10,7 @@ const SubjectResolvers = require('../modules/subject/subject.resolver.js');
 const TestResolvers = require('../modules/test/test.resolver.js');
 const StudentTestResultResolvers = require('../modules/studentTestResult/student_test_result.resolver.js');
 const TaskResolvers = require('../modules/task/task.resolver.js');
+const CalculationResultResolvers = require('../modules/calculationResult/calculation_result.resolver.js');
 
 // ***************  Merge all resolvers from modules
 const resolvers = mergeResolvers([
@@ -21,6 +22,7 @@ const resolvers = mergeResolvers([
   TestResolvers,
   StudentTestResultResolvers,
   TaskResolvers,
+  CalculationResultResolvers,
 ]);
 
 // *************** EXPORT MODULE ***************
