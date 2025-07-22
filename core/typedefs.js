@@ -30,8 +30,7 @@ const baseTypeDefs = gql`
   }
 
   enum ParameterEnum {
-    average_of_all
-    average_of_single
+    average_of
     mark
   }
 

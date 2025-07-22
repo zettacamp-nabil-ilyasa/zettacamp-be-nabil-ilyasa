@@ -29,9 +29,12 @@ function ValidateBlockInput({ blockName, blockDescription }) {
  * @throws {ApolloError} - if validation fails
  */
 function ValidateBlockPassConditionsInput(blockPassConditionsInput) {
+  // *************** check if input is an array
   if (!Array.isArray(blockPassConditionsInput)) {
     throw new ApolloError('input must be an array');
   }
+
+  // *************** loop through the input
   blockPassConditionsInput.forEach((passCondition, index) => {
     // *************** validate pass condition's parameter, check if it's value is allowed
     if (!passCondition.parameter || typeof passCondition.parameter !== 'string') {
@@ -55,31 +58,22 @@ function ValidateBlockPassConditionsInput(blockPassConditionsInput) {
 
     // *************** validate rules for parameter 'mark'
     if (passCondition.parameter === 'mark') {
-      // *************** validate test_id if syllabus_type is 'test'
       if (passCondition.syllabus_type === 'test') {
+        // *************** validate test_id if syllabus_type is 'test'
         ValidateMongoObjectId(passCondition.test_id);
       } else {
         throw new ApolloError(`pass condition's 'mark' cannot be used for syllabus_type other than 'test' in index[${index}]`);
       }
     }
 
-    // *************** validate rules for pass condition's parameter 'average_of_single'
-    if (passCondition.parameter === 'average_of_single') {
+    // *************** validate rules for pass condition's parameter 'average_of'
+    if (passCondition.parameter === 'average_of') {
       // *************** ensure that parameter 'average_of_single' only available for block and subject
       if (passCondition.syllabus_type === 'subject') {
         ValidateMongoObjectId(passCondition.subject_id);
       } else if (passCondition.syllabus_type !== 'subject' && passCondition.syllabus_type !== 'block') {
         throw new ApolloError(
           `pass condition's 'average_of_single' cannot be used for syllabus_type other than 'block' and 'subject' in index[${index}]`
-        );
-      }
-    }
-
-    // *************** validate rules for pass condition's parameter 'average_of_all'
-    if (passCondition.parameter === 'average_of_all') {
-      if (passCondition.syllabus_type !== 'subject' && passCondition.syllabus_type !== 'test') {
-        throw new ApolloError(
-          `pass condition's 'average_of_all' cannot be used for syllabus_type other than 'subject' and 'test' in index[${index}]`
         );
       }
     }
