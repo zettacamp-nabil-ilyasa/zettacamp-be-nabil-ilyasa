@@ -36,27 +36,27 @@ const calculationResultTypeDefs = gql`
   }
 
   input CalculationResultInput {
-    student_id: Student
+    student_id: String
     overall_result: GradingResultEnum
     results: [BlockResultInput]
   }
 
   input BlockResultInput {
-    block_id: Block
+    block_id: String
     block_result: GradingResultEnum
     total_marks: Float
     subject_results: [SubjectResultInput]
   }
 
-  type SubjectResultInput {
-    subject_id: Subject
+  input SubjectResultInput {
+    subject_id: String
     subject_result: GradingResultEnum
     total_mark: Float
     test_results: [TestResultInput]
   }
 
-  type TestResultInput {
-    test_id: Test
+  input TestResultInput {
+    test_id: String
     test_result: GradingResultEnum
     average_mark: Float
     weighted_mark: Float
@@ -73,9 +73,9 @@ const calculationResultTypeDefs = gql`
     archived
   }
 
-  type extend query{
-    GetAllCalculationResults(): [CalculationResult]
-    GetOneCalculationResults(_id: ID!): CalculationResult
+  extend type Query {
+    GetAllCalculationResults: [CalculationResult]
+    GetOneCalculationResult(_id: ID!): CalculationResult
   }
 `;
 
