@@ -72,10 +72,6 @@ function BlockPassConditionsPayloadComposer(passConditionsInput) {
     // *************** insert payload into array
     passConditionsPayload.push(payloadObject);
   });
-
-  // *************** verify result's length
-  if (passConditionsPayload.length !== passConditionsInput.length) throw new ApolloError('missmatch between payload result and input');
-  return passConditionsPayload;
 }
 
 // *************** EXPORT MODULE ***************
