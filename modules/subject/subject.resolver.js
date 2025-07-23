@@ -210,7 +210,7 @@ async function AddSubjectPassConditions(parent, { _id, input }) {
     const subjectPassConditionsPayload = SubjectPassConditionsPayloadComposer(input);
     const addedPassConditions = await SubjectModel.findOneAndUpdate(
       { _id },
-      { $set: { pass_conditions: subjectPassConditionsPayload } },
+      { pass_conditions: subjectPassConditionsPayload },
       { new: true }
     );
     return addedPassConditions;

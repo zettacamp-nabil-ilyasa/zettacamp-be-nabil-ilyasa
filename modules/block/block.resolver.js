@@ -164,11 +164,7 @@ async function AddBlockPassConditions(parent, { _id, input }) {
 
     // *************** compose payload
     const blockPassConditionsPayload = BlockPassConditionsPayloadComposer(input);
-    const addedPassConditions = await BlockModel.findOneAndUpdate(
-      { _id },
-      { $set: { pass_conditions: blockPassConditionsPayload } },
-      { new: true }
-    );
+    const addedPassConditions = await BlockModel.findOneAndUpdate({ _id }, { pass_conditions: blockPassConditionsPayload }, { new: true });
     return addedPassConditions;
   } catch (error) {
     await ErrorLogModel.create({
