@@ -207,7 +207,7 @@ function CalculateBlockResult({ blockPassConditions, calculationResultPayload })
         const result = MathOperatorParser({
           mathOperator: passCondition.math_operator,
           parameterValue: passCondition.parameter_value,
-          valueToCompare: passCondition.total_marks,
+          valueToCompare: calculationResultPayload.total_marks,
         });
         if (passCondition.logical_operator) {
           blockResult.push(passCondition.logical_operator);
@@ -377,28 +377,52 @@ function MathOperatorParser({ mathOperator, parameterValue, valueToCompare }) {
  * @returns {Boolean} - Final evaluation result of all conditions combined.
  */
 function CalculatePassConditions(arrayOfResult) {
-  // *************** loop for prioritizing 'and' operation
-  const evaluatedAndResults = [];
-  for (let index = 0; index < arrayOfResult.length; index++) {
-    const currentElement = arrayOfResult[index];
+  // *************** temporary array for storing boolean values after 'and' operator executed, may contain 'or' operator
+  const tempArray = [];
+  let resultArrayIndex = 0;
+  while (resultArrayIndex < arrayOfResult.length) {
+    const currentElement = arrayOfResult[resultArrayIndex];
+    // *************** prioritize executing the 'and' operator first
     if (currentElement === 'and') {
-      const leftValue = evaluatedAndResults.pop();
-      const rightValue = arrayOfResult[index + 1];
+      // *************** get value for element in left side of comparation from  array input
+      const leftValue = tempArray.pop();
+
+      // *************** get value for element in right side of comparation from  array input
+      const rightValue = arrayOfResult[resultArrayIndex + 1];
+
+      // *************** run the comparation according to the arrayOfResult input
       const result = leftValue && rightValue;
-      evaluatedAndResults.push(result);
+
+      // *************** push executed result into tempArray
+      tempArray.push(result);
+
+      // *************** jump to the next operator, ensure that rightValue not pushed into tempArray
+      resultArrayIndex += 2;
     } else {
-      evaluatedAndResults.push(currentElement);
+      // *************** push current element into tempArray if there's no 'and' operator detected
+      tempArray.push(currentElement);
+      resultArrayIndex++;
     }
   }
 
-  // *************** loop for finalizing the rest of operation
-  let finalResult = evaluatedAndResults[0];
-  for (let index = 1; index < evaluatedAndResults.length; index++) {
-    const currentElement = evaluatedAndResults[index];
-    const nextElement = evaluatedAndResults[index + 1];
+  // *************** store the first element of tempArray
+  let finalResult = tempArray[0];
+
+  // *************** start the index from element 1
+  let tempArrayIndex = 1;
+  while (tempArrayIndex < tempArray.length) {
+    const currentElement = tempArray[tempArrayIndex];
+    // *************** solve the rest 'or' operator that might be stored in tempArray
     if (currentElement === 'or') {
-      finalResult = finalResult || nextElement;
-      index++;
+      // *************** get value for element in right side of comparation from  tempArray
+      const rightValue = tempArray[tempArrayIndex + 1];
+      // *************** compare rightValue with finalResult using 'or' operator, set the  result into finalResult
+      finalResult = finalResult || rightValue;
+
+      // *************** jump to the next operator within tempArray if exists, ensure there's no repeated comparation
+      tempArrayIndex += 2;
+    } else {
+      tempArrayIndex++;
     }
   }
   return finalResult;
