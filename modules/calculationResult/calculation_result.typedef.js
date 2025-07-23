@@ -24,39 +24,12 @@ const calculationResultTypeDefs = gql`
   type SubjectResult {
     subject_id: Subject
     subject_result: GradingResultEnum
-    total_mark: Float
+    total_marks: Float
     test_results: [TestResult]
   }
 
   type TestResult {
     test_id: Test
-    test_result: GradingResultEnum
-    average_mark: Float
-    weighted_mark: Float
-  }
-
-  input CalculationResultInput {
-    student_id: String
-    overall_result: GradingResultEnum
-    results: [BlockResultInput]
-  }
-
-  input BlockResultInput {
-    block_id: String
-    block_result: GradingResultEnum
-    total_marks: Float
-    subject_results: [SubjectResultInput]
-  }
-
-  input SubjectResultInput {
-    subject_id: String
-    subject_result: GradingResultEnum
-    total_mark: Float
-    test_results: [TestResultInput]
-  }
-
-  input TestResultInput {
-    test_id: String
     test_result: GradingResultEnum
     average_mark: Float
     weighted_mark: Float
