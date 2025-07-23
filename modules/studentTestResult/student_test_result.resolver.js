@@ -379,7 +379,7 @@ async function student_id(parent, args, context) {
 
 // *************** EXPORT MODULE ***************
 module.exports = {
-  Query: { GetAllStudentTestResults, GetOneStudentTestResult, TestPopulate },
+  Query: { GetAllStudentTestResults, GetOneStudentTestResult },
   Mutation: { EnterMarks, UpdateEnteredMarks, DeleteStudentTestResult },
   StudentTestResult: {
     task_id,
