@@ -80,6 +80,8 @@ function SubjectPassConditionsPayloadComposer(passConditionsInput) {
     // *************** insert payload into array
     passConditionsPayload.push(payloadObject);
   });
+
+  return passConditionsPayload;
 }
 
 // *************** EXPORT MODULE ***************
