@@ -90,7 +90,7 @@ async function CalculateResult(studentId) {
         // *************** start another loop for test processing within subject
         for (const result of subjectData.results) {
           // *************** calculate the test result's weighted marks
-          const weightedMark = result.average_mark * result.test_id.weight;
+          const weightedMark = Number((result.average_mark * result.test_id.weight).toFixed(2));
 
           // *************** add the weightedMark to outer variable
           totalWeightedMarks += weightedMark;
@@ -112,7 +112,7 @@ async function CalculateResult(studentId) {
           });
         }
         // *************** calculate subject's total mark
-        const subjectTotalMark = (totalWeightedMarks / subjectData.results.length) * subjectData.subject.coefficient;
+        const subjectTotalMark = Number(((totalWeightedMarks / subjectData.results.length) * subjectData.subject.coefficient).toFixed(2));
 
         // *************** compose a subject scope payload object
         const subjectScopeCalculationResultPayload = {
