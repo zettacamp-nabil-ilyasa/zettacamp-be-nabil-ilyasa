@@ -47,10 +47,10 @@ const calculationResultSchema = new Schema(
                 test_result: { type: String, enum: gradingResult, trim: true },
 
                 // average mark of test's notations
-                average_mark: { type: String, enum: gradingResult, trim: true },
+                average_mark: { type: Number },
 
                 // average mark of test's notations after applying the test's weight
-                weighted_mark: { type: String, enum: gradingResult, trim: true },
+                weighted_mark: { type: Number },
               },
             ],
           },

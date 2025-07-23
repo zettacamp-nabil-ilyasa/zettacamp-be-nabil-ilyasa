@@ -1,5 +1,7 @@
 // *************** IMPORT LIBRARY ***************
 const { ApolloError } = require('apollo-server-express');
+const { Worker } = require('worker_threads');
+const path = require('path');
 
 // *************** IMPORT MODULE ***************
 const TaskModel = require('./task.model.js');
@@ -202,6 +204,12 @@ async function ValidateMarks(parent, { _id }) {
 
     // *************** update task document
     await TaskModel.updateOne({ _id }, { $set: { status: 'completed', completed_at: new Date() } });
+
+    new Worker(path.resolve(__dirname, '../../modules/calculationResult/calculation_result.worker.js'), {
+      workerData: {
+        studentId: String(taskDocument.student_id),
+      },
+    });
 
     return 'Marks validated successfully';
   } catch (error) {
