@@ -85,7 +85,7 @@ async function CalculateResult(studentId) {
       // *************** start another loop for payload's subject results
       for (const [subjectId, subjectData] of Object.entries(blockData.subjects)) {
         let totalWeightedMarks = 0;
-        const testResultsForCalculationResultPayload = [];
+        const testResultsForSubjectScopePayload = [];
 
         // *************** start another loop for test processing within subject
         for (const result of subjectData.results) {
@@ -104,7 +104,7 @@ async function CalculateResult(studentId) {
           }
 
           // *************** push test results to outer variable
-          testResultsForCalculationResultPayload.push({
+          testResultsForSubjectScopePayload.push({
             test_id: result.test_id._id,
             test_result: testResult,
             average_mark: result.average_mark,
@@ -118,7 +118,7 @@ async function CalculateResult(studentId) {
         const subjectScopeCalculationResultPayload = {
           subject_id: subjectId,
           total_marks: subjectTotalMark,
-          test_results: testResultsForCalculationResultPayload,
+          test_results: testResultsForSubjectScopePayload,
         };
 
         // *************** add the subject's total mark to outer variable
@@ -136,7 +136,7 @@ async function CalculateResult(studentId) {
         } else if (subjectScopeEvaluatedConditions === false) {
           subjectScopeCalculationResultPayload.subject_result = 'fail';
         }
-        // *************** push subject's local payload to calculationResultPayload outside
+        // *************** push subject's payload to calculationResultPayload outside
         calculationResultPayload.subject_results.push(subjectScopeCalculationResultPayload);
       }
 
