@@ -384,7 +384,7 @@ function CalculatePassConditions(arrayOfResult) {
     const currentElement = arrayOfResult[resultArrayIndex];
     // *************** prioritize executing the 'and' operator first
     if (currentElement === 'and') {
-      // *************** get value for element in left side of comparation from  array input
+      // *************** get value for element in left side of comparation from  tempArray
       const leftValue = tempArray.pop();
 
       // *************** get value for element in right side of comparation from  array input
