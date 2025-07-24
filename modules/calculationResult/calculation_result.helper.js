@@ -5,9 +5,9 @@ const Mongoose = require('mongoose');
 // *************** IMPORT MODULE ***************
 const CalculationResultModel = require('./calculation_result.model.js');
 const StudentTestResultModel = require('../studentTestResult/student_test_result.model.js');
-const BlockModel = require('../../modules/block/block.model.js');
-const SubjectModel = require('../../modules/subject/subject.model.js');
-const TestModel = require('../../modules/test/test.model.js');
+require('../../modules/block/block.model.js');
+require('../../modules/subject/subject.model.js');
+require('../../modules/test/test.model.js');
 
 // *************** IMPORT VALIDATOR ***************
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
