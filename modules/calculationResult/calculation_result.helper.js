@@ -373,56 +373,56 @@ function MathOperatorParser({ mathOperator, parameterValue, valueToCompare }) {
 
 /**
  * Evaluate logical conditions (e.g., AND/OR) from an array of boolean values and operators.
- * @param {Array<Boolean|string>} arrayOfResult - Array containing boolean values and logical operators ('and', 'or').
+ * @param {Array<Boolean|string>} arrayOfResults - Array containing boolean values and logical operators ('and', 'or').
  * @returns {Boolean} - Final evaluation result of all conditions combined.
  */
-function CalculatePassConditions(arrayOfResult) {
-  // *************** temporary array for storing boolean values after 'and' operator executed, may contain 'or' operator
-  const tempArray = [];
-  let resultArrayIndex = 0;
-  while (resultArrayIndex < arrayOfResult.length) {
-    const currentElement = arrayOfResult[resultArrayIndex];
+function CalculatePassConditions(arrayOfResults) {
+  // *************** array for storing boolean values after 'and' operator executed, may contain 'or' operator
+  const resultsOfAndOperator = [];
+  let indexOfArrayOfResults = 0;
+  while (indexOfArrayOfResults < arrayOfResults.length) {
+    const currentElement = arrayOfResults[indexOfArrayOfResults];
     // *************** prioritize executing the 'and' operator first
     if (currentElement === 'and') {
-      // *************** get value for element in left side of comparation from  tempArray
-      const leftValue = tempArray.pop();
+      // *************** get value for element in left side for comparation from resultsOfAndOperator array
+      const leftValue = resultsOfAndOperator.pop();
 
-      // *************** get value for element in right side of comparation from  array input
-      const rightValue = arrayOfResult[resultArrayIndex + 1];
+      // *************** get value for element in right side for comparation from  array input
+      const rightValue = arrayOfResults[indexOfArrayOfResults + 1];
 
-      // *************** run the comparation according to the arrayOfResult input
+      // *************** run the comparation according to the arrayOfResults input
       const result = leftValue && rightValue;
 
-      // *************** push executed result into tempArray
-      tempArray.push(result);
+      // *************** push executed result into resultsOfAndOperator
+      resultsOfAndOperator.push(result);
 
-      // *************** jump to the next operator, ensure that rightValue not pushed into tempArray
-      resultArrayIndex += 2;
+      // *************** jump to the next operator, ensure that rightValue not pushed into resultsOfAndOperator
+      indexOfArrayOfResults += 2;
     } else {
-      // *************** push current element into tempArray if there's no 'and' operator detected
-      tempArray.push(currentElement);
-      resultArrayIndex++;
+      // *************** push current element into resultsOfAndOperator if there's no 'and' operator detected
+      resultsOfAndOperator.push(currentElement);
+      indexOfArrayOfResults++;
     }
   }
 
-  // *************** store the first element of tempArray
-  let finalResult = tempArray[0];
+  // *************** store the first element of resultsOfAndOperator
+  let finalResult = resultsOfAndOperator[0];
 
   // *************** start the index from element 1
-  let tempArrayIndex = 1;
-  while (tempArrayIndex < tempArray.length) {
-    const currentElement = tempArray[tempArrayIndex];
-    // *************** solve the rest 'or' operator that might be stored in tempArray
+  let indexOfResultsOfAndOperator = 1;
+  while (indexOfResultsOfAndOperator < resultsOfAndOperator.length) {
+    const currentElement = resultsOfAndOperator[indexOfResultsOfAndOperator];
+    // *************** solve the rest 'or' operator that might be stored in resultsOfAndOperator
     if (currentElement === 'or') {
-      // *************** get value for element in right side of comparation from  tempArray
-      const rightValue = tempArray[tempArrayIndex + 1];
+      // *************** get value for element in right side of comparation from  resultsOfAndOperator
+      const rightValue = resultsOfAndOperator[indexOfResultsOfAndOperator + 1];
       // *************** compare rightValue with finalResult using 'or' operator, set the  result into finalResult
       finalResult = finalResult || rightValue;
 
-      // *************** jump to the next operator within tempArray if exists, ensure there's no repeated comparation
-      tempArrayIndex += 2;
+      // *************** jump to the next operator within resultsOfAndOperator if exists, ensure there's no repeated comparation
+      indexOfResultsOfAndOperator += 2;
     } else {
-      tempArrayIndex++;
+      indexOfResultsOfAndOperator++;
     }
   }
   return finalResult;
