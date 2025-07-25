@@ -75,7 +75,7 @@ function ValidateTestFilterInput(filterInput) {
   }
 }
 /**
- *
+ * Validate test's pass condition input
  * @param {Object} testPassConditionsInput - object containing test's pass condition data
  * @param {Number} testPassConditionsInput.parameter_value - value to be compared to in pass criteria checking
  * @param {Object} testPassConditionsInput.math_operator - string representation of math operator
