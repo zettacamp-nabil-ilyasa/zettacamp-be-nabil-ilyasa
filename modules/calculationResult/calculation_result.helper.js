@@ -14,7 +14,7 @@ const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-vali
 
 /**
  * Calculate result for all blocks, subjects, and tests that related with student_test_result documents that contain studentId
- * This function groups student test results by block and computes all needed fields for calculation result,
+ * This function groups student test results by block and computes all needed fields for calculation result
  * @param {String} studentId - Student's id to filter the populated documents
  * @returns {Promise<void>} - Returns nothing
  * @throws {Error} - if any error occured within try block
@@ -34,10 +34,10 @@ async function CalculateResult(studentId) {
 
     const groupedDocumentsByBlock = {};
     // *************** START: Grouping populated data by block ***************
-    for (const result of populatedStudentTestResults) {
+    for (const testResult of populatedStudentTestResults) {
       // *************** store block's and subject's id
-      const block = result.test_id.subject_id?.block_id;
-      const subject = result.test_id?.subject_id;
+      const block = testResult.test_id.subject_id?.block_id;
+      const subject = testResult.test_id?.subject_id;
 
       // *************** convert the ids into a string
       const blockId = String(block._id);
@@ -62,18 +62,18 @@ async function CalculateResult(studentId) {
       }
 
       // *************** insert the populated student test results into the results field within the mapped object
-      groupedDocumentsByBlock[blockId].subjects[subjectId].results.push(result);
+      groupedDocumentsByBlock[blockId].subjects[subjectId].results.push(testResult);
     }
-    // *************** END: Store the grouping result into grouppedDocumentsByBlock ***************
+    // *************** END: Store the grouping testResult into grouppedDocumentsByBlock ***************
 
     // *************** START: Construct data for calculation_result model ***************
     const calculationResultObjects = [];
 
     // *************** create an array out of grouppedDocumentsByBlock
-    const arrayedDocuments = Object.entries(groupedDocumentsByBlock);
+    const arrayedGroupedDocuments = Object.entries(groupedDocumentsByBlock);
 
     // *************** start a loop to construct payload
-    for (const [blockId, blockData] of arrayedDocuments) {
+    for (const [blockId, blockData] of arrayedGroupedDocuments) {
       // *************** set up a base payload object
       const calculationResultPayload = {
         block_id: blockId,
@@ -95,6 +95,7 @@ async function CalculateResult(studentId) {
           // *************** add the weightedMark to outer variable
           totalWeightedMarks += weightedMark;
 
+          // *************** call CalculateTestResult helper to process tests pass_condition
           const testScopeEvaluatedCondition = CalculateTestResult({ testPassCondition: result.test_id.pass_condition, weightedMark });
           let testResult;
           if (testScopeEvaluatedCondition === true) {
@@ -103,7 +104,7 @@ async function CalculateResult(studentId) {
             testResult = 'fail';
           }
 
-          // *************** push test results to outer variable
+          // *************** push test results to outer variable (testResultsForSubjectScopePayload)
           testResultsForSubjectScopePayload.push({
             test_id: result.test_id._id,
             test_result: testResult,
@@ -124,7 +125,7 @@ async function CalculateResult(studentId) {
         // *************** add the subject's total mark to outer variable
         totalOfSubjectsMarks += subjectTotalMark;
 
-        // *************** call helper to calculate subject_result
+        // *************** call CalculateSubjectResult to process subjects pass_conditions
         const subjectScopeEvaluatedConditions = CalculateSubjectResult({
           subjectPassConditions: subjectData.subject.pass_conditions,
           subjectCalculationResultPayload: subjectScopeCalculationResultPayload,
@@ -142,6 +143,8 @@ async function CalculateResult(studentId) {
 
       // *************** calculate the total marks for block
       calculationResultPayload.total_marks = Number((totalOfSubjectsMarks / Object.keys(blockData.subjects).length).toFixed(2));
+
+      // *************** call CalculateBlockResult to process blocks pass_conditions
       const blockScopeEvaluatedConditions = CalculateBlockResult({
         blockPassConditions: blockData.block.pass_conditions,
         calculationResultPayload: calculationResultPayload,
@@ -196,7 +199,7 @@ async function CalculateResult(studentId) {
 function CalculateBlockResult({ blockPassConditions, calculationResultPayload }) {
   // *************** sanity check for the pass conditions
   if (!blockPassConditions || !blockPassConditions.length) return true;
-  const blockResult = [];
+  const blockResults = [];
 
   for (const passCondition of blockPassConditions) {
     // *************** START: Pass condition processing for parameter 'average_of' ***************
@@ -210,10 +213,10 @@ function CalculateBlockResult({ blockPassConditions, calculationResultPayload })
           valueToCompare: calculationResultPayload.total_marks,
         });
         if (passCondition.logical_operator) {
-          blockResult.push(passCondition.logical_operator);
+          blockResults.push(passCondition.logical_operator);
         }
         // *************** push math comparation result (true/false)
-        blockResult.push(result);
+        blockResults.push(result);
       }
 
       // *************** check if syllabus type is 'subject'
@@ -232,10 +235,10 @@ function CalculateBlockResult({ blockPassConditions, calculationResultPayload })
         });
         // *************** add logical operator ('and' or 'or') into the blockResultArray
         if (passCondition.logical_operator) {
-          blockResult.push(passCondition.logical_operator);
+          blockResults.push(passCondition.logical_operator);
         }
         // *************** push math comparation result (true/false)
-        blockResult.push(result);
+        blockResults.push(result);
       }
     }
     // *************** END: End of pass condition checking for parameter 'average_of' ***************
@@ -261,14 +264,14 @@ function CalculateBlockResult({ blockPassConditions, calculationResultPayload })
 
       // *************** add logical operator if it exists
       if (passCondition.logical_operator) {
-        blockResult.push(passCondition.logical_operator);
+        blockResults.push(passCondition.logical_operator);
       }
-      blockResult.push(result);
+      blockResults.push(result);
     }
     // *************** END: End of pass condition checking for parameter 'mark' ***************
   }
   // *************** call helper to calculate final result
-  const finalResult = CalculatePassConditions(blockResult);
+  const finalResult = CalculatePassConditions(blockResults);
   return finalResult;
 }
 
@@ -282,10 +285,10 @@ function CalculateBlockResult({ blockPassConditions, calculationResultPayload })
 function CalculateSubjectResult({ subjectPassConditions, subjectCalculationResultPayload }) {
   // *************** sanity check for the pass conditions
   if (!subjectPassConditions || !subjectPassConditions.length) return true;
-  const subjectResult = [];
+  const subjectResults = [];
   for (const passCondition of subjectPassConditions) {
     if (passCondition.parameter === 'average_of') {
-      // *************** call helper to run the comparation
+      // *************** call MathOperatorParser to do the math comparation
       const result = MathOperatorParser({
         mathOperator: passCondition.math_operator,
         parameterValue: passCondition.parameter_value,
@@ -294,9 +297,9 @@ function CalculateSubjectResult({ subjectPassConditions, subjectCalculationResul
 
       // *************** add logical operator if it exists
       if (passCondition.logical_operator) {
-        subjectResult.push(passCondition.logical_operator);
+        subjectResults.push(passCondition.logical_operator);
       }
-      subjectResult.push(result);
+      subjectResults.push(result);
     }
 
     if (passCondition.parameter === 'mark') {
@@ -306,22 +309,22 @@ function CalculateSubjectResult({ subjectPassConditions, subjectCalculationResul
       let testData;
       testData = subjectCalculationResultPayload.test_results.find((test) => String(test.test_id) === String(passCondition.test_id));
 
-      // *************** call helper to run the comparation
+      // *************** call MathOperatorParser to do the math comparation
       const result = MathOperatorParser({
         mathOperator: passCondition.math_operator,
         parameterValue: passCondition.parameter_value,
         valueToCompare: testData?.weighted_mark,
       });
 
-      // *************** add logical operator if it exists
+      // *************** add logical into subjectResults array operator if it exists
       if (passCondition.logical_operator) {
-        subjectResult.push(passCondition.logical_operator);
+        subjectResults.push(passCondition.logical_operator);
       }
-      subjectResult.push(result);
+      subjectResults.push(result);
     }
   }
   // *************** call helper to calculate final result
-  const finalResult = CalculatePassConditions(subjectResult);
+  const finalResult = CalculatePassConditions(subjectResults);
   return finalResult;
 }
 
@@ -416,6 +419,7 @@ function CalculatePassConditions(arrayOfResults) {
     if (currentElement === 'or') {
       // *************** get value for element in right side of comparation from  resultsOfAndOperator
       const rightValue = resultsOfAndOperator[indexOfResultsOfAndOperator + 1];
+
       // *************** compare rightValue with finalResult using 'or' operator, set the  result into finalResult
       finalResult = finalResult || rightValue;
 
