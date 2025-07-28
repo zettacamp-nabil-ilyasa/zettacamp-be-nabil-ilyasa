@@ -8,12 +8,17 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 const { taskOwnerUserId } = require('../../shared/strings.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateTestInput, ValidateTestFilterInput } = require('./test.validators.js');
+const { ValidateTestInput, ValidateTestFilterInput, ValidateTestPassConditionInput } = require('./test.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
 // *************** IMPORT HELPER ***************
-const { TestPayloadComposer, GetTotalWeightOfTests, CreateAssignCorrectorTask } = require('./test.helper.js');
+const {
+  TestPayloadComposer,
+  GetTotalWeightOfTests,
+  CreateAssignCorrectorTask,
+  TestPassConditionPayloadComposer,
+} = require('./test.helper.js');
 
 // *************** QUERY ****************
 /**
@@ -203,6 +208,37 @@ async function UpdateTest(parent, { _id, input }) {
 }
 
 /**
+ * Add pass_conditions field into a specific test
+ * @param {Object} parent - Not used (GraphQL resolver convention).
+ * @param {String} _id - _id of the block
+ * @param {Array<Object>} input - an array of object containing pass/fail criteria
+ * @param {Number} input.parameter_value - pass condition's parameter_value to be used as comparator
+ *@param  {String} input.math_operator - string representation of math_operator
+ */
+async function AddTestPassCondition(parent, { _id, input }) {
+  try {
+    // *************** validate test's id
+    ValidateMongoObjectId(_id);
+
+    // *************** validate test's pass_condition input
+    ValidateTestPassConditionInput(input);
+
+    // *************** compose payload
+    const testPassConditionsPayload = TestPassConditionPayloadComposer(input);
+    const addedPassConditions = await TestModel.findOneAndUpdate({ _id }, { pass_condition: testPassConditionsPayload }, { new: true });
+    return addedPassConditions;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'AddTestPassConditions',
+      path: '/modules/test/test.resolver.js',
+      parameter_input: JSON.stringify({ _id, input }),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
  * Publish a test by updating its status and creating an `assign_corrector` task.
  * @async
  * @param {Object} parent - Unused GraphQL resolver parent argument.
@@ -317,7 +353,7 @@ async function subject_id(parent, args, context) {
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllTests, GetOneTest },
-  Mutation: { CreateTest, UpdateTest, PublishTest, DeleteTest },
+  Mutation: { CreateTest, UpdateTest, PublishTest, AddTestPassCondition, DeleteTest },
   Test: {
     subject_id,
   },

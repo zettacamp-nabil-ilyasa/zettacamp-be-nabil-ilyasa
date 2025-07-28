@@ -6,12 +6,12 @@ const BlockModel = require('./block.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateBlockInput } = require('./block.validators.js');
+const { ValidateBlockInput, ValidateBlockPassConditionsInput } = require('./block.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
 // *************** IMPORT HELPER ***************
-const { BlockPayloadComposer } = require('./block.helper.js');
+const { BlockPayloadComposer, BlockPassConditionsPayloadComposer } = require('./block.helper.js');
 
 // *************** QUERY ****************
 /**
@@ -135,7 +135,43 @@ async function UpdateBlock(parent, { _id, name, description }) {
       error_stack: error.stack,
       function_name: 'UpdateBlock',
       path: '/modules/block/block.resolver.js',
-      parameter_input: JSON.stringify({ _id, blockName, blockDescription }),
+      parameter_input: JSON.stringify({ _id, name, description }),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
+ * Add pass_conditions field into a specific block
+ * @param {Object} parent - Not used (GraphQL resolver convention).
+ * @param {String} _id - _id of the block
+ * @param {Array<Object>} blockPassConditionsInput - an array of object containing pass/fail criteria
+ * @param {String} parameter - pass condition's parameter to be used for conditional checking
+ * @param {Number}parameter_value - pass condition's parameter_value to be used as comparator
+ * @param {String}syllabus_type - pass condition's syllabus_type
+ * @param {String}subject_id - id of Subject used within pass_conditions
+ * @param {String}test_id - id of Test used within pass_conditions
+ *@param  {String}math_operator - string representation of math_operator
+ * @param {String}logical_operator - string representation of logical operator
+ */
+async function AddBlockPassConditions(parent, { _id, input }) {
+  try {
+    // *************** validate block's id
+    ValidateMongoObjectId(_id);
+
+    // *************** validate block's pass_conditions input
+    ValidateBlockPassConditionsInput(input);
+
+    // *************** compose payload
+    const blockPassConditionsPayload = BlockPassConditionsPayloadComposer(input);
+    const addedPassConditions = await BlockModel.findOneAndUpdate({ _id }, { pass_conditions: blockPassConditionsPayload }, { new: true });
+    return addedPassConditions;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'AddBlockPassConditions',
+      path: '/modules/block/block.resolver.js',
+      parameter_input: JSON.stringify({ _id, input }),
     });
     throw new ApolloError(error.message);
   }
@@ -214,11 +250,65 @@ async function subject_ids(parent, args, context) {
   }
 }
 
+/**
+ * Resolve the subject_id field in pass_conditions field in block document using DataLoader.
+ * @async
+ * @param {object} parent - The passcondition object containing subject_id field.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context containing DataLoaders.
+ * @param {object} context.loaders.subject - DataLoader instance for subjects.
+ * @returns {Promise<Object|null>} - The subject document or null if not available.
+ * @throws {ApolloError} - Throws error if loading fails.
+ */
+async function subject_id(parent, _, context) {
+  try {
+    if (!parent?.subject_id) return null;
+    return await context.loaders.subject.load(parent.subject_id);
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'subject_id',
+      path: '/modules/block/passCondition.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
+ * Resolve the test_id field in pass_conditions field in block document using DataLoader.
+ * @async
+ * @param {object} parent - The passcondition object containing test_id field.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context containing DataLoaders.
+ * @param {object} context.loaders.test - DataLoader instance for tests.
+ * @returns {Promise<Object|null>} - The test document or null if not available.
+ * @throws {ApolloError} - Throws error if loading fails.
+ */
+async function test_id(parent, _, context) {
+  try {
+    if (!parent?.test_id) return null;
+    return await context.loaders.test.load(parent.test_id);
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'test_id',
+      path: '/modules/block/block.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllBlocks, GetOneBlock },
-  Mutation: { CreateBlock, UpdateBlock, DeleteBlock },
+  Mutation: { CreateBlock, UpdateBlock, AddBlockPassConditions, DeleteBlock },
   Block: {
     subject_ids,
+  },
+  BlockPassCondition: {
+    subject_id,
+    test_id,
   },
 };

@@ -9,6 +9,7 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***************
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
+const { ValidateTestInput } = require('./test.validators.js');
 
 /**
  * Get total weight of all tests that referenced the same subject_id
@@ -71,6 +72,28 @@ function TestPayloadComposer(inputObject) {
 }
 
 /**
+ * Compose a payload object for AddTestPassCondition mutation
+ * @param {Object} passCondition - object containing test pass conditions data
+ * @param {Object} passCondition.parameter_value - value to be compared to in pass criteria checking
+ * @param {Object} passCondition.math_operator - string representation of math operator
+ * @returns
+ */
+function TestPassConditionPayloadComposer(passCondition) {
+  // *************** sanity check parameter_value
+  if (!passCondition.parameter_value) throw new ApolloError('parameter_value is required');
+
+  // *************** sanity check math_operator
+  if (!passCondition.math_operator) throw new ApolloError('math_operator is required');
+
+  // *************** compose pass_condition payload
+  const testPassConditionPayload = {
+    parameter_value: passCondition.parameter_value,
+    math_operator: passCondition.math_operator,
+  };
+  return testPassConditionPayload;
+}
+
+/**
  * Create task for assign corrector
  * @async
  * @param {string} userId - Id of user to be assigned
@@ -99,4 +122,4 @@ async function CreateAssignCorrectorTask({ userId, testId }) {
 }
 
 // *************** EXPORT MODULE ***************
-module.exports = { GetTotalWeightOfTests, TestPayloadComposer, CreateAssignCorrectorTask };
+module.exports = { GetTotalWeightOfTests, TestPayloadComposer, CreateAssignCorrectorTask, TestPassConditionPayloadComposer };

@@ -6,6 +6,7 @@ const StudentTestResultModel = require('./student_test_result.model.js');
 const TaskModel = require('../task/task.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 const { taskOwnerUserId } = require('../../shared/strings.js');
+const { CalculateResult } = require('../calculationResult/calculation_result.helper.js');
 
 // *************** IMPORT VALIDATOR ***************
 const { ValidateStudentTestResultFilterInput, ValidateEnterMarksInput } = require('./studentTestResult.validators.js');

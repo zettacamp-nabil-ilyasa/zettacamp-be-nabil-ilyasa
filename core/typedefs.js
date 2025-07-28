@@ -9,8 +9,9 @@ const StudentTypeDefs = require('../modules/student/student.typedef.js');
 const BlockTypeDefs = require('../modules/block/block.typedef.js');
 const SubjectTypeDefs = require('../modules/subject/subject.typedef.js');
 const TestTypeDefs = require('../modules/test/test.typedef.js');
-const StudentTestResultTypeDefs = require('../modules/studenTestResult/studentTestResult.typedef.js');
+const StudentTestResultTypeDefs = require('../modules/studentTestResult/studentTestResult.typedef.js');
 const TaskTypeDefs = require('../modules/task/task.typedef.js');
+const CalculationResultTypeDefs = require('../modules/calculationResult/calculation_result.typedef.js');
 
 // *************** base typedef
 const baseTypeDefs = gql`
@@ -19,6 +20,31 @@ const baseTypeDefs = gql`
   enum Status {
     active
     deleted
+    archived
+  }
+
+  enum SyllabusStatus {
+    active
+    deleted
+    archived
+  }
+
+  enum ParameterEnum {
+    average_of
+    mark
+  }
+
+  enum MathOperatorEnum {
+    greater_than
+    greater_or_equal_than
+    less_than
+    less_or_equal_than
+    equal
+  }
+
+  enum LogicalOperatorEnum {
+    and
+    or
   }
 
   input PaginationInput {
@@ -41,6 +67,7 @@ const typeDefs = mergeTypeDefs([
   TestTypeDefs,
   StudentTestResultTypeDefs,
   TaskTypeDefs,
+  CalculationResultTypeDefs,
 ]);
 
 // *************** EXPORT MODULE ***************

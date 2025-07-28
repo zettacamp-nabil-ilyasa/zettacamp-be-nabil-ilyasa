@@ -7,12 +7,12 @@ const BlockModel = require('../block/block.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateSubjectInput, ValidateSubjectFilterInput } = require('./subject.validators.js');
+const { ValidateSubjectInput, ValidateSubjectFilterInput, ValidateSubjectPassConditionsInput } = require('./subject.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
 // *************** IMPORT HELPER ***************
-const { SubjectPayloadComposer } = require('./subject.helper.js');
+const { SubjectPayloadComposer, SubjectPassConditionsPayloadComposer } = require('./subject.helper.js');
 
 // *************** QUERY ****************
 /**
@@ -186,6 +186,46 @@ async function UpdateSubject(parent, { _id, input }) {
 }
 
 /**
+ * Add pass_conditions field into a specific subject
+ * @param {Object} parent - Not used (GraphQL resolver convention).
+ * @param {String} _id - _id of the block
+ * @param {Array<Object>} input - an array of object containing pass/fail criteria
+ * @param {String} input.parameter - pass condition's parameter to be used for conditional checking
+ * @param {Number} input.parameter_value - pass condition's parameter_value to be used as comparator
+ * @param {String} input.syllabus_type - pass condition's syllabus_type
+ * @param {String} input.subject_id - id of Subject used within pass_conditions
+ * @param {String} input.test_id - id of Test used within pass_conditions
+ *@param  {String} input.math_operator - string representation of math_operator
+ * @param {String} input.logical_operator - string representation of logical operator
+ */
+async function AddSubjectPassConditions(parent, { _id, input }) {
+  try {
+    // *************** validate block's id
+    ValidateMongoObjectId(_id);
+
+    // *************** validate subject's pass_conditions input
+    ValidateSubjectPassConditionsInput(input);
+
+    // *************** compose payload
+    const subjectPassConditionsPayload = SubjectPassConditionsPayloadComposer(input);
+    const addedPassConditions = await SubjectModel.findOneAndUpdate(
+      { _id },
+      { pass_conditions: subjectPassConditionsPayload },
+      { new: true }
+    );
+    return addedPassConditions;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'UpdateSubject',
+      path: '/modules/subject/subject.resolver.js',
+      parameter_input: JSON.stringify({ _id, input }),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
  * Soft delete a subject by marking its status as 'deleted'.
  * Prevents deletion if subject is referenced by any subject, delete subject's id from block.
  * @async
@@ -292,12 +332,40 @@ async function test_ids(parent, args, context) {
   }
 }
 
+/**
+ * Resolve the test_id field in pass_conditions field in subject document using DataLoader.
+ * @async
+ * @param {object} parent - The passcondition object containing test_id field.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context containing DataLoaders.
+ * @param {object} context.loaders.test - DataLoader instance for tests.
+ * @returns {Promise<Object|null>} - The test document or null if not available.
+ * @throws {ApolloError} - Throws error if loading fails.
+ */
+async function test_id(parent, _, context) {
+  try {
+    if (!parent?.test_id) return null;
+    return await context.loaders.test.load(parent.test_id);
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'test_id',
+      path: '/modules/subject/subject.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllSubjects, GetOneSubject },
-  Mutation: { CreateSubject, UpdateSubject, DeleteSubject },
+  Mutation: { CreateSubject, UpdateSubject, AddSubjectPassConditions, DeleteSubject },
   Subject: {
     block_id,
     test_ids,
+  },
+  SubjectPassCondition: {
+    test_id,
   },
 };

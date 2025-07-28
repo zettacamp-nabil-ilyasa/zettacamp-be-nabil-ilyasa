@@ -2,7 +2,7 @@
 const { ApolloError } = require('apollo-server-express');
 
 // *************** IMPORT MODULE ***************
-const { testStatus } = require('../../shared/strings');
+const { testStatus, mathOperatorEnum } = require('../../shared/strings');
 
 // *************** IMPORT VALIDATOR ***************
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
@@ -74,6 +74,23 @@ function ValidateTestFilterInput(filterInput) {
     }
   }
 }
+/**
+ * Validate test's pass condition input
+ * @param {Object} testPassConditionsInput - object containing test's pass condition data
+ * @param {Number} testPassConditionsInput.parameter_value - value to be compared to in pass criteria checking
+ * @param {Object} testPassConditionsInput.math_operator - string representation of math operator
+ */
+function ValidateTestPassConditionInput(testPassConditionsInput) {
+  // *************** validate parameter_value
+  if (!testPassConditionsInput.parameter_value || typeof testPassConditionsInput.parameter_value !== 'number') {
+    throw new ApolloError("pass condition's parameter_value is required and must be a number");
+  }
+
+  // *************** validate math_operator, ensure it is one of allowed enum
+  if (!testPassConditionsInput.math_operator || typeof testPassConditionsInput.math_operator !== 'string') {
+    throw new ApolloError("pass condition's parameter_value is required and must be a string");
+  }
+}
 
 // *************** EXPORT MODULE ***************
-module.exports = { ValidateTestInput, ValidateTestFilterInput };
+module.exports = { ValidateTestInput, ValidateTestFilterInput, ValidateTestPassConditionInput };
