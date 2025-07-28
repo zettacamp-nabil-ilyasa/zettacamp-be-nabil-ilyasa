@@ -2,6 +2,7 @@
 const ConnectDb = require('./core/database');
 const InitializeApolloServer = require('./core/apollo');
 const InitializeExpressApp = require('./core/express');
+const { router } = require('./core/routes');
 
 // *************** IMPORT LIBRARY ***************
 const { PORT } = require('./core/config');
@@ -30,6 +31,7 @@ async function InitializeServer() {
     console.log(`Apollo Server ready at http://localhost:${PORT}${server.graphqlPath}`);
 
     // *************** start express server
+    app.use(router);
     app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
   } catch (error) {
     console.error('Failed to start server', error);
