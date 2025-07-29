@@ -18,6 +18,12 @@ async function InitializeServer() {
   try {
     // *************** initialize express app
     const app = InitializeExpressApp();
+    app.use(router);
+    app._router.stack.forEach((r) => {
+      if (r.route && r.route.path) {
+        console.log(`Route registered: [${Object.keys(r.route.methods).join(',').toUpperCase()}] ${r.route.path}`);
+      }
+    });
 
     // *************** initialize apollo server
     const server = InitializeApolloServer();
@@ -28,10 +34,10 @@ async function InitializeServer() {
     // *************** start apollo server and apply GraphQL middleware
     await server.start();
     server.applyMiddleware({ app });
+
     console.log(`Apollo Server ready at http://localhost:${PORT}${server.graphqlPath}`);
 
     // *************** start express server
-    app.use(router);
     app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
   } catch (error) {
     console.error('Failed to start server', error);
