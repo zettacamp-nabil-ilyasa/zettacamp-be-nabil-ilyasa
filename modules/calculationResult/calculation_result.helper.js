@@ -1,6 +1,10 @@
 // *************** IMPORT LIBRARY ***************
 const { ApolloError } = require('apollo-server-express');
 const Mongoose = require('mongoose');
+const Fs = require('fs');
+const { resolve } = require('path');
+const Handlebars = require('handlebars');
+const Puppeteer = require('puppeteer');
 
 // *************** IMPORT MODULE ***************
 const CalculationResultModel = require('./calculation_result.model.js');
@@ -432,5 +436,67 @@ function CalculatePassConditions(arrayOfResults) {
   return finalResult;
 }
 
+/**
+ * Generate a transcript PDF from a populated calculation result document using Handlebars and Puppeteer.
+ * @param {Object} calculationResultDocument - Populated `CalculationResult` document, including student and syllabus details.
+ * @returns {Promise<Buffer>} A Buffer pdf file to be sent as a response.
+ * @throws {Error} If PDF generation fails.
+ */
+async function GenerateTranscriptPdf(calculationResultDocument) {
+  try {
+    // *************** handlebars helper for formating the isoDate into yyyy-mm-dd
+    Handlebars.registerHelper('formatDate', function (isoDate) {
+      const date = new Date(isoDate);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth()).padStart(2, '0');
+      const year = date.getFullYear();
+      const formatedDate = `${year}-${month}-${day}`;
+      return formatedDate;
+    });
+
+    // *************** handlebars helper for value comparation
+    Handlebars.registerHelper('ifValueEquals', function (value1, value2, options) {
+      if (value1 === value2) {
+        return options.fn(this);
+      } else {
+        return options.inverse(this);
+      }
+    });
+
+    // *************** set current date for transcript's generated time
+    const currentDate = new Date();
+    calculationResultDocument.generated_at = currentDate;
+    // *************** get the absolute path for handlebars template
+    const templatePath = resolve(process.cwd(), 'template', 'calculation_result.template.hbs');
+
+    // *************** read the html template, get string output from html template
+    const templateFile = Fs.readFileSync(templatePath, 'utf8');
+
+    // *************** compile handlebars template file read
+    const compiledFile = Handlebars.compile(templateFile);
+
+    // *************** pass input/data into the compiled template
+    const completedFile = compiledFile(calculationResultDocument);
+
+    // *************** set a variable to launch a headless chromium instance
+    const browser = await Puppeteer.launch();
+
+    // *************** set a variable to access new page within launched browser
+    const page = await browser.newPage();
+    // *************** set the content of the page, ensure page content is fully loaded
+    await page.setContent(completedFile, { waitUntil: 'networkidle0' });
+
+    // *************** generate the pdf
+    const generatedPdf = await page.pdf({ format: 'A4', printBackground: true });
+    // *************** convert generated pdf into a buffer type data
+    const bufferedGeneratedPdf = Buffer.from(generatedPdf);
+    // *************** close the browser launched by puppeteer
+    await browser.close();
+    return bufferedGeneratedPdf;
+  } catch (error) {
+    throw new Error(`pdf generation is failed: ${error.message}`);
+  }
+}
+
 // *************** EXPORT MODULE ***************
-module.exports = { CalculateResult };
+module.exports = { CalculateResult, GenerateTranscriptPdf };
