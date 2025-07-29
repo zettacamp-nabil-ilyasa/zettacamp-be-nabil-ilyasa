@@ -17,10 +17,10 @@
       margin-top:30px;} .content_table { margin: 0 auto 0 auto; font-size: 18px; width: 90%; font-family: 'Merriweather'} .content_table
       th,.content_table td{padding: 8px 12px; table-layout:fixed; overflow:hidden; word-wrap: break-word; } .content_table
       th{background-color:#F1FAEE ; font-size: 22; font-family: 'Open Sans';} .mark{text-align: justify; } .subject_indent{text-indent:
-      20px;} .test_indent{text-indent: 40px;} .pass_result{background-color: #4CAF50 ; text-align: center; font-family: 'Anton';}
-      .fail_result{background-color: #F44336 ; text-align: center; font-family: 'Anton';} .level_block{background-color: #3A506B;
-      font-size:20px;} .level_component{background-color: #5BC0BE;} footer{position: absolute; bottom: 0; width: 100%; text-align:
-      center;font-family: 'Times New Roman', Times, serif; font-style: italic;}
+      20px;} .test_indent{text-indent: 40px;} .pass_result{background-color: #A7E9AF ; text-align: center; font-family: 'Anton';}
+      .fail_result{background-color: #FF6B6B ; text-align: center; font-family: 'Anton';} .level_block{background-color: #AEDFF7;
+      font-size:20px;} .level_subject{background-color: #D2F1F0;} .level_test{background-color: #C7EAE4;} footer{position: absolute; bottom:
+      0; width: 100%; text-align: center;font-family: 'Times New Roman', Times, serif; font-style: italic;}
     </style>
   </head>
   <body>
@@ -66,7 +66,7 @@
             {{/ifValueEquals}}
           </tr>
           {{#each subject_results}}
-            <tr class='level_component'>
+            <tr class='level_subject'>
               <td class='subject_indent'><strong>Subject</strong>&nbsp;: {{subject_id.name}}</td>
               <td class='mark'>{{total_marks}}</td>
               {{#ifValueEquals subject_result 'pass'}}
@@ -76,7 +76,7 @@
               {{/ifValueEquals}}
             </tr>
             {{#each test_results}}
-              <tr class='level_component'>
+              <tr class='level_test'>
                 <td class='test_indent'><strong>Test</strong>&nbsp;: {{test_id.name}}</td>
                 <td>{{weighted_mark}}</td>
                 {{#ifValueEquals test_result 'pass'}}
