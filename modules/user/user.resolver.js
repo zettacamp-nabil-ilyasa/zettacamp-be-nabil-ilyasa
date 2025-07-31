@@ -48,6 +48,9 @@ async function GetAllUsers() {
  */
 async function GetOneUser(parent, { _id }) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user });
+
     // *************** validate user's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
 
@@ -88,7 +91,7 @@ async function CreateUser(parent, { input }, context) {
     UserIsAuthorized({ userData: context.user, allowedRoles: allowedRolesForCreateUser });
 
     // *************** validation to ensure fail-fast and bad input is handled correctly
-    ValidateUserInput(input);
+    ValidateCreateUserInput(input);
 
     // *************** check if email already used by another user
     await ValidateUniqueUserEmail(input.email);
