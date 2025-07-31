@@ -47,7 +47,7 @@ const baseTypeDefs = gql`
     or
   }
 
-  enum SortOrderBy {
+  enum SortOrderEnum {
     asc
     desc
   }

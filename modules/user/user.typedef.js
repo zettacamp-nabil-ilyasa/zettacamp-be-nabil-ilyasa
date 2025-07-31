@@ -27,11 +27,11 @@ const userTypeDefs = gql`
   }
 
   input UserFilterInput {
-    sort_by: UserSortByEnum
+    sort_by: SortUserByEnum
     sort_order: SortOrderEnum
-    limit: Number
-    offset: Number
-    page: Number
+    limit: Int
+    offset: Int
+    page: Int
   }
 
   enum SortUserByEnum {
