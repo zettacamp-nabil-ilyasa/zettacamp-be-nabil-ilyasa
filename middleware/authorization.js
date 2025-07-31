@@ -1,5 +1,5 @@
 // *************** IMPORT LIBRARY ***************
-const { ApolloError } = require('apollo-server-express');
+const { AuthenticationError, ForbiddenError, ApolloError } = require('apollo-server-express');
 
 /**
  * Middleware function to prevent access from unauthorized user
@@ -10,7 +10,7 @@ const { ApolloError } = require('apollo-server-express');
 function UserIsAuthorized({ userData, allowedRoles }) {
   // *************** check if user is authenticated by checking user data provided from context
   if (!userData || !userData.role) {
-    throw new ApolloError('unauthorized access');
+    throw new AuthenticationError('unauthorized access');
   }
 
   // *************** check for roles if allowedRoles provided
@@ -21,7 +21,7 @@ function UserIsAuthorized({ userData, allowedRoles }) {
     }
     // *************** check if user's role is one of the allowed roles within allowedRoles
     if (!allowedRoles.includes(userData.role)) {
-      throw new ApolloError('unauthorized access');
+      throw new ForbiddenError("you don't have neccesarry role");
     }
   }
 }

@@ -4,6 +4,7 @@ const { ApolloError } = require('apollo-server-express');
 // *************** IMPORT MODULE ***************
 const UserModel = require('./user.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
+const { allowedRolesForCreateUser } = require('../../shared/strings.js');
 
 // *************** IMPORT VALIDATOR ***************
 const { ValidateUserInput, ValidateLoginInput, ValidateUniqueUserEmail } = require('./user.validators.js');
@@ -11,6 +12,9 @@ const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-vali
 
 // *************** IMPORT HELPER ***************
 const { GenerateToken, CompareHashedPassword } = require('./user.helper.js');
+
+// *************** IMPORT UTILITIES ***************
+const { UserIsAuthorized } = require('../../middleware/authorization.js');
 
 // *************** QUERY ***************
 /**
@@ -78,8 +82,11 @@ async function GetOneUser(parent, { _id }) {
  * @returns {Promise<Object>} - Created user document.
  * @throws {ApolloError} - Throws error if validation fails or email already exist.
  */
-async function CreateUser(parent, { input }) {
+async function CreateUser(parent, { input }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRolesForCreateUser });
+
     // *************** validation to ensure fail-fast and bad input is handled correctly
     ValidateUserInput(input);
 
@@ -92,11 +99,8 @@ async function CreateUser(parent, { input }) {
       first_name: input.first_name,
       last_name: input.last_name,
       role: input.role,
+      created_by: context.user._id,
     };
-
-    // *************** set static User id for created_by field
-    const createdByUserId = '6862150331861f37e4e3d209';
-    newUser.created_by = createdByUserId;
 
     // *************** create user with composed object
     const createdUser = await UserModel.create(newUser);

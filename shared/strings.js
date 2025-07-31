@@ -14,6 +14,7 @@ const blockSyllabusType = ['block', 'subject', 'test'];
 const subjectSyllabusType = ['subject', 'test'];
 const gradingResult = ['pass', 'fail'];
 const calculationResultStatus = ['active', 'deleted', 'archived'];
+const allowedRolesForCreateUser = ['admin'];
 
 // *************** EXPORT MODULE ***************
 module.exports = {
