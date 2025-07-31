@@ -23,11 +23,18 @@ const userTypeDefs = gql`
     access_token: String!
   }
 
-  input UserInput {
+  input CreateUserInput {
     first_name: String!
     last_name: String!
     email: String!
     role: String!
+  }
+
+  input UpdateUserInput {
+    first_name: String!
+    last_name: String!
+    email: String!
+    password: String!
   }
 
   input LoginInput {
@@ -54,9 +61,9 @@ const userTypeDefs = gql`
   }
 
   extend type Mutation {
-    CreateUser(input: UserInput): User
+    CreateUser(input: CreateUserInput): User
     UserLogin(input: LoginInput): UserLoggedIn
-    UpdateUser(_id: ID!, input: UserInput!): User
+    UpdateUser(_id: ID!, input: UpdateUserInput!): User
     DeleteUser(_id: ID!): String
   }
 `;

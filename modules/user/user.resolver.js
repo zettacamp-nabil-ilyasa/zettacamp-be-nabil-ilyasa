@@ -7,11 +7,11 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 const { allowedRolesForCreateUser } = require('../../shared/strings.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateUserInput, ValidateLoginInput, ValidateUniqueUserEmail } = require('./user.validators.js');
+const { ValidateCreateUserInput, ValidateUpdateUserInput, ValidateLoginInput, ValidateUniqueUserEmail } = require('./user.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 
 // *************** IMPORT HELPER ***************
-const { GenerateToken, CompareHashedPassword } = require('./user.helper.js');
+const { GenerateToken, CompareHashedPassword, HashPassword } = require('./user.helper.js');
 
 // *************** IMPORT UTILITIES ***************
 const { UserIsAuthorized } = require('../../middleware/authorization.js');
@@ -169,13 +169,16 @@ async function UserLogin(parent, { input }) {
  * @returns {Promise<Object>} - Updated user document.
  * @throws {ApolloError} - Throws error if validation fails, user not found, or email already exist.
  */
-async function UpdateUser(parent, { _id, input }) {
+async function UpdateUser(parent, { _id, input }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user });
+
     // *************** validate user's id
     ValidateMongoObjectId(_id);
 
     // *************** validation to ensure fail-fast and bad input is handled correctly
-    ValidateUserInput(input);
+    ValidateUpdateUserInput(input);
 
     // *************** get the user document
     const toBeUpdatedUserDocument = await UserModel.findOne({ _id, status: 'active' });
@@ -197,6 +200,8 @@ async function UpdateUser(parent, { _id, input }) {
       first_name: input.first_name,
       last_name: input.last_name,
       role: input.role,
+      password: HashPassword(input.password),
+      updated_by: context.user._id,
     };
 
     // *************** update user with composed object

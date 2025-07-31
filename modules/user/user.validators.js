@@ -6,7 +6,7 @@ const UserModel = require('./user.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 /**
- * Validates the user input object for required fields.
+ * Validates the user input object for CreateUser.
  * @param {Object} input - The input object containing user data.
  * @param {string} input.first_name - The user's first name.
  * @param {string} input.last_name - The user's last name.
@@ -14,7 +14,7 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
  * @param {string} input.role - Role assigned to the user.
  * @throws {ApolloError} - If any field is missing, has the wrong type, or fails validation.
  */
-function ValidateUserInput(input) {
+function ValidateCreateUserInput(input) {
   // *************** destructured input object
   let { first_name, last_name, email, role } = input;
 
@@ -33,6 +33,37 @@ function ValidateUserInput(input) {
   const validRoles = ['admin', 'operator'];
   if (typeof role !== 'string' || !validRoles.includes(role))
     throw new ApolloError(`role is required and should be one of: ${validRoles.join(', ')}`);
+}
+
+/**
+ * Validates the user input object for UpdateUser.
+ * @param {Object} input - The input object containing user data.
+ * @param {string} input.first_name - The user's first name.
+ * @param {string} input.last_name - The user's last name.
+ * @param {string} input.email - The user's email address.
+ * @param {string} input.password - The user's updated password.
+ * @throws {ApolloError} - If any field is missing, has the wrong type, or fails validation.
+ */
+function ValidateUpdateUserInput(input) {
+  // *************** destructured input object
+  let { first_name, last_name, email, password } = input;
+
+  // *************** validate user's email
+  const userEmailRegexPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || typeof email !== 'string') throw new ApolloError('email is required and must be a string');
+  if (!userEmailRegexPattern.test(email)) throw new ApolloError('email must be in valid format');
+
+  // *************** validate user's first_name
+  if (!first_name || typeof first_name !== 'string') throw new ApolloError('first_name is required and must be a string');
+
+  // *************** validate user's last_name
+  if (!last_name || typeof last_name !== 'string') throw new ApolloError('last_name is required and must be a string');
+
+  // *************** validate user's password
+  const passwordRegexPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,}$/;
+  if (!password || typeof password !== 'string') throw new ApolloError('password is required and must be a string');
+  if (!passwordRegexPattern.test(password))
+    throw new ApolloError('password must have min of 8 characters, contain min of 1 number, 1 uppercase letter, and 1 lowercase letter');
 }
 
 /**
@@ -82,4 +113,4 @@ async function ValidateUniqueUserEmail(userEmail) {
 }
 
 // *************** EXPORT MODULE ***************
-module.exports = { ValidateUserInput, ValidateUniqueUserEmail, ValidateLoginInput };
+module.exports = { ValidateCreateUserInput, ValidateUpdateUserInput, ValidateUniqueUserEmail, ValidateLoginInput };
