@@ -23,11 +23,16 @@ const userTypeDefs = gql`
     access_token: String!
   }
 
+  type PagedUsers {
+    data: [User]
+    pagination_info: PaginationInfo
+  }
+
   input CreateUserInput {
     first_name: String!
     last_name: String!
     email: String!
-    role: String!
+    role: UserRoleEnum!
   }
 
   input UpdateUserInput {
@@ -43,11 +48,9 @@ const userTypeDefs = gql`
   }
 
   input UserFilterInput {
+    role: UserRoleEnum
     sort_by: SortUserByEnum
     sort_order: SortOrderEnum
-    limit: Int
-    offset: Int
-    page: Int
   }
 
   enum SortUserByEnum {
@@ -55,8 +58,13 @@ const userTypeDefs = gql`
     created_at
   }
 
+  enum UserRoleEnum {
+    admin
+    role
+  }
+
   extend type Query {
-    GetAllUsers: [User]
+    GetAllUsers(pagination: PaginationInput, filter: UserFilterInput): PagedUsers
     GetOneUser(_id: ID!): User
   }
 

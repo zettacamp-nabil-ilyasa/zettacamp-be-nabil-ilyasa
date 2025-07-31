@@ -1,5 +1,6 @@
 // *************** IMPORT LIBRARY ***************
 const Mongoose = require('mongoose');
+const { existenceStatus, userRole } = require('../../shared/strings');
 const Schema = Mongoose.Schema;
 
 const userSchema = new Schema(
@@ -17,10 +18,10 @@ const userSchema = new Schema(
     password_hash: { type: String },
 
     // Role of User
-    role: { type: String, enum: ['admin', 'user'], default: 'user', required: true },
+    role: { type: String, enum: userRole, required: true },
 
     // Status of User
-    status: { type: String, enum: ['active', 'deleted'], default: 'active' },
+    status: { type: String, enum: existenceStatus, default: 'active' },
 
     // Reference to User who created this User
     created_by: { type: Schema.Types.ObjectId, ref: 'user' },
@@ -33,7 +34,10 @@ const userSchema = new Schema(
   },
   {
     // Timestamp set-up for createdAt and updatedAt
-    timestamps: true,
+    timestamps: {
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
+    },
   }
 );
 

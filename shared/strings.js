@@ -1,4 +1,4 @@
-const syllabusStatus = ['active', 'deleted', 'archived'];
+const existenceStatus = ['active', 'deleted', 'archived'];
 const testStatus = ['published', 'not_published', 'deleted'];
 const studentTestResultStatus = ['completed', 'validated', 'need_revision', 'deleted'];
 const taskStatus = ['pending', 'in_progress', 'completed', 'deleted'];
@@ -13,13 +13,14 @@ const logicalOperatorEnum = ['and', 'or'];
 const blockSyllabusType = ['block', 'subject', 'test'];
 const subjectSyllabusType = ['subject', 'test'];
 const gradingResult = ['pass', 'fail'];
-const calculationResultStatus = ['active', 'deleted', 'archived'];
+const userRole = ['admin', 'student'];
+const allowedRolesForGetAllUsers = ['admin'];
 const allowedRolesForCreateUser = ['admin'];
 const allowedRolesForDeleteUser = ['admin'];
 
 // *************** EXPORT MODULE ***************
 module.exports = {
-  syllabusStatus,
+  existenceStatus,
   testStatus,
   studentTestResultStatus,
   taskStatus,
@@ -27,6 +28,7 @@ module.exports = {
   allowedTaskStatus,
   allowedTaskTypes,
   taskOwnerUserId,
+  userRole,
   allowedStudentTestResultStatus,
   parameterEnum,
   mathOperatorEnum,
@@ -34,7 +36,7 @@ module.exports = {
   blockSyllabusType,
   subjectSyllabusType,
   gradingResult,
-  calculationResultStatus,
+  allowedRolesForGetAllUsers,
   allowedRolesForCreateUser,
   allowedRolesForDeleteUser,
 };

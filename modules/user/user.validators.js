@@ -16,7 +16,7 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
  */
 function ValidateCreateUserInput(input) {
   // *************** destructured input object
-  let { first_name, last_name, email, role } = input;
+  let { first_name, last_name, email } = input;
 
   // *************** validate user's email
   const userEmailRegexPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -28,11 +28,6 @@ function ValidateCreateUserInput(input) {
 
   // *************** validate user's last_name
   if (!last_name || typeof last_name !== 'string') throw new ApolloError('last_name is required');
-
-  // *************** validate user's role
-  const validRoles = ['admin', 'operator'];
-  if (typeof role !== 'string' || !validRoles.includes(role))
-    throw new ApolloError(`role is required and should be one of: ${validRoles.join(', ')}`);
 }
 
 /**

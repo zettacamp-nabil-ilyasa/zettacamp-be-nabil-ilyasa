@@ -4,11 +4,12 @@ const { ApolloError } = require('apollo-server-express');
 // *************** IMPORT MODULE ***************
 const UserModel = require('./user.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
-const { allowedRolesForCreateUser, allowedRolesForDeleteUser } = require('../../shared/strings.js');
+const { allowedRolesForGetAllUsers, allowedRolesForCreateUser, allowedRolesForDeleteUser } = require('../../shared/strings.js');
 
 // *************** IMPORT VALIDATOR ***************
 const { ValidateCreateUserInput, ValidateUpdateUserInput, ValidateLoginInput, ValidateUniqueUserEmail } = require('./user.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
+const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
 // *************** IMPORT HELPER ***************
 const { GenerateToken, CompareHashedPassword, HashPassword } = require('./user.helper.js');
@@ -23,16 +24,73 @@ const { UserIsAuthorized } = require('../../middleware/authorization.js');
  * @returns {Promise<Array<Object>>} - Array of user documents with status 'active'.
  * @throws {ApolloError} - Throws error if database query fails.
  */
-async function GetAllUsers() {
+async function GetAllUsers(paginationInput, filterInput) {
   try {
-    const users = await UserModel.find({ status: 'active' }).lean();
-    return users;
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRolesForGetAllUsers });
+
+    // *************** validate pagination input
+    ValidatePaginationInput(paginationInput);
+
+    // *************** construct base query
+    const query = { status: 'active' };
+
+    // *************** add filter if it exist
+    if (filterInput?.role) {
+      query.role = filterInput.role;
+    }
+
+    // *************** set default value for page
+    const page = paginationInput?.page ?? 1;
+
+    // *************** set default value for limit
+    const limit = paginationInput?.limit ?? 10;
+
+    // *************** set how much documents skipped relative to page
+    const skip = (page - 1) * limit;
+
+    // *************** get total documents with status 'active' within UserModel
+    const total_items = await UserModel.countDocuments(query);
+
+    // *************** count total pages possible
+    const total_pages = Math.ceil(total_items / limit);
+
+    // *************** create empty object for sort
+    const sort = {};
+
+    // *************** extract sort_by from input
+    const sortFieldMap = {
+      name: 'name',
+      created_at: 'created_at',
+    };
+
+    // *************** set default value for sortField
+    const sortField = sortFieldMap[filterInput?.sort_by] || 'created_at';
+
+    // *************** ensure that sort_order default value is 1 (ascending)
+    const sortOrder = filterInput?.sort_order === 'desc' ? -1 : 1;
+
+    // *************** set sort object using sort_ by and sort_order
+    sort[sortField] = sortOrder;
+
+    // *************** get users documents, apply filter, sorting, and pagination
+    const users = await UserModel.find(query).sort(sort).skip(skip).limit(limit).lean();
+    const pagedUsersData = {
+      data: users,
+      pagination_info: {
+        page,
+        limit,
+        total_items,
+        total_pages,
+      },
+    };
+    return pagedUsersData;
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'GetAllUsers',
       path: '/modules/user/user.resolver.js',
-      parameter_input: JSON.stringify({}),
+      parameter_input: JSON.stringify({ paginationInput, filterInput }),
     });
     throw new ApolloError(error.message);
   }
