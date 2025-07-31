@@ -9,6 +9,9 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
 const { ValidateSchoolInput, ValidateUniqueSchoolLongName } = require('./school.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 
+// *************** IMPORT UTILITIES ***************
+const { UserIsAuthorized } = require('../../middleware/authorization.js');
+
 // *************** QUERY ****************
 /**
  * Get all active schools from the database.
@@ -36,11 +39,16 @@ async function GetAllSchools() {
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {string} _id - ID of the school to retrieve.
+ * @param {object} context - Resolver context containing user data.
+ * @param {object} context.user - Authenticated user data.
  * @returns {Promise<Object|null>} - School document or null if not found.
  * @throws {ApolloError} - Throws error if validation fails or database query fails.
  */
-async function GetOneSchool(parent, { _id }) {
+async function GetOneSchool(parent, { _id }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user });
+
     // *************** validate school's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
 
