@@ -4,7 +4,7 @@ const { ApolloError } = require('apollo-server-express');
 // *************** IMPORT MODULE ***************
 const UserModel = require('./user.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
-const { allowedRolesForCreateUser } = require('../../shared/strings.js');
+const { allowedRolesForCreateUser, allowedRolesForDeleteUser } = require('../../shared/strings.js');
 
 // *************** IMPORT VALIDATOR ***************
 const { ValidateCreateUserInput, ValidateUpdateUserInput, ValidateLoginInput, ValidateUniqueUserEmail } = require('./user.validators.js');
@@ -226,23 +226,23 @@ async function UpdateUser(parent, { _id, input }, context) {
  * @returns {Promise<string>} - Deletion success message.
  * @throws {ApolloError} - Throws error if unauthorized, user not found, or attempt to self-delete.
  */
-async function DeleteUser(parent, { _id }) {
+async function DeleteUser(parent, { _id }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRolesForDeleteUser });
+
     // *************** validate user's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
 
-    // *************** set static User id for deleted_by
-    const deletedByUserId = '6862150331861f37e4e3d209';
-
     // *************** check if user is trying to delete themselves
-    if (_id === deletedByUserId) {
+    if (_id === context.user._id) {
       throw new ApolloError('You cannot delete yourself');
     }
 
     // *************** soft-delete user by updating it's status
     const deletedUser = await UserModel.updateOne(
       { _id, status: 'active' },
-      { $set: { status: 'deleted', deleted_by: deletedByUserId, deleted_at: new Date() } }
+      { $set: { status: 'deleted', deleted_by: context.user._id, deleted_at: new Date() } }
     );
 
     // *************** check if the user is exist and not already deleted

@@ -15,6 +15,7 @@ const subjectSyllabusType = ['subject', 'test'];
 const gradingResult = ['pass', 'fail'];
 const calculationResultStatus = ['active', 'deleted', 'archived'];
 const allowedRolesForCreateUser = ['admin'];
+const allowedRolesForDeleteUser = ['admin'];
 
 // *************** EXPORT MODULE ***************
 module.exports = {
@@ -34,4 +35,6 @@ module.exports = {
   subjectSyllabusType,
   gradingResult,
   calculationResultStatus,
+  allowedRolesForCreateUser,
+  allowedRolesForDeleteUser,
 };
