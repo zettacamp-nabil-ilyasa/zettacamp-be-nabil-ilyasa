@@ -47,6 +47,11 @@ const baseTypeDefs = gql`
     or
   }
 
+  enum SortOrderBy {
+    asc
+    desc
+  }
+
   input PaginationInput {
     limit: Int
     offset: Int
