@@ -23,6 +23,25 @@ const studentTypeDefs = gql`
     school_id: String
   }
 
+  input StudentFilterInput {
+    sort_by: SortStudentByEnum
+    sort_order: SortOrderEnum
+    school_id: String
+    school_long_name: String
+    date_of_birth: String
+    limit: Int
+    offset: Int
+    page: Int
+  }
+
+  enum SortStudentByEnum {
+    first_name
+    last_name
+    school_long_name
+    date_of_birth
+    created_at
+  }
+
   extend type Query {
     GetAllStudents: [Student]
     GetOneStudent(_id: ID!): Student
