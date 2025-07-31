@@ -4,7 +4,7 @@ const { ApolloError } = require('apollo-server-express');
 // *************** IMPORT MODULE ***************
 const SchoolModel = require('./school.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
-const { allowedRolesForCreateSchool, allowedRolesForUpdateSchool } = require('../../shared/strings.js');
+const { allowedRolesForCreateSchool, allowedRolesForUpdateSchool, allowedRolesForDeleteSchool } = require('../../shared/strings.js');
 
 // *************** IMPORT VALIDATOR ***************
 const { ValidateSchoolInput, ValidateUniqueSchoolLongName } = require('./school.validators.js');
@@ -137,10 +137,12 @@ async function CreateSchool(parent, { input }, context) {
  * @param {string} [input.country] - Country of the School (optional).
  * @param {string} [input.city] - City of the School (optional).
  * @param {string} [input.zipcode] - Zip code of the School (optional).
+ * @param {object} context - Resolver context containing user data.
+ * @param {object} context.user - Authenticated user data.
  * @returns {Promise<Object>} - Updated school document.
  * @throws {ApolloError} - Throws error if validation fails or name conflict exists.
  */
-async function UpdateSchool(parent, { _id, input }) {
+async function UpdateSchool(parent, { _id, input }, context) {
   try {
     // *************** apply authorization
     UserIsAuthorized({ userData: context.user, allowedRoles: allowedRolesForUpdateSchool });
@@ -195,11 +197,16 @@ async function UpdateSchool(parent, { _id, input }) {
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {string} _id - ID of the school to delete.
+ * @param {object} context - Resolver context containing user data.
+ * @param {object} context.user - Authenticated user data.
  * @returns {Promise<string>} - Deletion success message.
  * @throws {ApolloError} - Throws error if unauthorized, school not found, or school is referenced.
  */
-async function DeleteSchool(parent, { _id }) {
+async function DeleteSchool(parent, { _id }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRolesForDeleteSchool });
+
     // *************** validate school's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
 
@@ -216,11 +223,8 @@ async function DeleteSchool(parent, { _id }) {
       throw new ApolloError('School that is referenced by Student cannot be deleted');
     }
 
-    // *************** set static User id for deleted_by
-    const deletedByUserId = '6862150331861f37e4e3d209';
-
     // *************** soft-delete School by updating it with composed object
-    await SchoolModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: deletedByUserId, deleted_at: new Date() } });
+    await SchoolModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: context.user._id, deleted_at: new Date() } });
     return 'School deleted successfully';
   } catch (error) {
     await ErrorLogModel.create({
