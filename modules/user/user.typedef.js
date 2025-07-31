@@ -21,6 +21,24 @@ const userTypeDefs = gql`
     role: String!
   }
 
+  input LoginInput {
+    email: String!
+    password: String!
+  }
+
+  input UserFilterInput {
+    sort_by: UserSortByEnum
+    sort_order: SortOrderEnum
+    limit: Number
+    offset: Number
+    page: Number
+  }
+
+  enum SortUserByEnum {
+    name
+    created_at
+  }
+
   extend type Query {
     GetAllUsers: [User]
     GetOneUser(_id: ID!): User
