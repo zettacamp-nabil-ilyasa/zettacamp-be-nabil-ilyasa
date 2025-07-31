@@ -26,6 +26,23 @@ const schoolTypeDefs = gql`
     zipcode: String
   }
 
+  input SchoolFilterInput {
+    sort_by: SortSchoolByEnum
+    sort_order: SortOrderEnum
+    country: String
+    student_last_name: String
+    student_first_name: String
+    limit: Int
+    offset: Int
+    page: Int
+  }
+
+  enum SortSchoolByEnum {
+    long_name
+    brand_name
+    created_at
+  }
+
   extend type Query {
     GetAllSchools: [School]
     GetOneSchool(_id: ID!): School
