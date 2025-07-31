@@ -2,6 +2,7 @@
 const ConnectDb = require('./core/database');
 const InitializeApolloServer = require('./core/apollo');
 const InitializeExpressApp = require('./core/express');
+const { router } = require('./core/routes');
 
 // *************** IMPORT LIBRARY ***************
 const { PORT } = require('./core/config');
@@ -17,6 +18,7 @@ async function InitializeServer() {
   try {
     // *************** initialize express app
     const app = InitializeExpressApp();
+    app.use(router);
 
     // *************** initialize apollo server
     const server = InitializeApolloServer();
@@ -27,6 +29,7 @@ async function InitializeServer() {
     // *************** start apollo server and apply GraphQL middleware
     await server.start();
     server.applyMiddleware({ app });
+
     console.log(`Apollo Server ready at http://localhost:${PORT}${server.graphqlPath}`);
 
     // *************** start express server

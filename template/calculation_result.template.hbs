@@ -1,0 +1,97 @@
+<html lang='en'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Document</title>
+    <link
+      href='https://fonts.googleapis.com/css2?family=Anton&family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Raleway:ital,wght@0,100..900;1,100..900&display=swap'
+      rel='stylesheet'
+    />
+    <style>
+      @page { margin: 10mm 16mm 10mm 16mm; } table, th, td { border: 1px solid black; border-collapse: collapse; } body{width: 100%;} div
+      {align-items: center; justify-content: center; } .title { font-size: 24pt; text-align: center; margin-bottom: 100px; font-family:
+      'Times New Roman', Times, serif;} .upper_section { display: flex; align-items: center; justify-content: center; margin-bottom: 50px;}
+      .student_identity_table { border: 1px solid black; font-size: 14px;} .student_identity_table td { table-layout:fixed;
+      width:150px;overflow:hidden; word-wrap:break-word; padding: 8px 12px; font-family: 'Merriweather';} .strong_name{font-size: 18px;}
+      .pass_box {padding: 69px; border: 2px solid black; margin-right: 72px; font-size: 30px;} .content_section { margin-top:30px;}
+      .content_table { margin: 0 auto 0 auto; font-size: 18px; width: 90%; font-family: 'Merriweather'} .content_table th,.content_table
+      td{padding: 8px 12px; table-layout:fixed; overflow:hidden; word-wrap: break-word; } .content_table th{background-color:#F1FAEE ;
+      font-size: 22; font-family: 'Open Sans';} .mark{text-align: justify; } .subject_indent{text-indent: 40px;} .test_indent{text-indent:
+      80px;} .pass_result{background-color: #A7E9AF ; text-align: center; font-family: 'Merriweather';} .fail_result{background-color:
+      #FF6B6B ; text-align: center; font-family: 'Merriweather';} footer{position: absolute; bottom: 0; width: 100%; text-align:
+      center;font-family: 'Times New Roman', Times, serif; font-style: italic;}
+    </style>
+  </head>
+  <body>
+    <h1 class='title'>Transcript Result</h1>
+    <div class='upper_section'>
+      {{#ifValueEquals overall_result 'pass'}}
+        <div class='pass_box pass_result'>PASS</div>
+      {{else}}
+        <div class='pass_box fail_result'>FAIL</div>
+      {{/ifValueEquals}}
+      <div>
+        <table class='student_identity_table'>
+          <tr>
+            <td>Name</td>
+            <td class='strong_name'><strong>{{student_id.first_name}} {{student_id.last_name}}</strong></td>
+          </tr>
+          <tr>
+            <td>Date of Birth</td>
+            <td>{{formatDate student_id.date_of_birth}}</td>
+          </tr>
+          <tr>
+            <td>School</td>
+            <td>{{student_id.school_id.long_name}}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    <div class='content_section'>
+      <table class='content_table'>
+        <tr>
+          <th>Syllabus</th>
+          <th>Mark</th>
+          <th>Result</th>
+        </tr>
+        {{#each results}}
+          <tr>
+            <td><strong>Block</strong> : {{block_id.name}}</td>
+            <td class='mark'>{{total_marks}}</td>
+            {{#ifValueEquals block_result 'pass'}}
+              <td class='pass_result'>PASS</td>
+            {{else}}
+              <td class='fail_result'>FAIL</td>
+            {{/ifValueEquals}}
+          </tr>
+          {{#each subject_results}}
+            <tr>
+              <td class='subject_indent'><strong>Subject</strong>&nbsp;: {{subject_id.name}}</td>
+              <td class='mark'>{{total_marks}}</td>
+              {{#ifValueEquals subject_result 'pass'}}
+                <td class='pass_result'>PASS</td>
+              {{else}}
+                <td class='fail_result'>FAIL</td>
+              {{/ifValueEquals}}
+            </tr>
+            {{#each test_results}}
+              <tr>
+                <td class='test_indent'><strong>Test</strong>&nbsp;: {{test_id.name}}</td>
+                <td>{{weighted_mark}}</td>
+                {{#ifValueEquals test_result 'pass'}}
+                  <td class='pass_result'>PASS</td>
+                {{else}}
+                  <td class='fail_result'>FAIL</td>
+                {{/ifValueEquals}}
+              </tr>
+            {{/each}}
+          {{/each}}
+        {{/each}}
+      </table>
+    </div>
+    <footer>
+      <p>The Transcript Result is Issued at {{formatDate updated_at}}</p>
+      <p>The Transcript Result is Generated at {{formatDate generated_at}}</p>
+    </footer>
+  </body>
+</html>

@@ -41,7 +41,7 @@ const calculationResultSchema = new Schema(
             test_results: [
               {
                 // id of test associated with student's test result
-                test_id: { type: Schema.Types.ObjectId, ref: 'block' },
+                test_id: { type: Schema.Types.ObjectId, ref: 'test' },
 
                 // grading result of the test (e.g: pass, fail)
                 test_result: { type: String, enum: gradingResult, trim: true },
