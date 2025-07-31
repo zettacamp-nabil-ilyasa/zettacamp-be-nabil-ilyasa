@@ -36,6 +36,21 @@ function ValidateUserInput(input) {
 }
 
 /**
+ * Validates the user input object for required fields.
+ * @param {Object} input - The input object containing data for user login.
+ * @param {String} input.email - The user's email.
+ * @param {String} input.password - The user's password.
+ * @throws {ApolloError} - If any field is missing, has the wrong type, or fails validation.
+ */
+function ValidateLoginInput(input) {
+  // *************** validate email provided in input
+  if (!input.email || !typeof input.email !== 'string') throw new ApolloError('email is required and must be a string');
+
+  // *************** validate password provided in input
+  if (!input.password || !typeof input.password !== 'string') throw new ApolloError('password is required and must be a string');
+}
+
+/**
  * Check if a user email already exists in the database.
  * @async
  * @param {string} userEmail - The email to check.
@@ -67,4 +82,4 @@ async function ValidateUniqueUserEmail(userEmail) {
 }
 
 // *************** EXPORT MODULE ***************
-module.exports = { ValidateUserInput, ValidateUniqueUserEmail };
+module.exports = { ValidateUserInput, ValidateUniqueUserEmail, ValidateLoginInput };
