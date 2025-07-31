@@ -14,6 +14,15 @@ const userTypeDefs = gql`
     updatedAt: Date
   }
 
+  type UserLoggedIn {
+    _id: ID!
+    first_name: String!
+    last_name: String!
+    email: String!
+    role: String!
+    access_token: String!
+  }
+
   input UserInput {
     first_name: String!
     last_name: String!
@@ -46,6 +55,7 @@ const userTypeDefs = gql`
 
   extend type Mutation {
     CreateUser(input: UserInput): User
+    UserLogin(input: LoginInput): UserLoggedIn
     UpdateUser(_id: ID!, input: UserInput!): User
     DeleteUser(_id: ID!): String
   }

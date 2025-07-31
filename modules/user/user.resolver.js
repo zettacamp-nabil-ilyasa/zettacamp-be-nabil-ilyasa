@@ -6,8 +6,11 @@ const UserModel = require('./user.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateUserInput, ValidateUniqueUserEmail } = require('./user.validators.js');
+const { ValidateUserInput, ValidateLoginInput, ValidateUniqueUserEmail } = require('./user.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
+
+// *************** IMPORT HELPER ***************
+const { GenerateToken, CompareHashedPassword } = require('./user.helper.js');
 
 // *************** QUERY ***************
 /**
@@ -102,6 +105,46 @@ async function CreateUser(parent, { input }) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'CreateUser',
+      path: '/modules/user/user.resolver.js',
+      parameter_input: JSON.stringify({ input }),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
+ * Generata an access token for user, marked them as logged in.
+ * @async
+ * @param {object} parent - Not used (GraphQL resolver convention).
+ * @param {object} input - Login input fields.
+ * @param {string} input.email - User's email.
+ * @param {string} input.password - User's password.
+ * @returns {Promise<Object>} - User's data.
+ * @throws {ApolloError} - Throws error if validation or jwt operation fails
+ */
+async function UserLogin(parent, { input }) {
+  try {
+    // *************** validation to ensure fail-fast and bad input is handled correctly
+    ValidateLoginInput(input);
+
+    // *************** get user document
+    const userDocument = UserModel.findOne({ email: input.email, status: 'active' });
+
+    // *************** sanity check for userDocument
+    if (!userDocument) {
+      throw new ApolloError('invalid email or password');
+    }
+
+    // *************** compare inputed password with hashed password within user's document
+    CompareHashedPassword({ passwordInput: input.password, hashedPassword: userDocument.password });
+
+    // *************** generate an access_token for the user
+    const loggedInUserData = GenerateToken(userDocument);
+    return loggedInUserData;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'UserLogin',
       path: '/modules/user/user.resolver.js',
       parameter_input: JSON.stringify({ input }),
     });
@@ -243,7 +286,7 @@ async function created_by(parent, args, context) {
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllUsers, GetOneUser },
-  Mutation: { CreateUser, UpdateUser, DeleteUser },
+  Mutation: { CreateUser, UserLogin, UpdateUser, DeleteUser },
   User: {
     created_by,
   },
