@@ -1,10 +1,16 @@
 // *************** IMPORT LIBRARY ***************
 const jwt = require('jsonwebtoken');
 const { ApolloError } = require('apollo-server-express');
+const Bcrypt = require('bcrypt');
 
 // *************** IMPORT MODULE ***************
 const ErrorLogModel = require('../errorLog/error_log.model');
 
+/**
+ * Generate jwt token for provided user data
+ * @param {Object} userData - User's object passed from login mutation
+ * @returns {Object} - Containing user's data and access_token
+ */
 async function GenerateToken(userData) {
   try {
     // *************** check if env variable is provided
@@ -12,34 +18,9 @@ async function GenerateToken(userData) {
       throw new ApolloError('missing required env: JWT_SECRET_KEY or ACCESS_TOKEN_EXPIRE_TIME');
     }
 
-    // *************** user's email sanity check
-    if (!userData._id) {
-      throw new ApolloError("user's _id is required");
-    }
-
-    // *************** user's email sanity check
-    if (!userData.email) {
-      throw new ApolloError("user's email is required");
-    }
-
-    // *************** user's first_name sanity check
-    if (!userData.first_name) {
-      throw new ApolloError("user's first_name is required");
-    }
-
-    // *************** user's last_name sanity check
-    if (!userData.last_name) {
-      throw new ApolloError("user's last_name is required");
-    }
-
-    // *************** user's role sanity check
-    if (!userData.role) {
-      throw new ApolloError("user's role is required");
-    }
-
-    // *************** user's status sanity check
-    if (!userData.status || userData.status !== 'active') {
-      throw new ApolloError("user's status is required and should be 'active'");
+    // *************** sanity check for the userData object
+    if (typeof userData !== 'object') {
+      throw new ApolloError('userData must be a plain object');
     }
 
     // *************** compose payload for jwt token from userData
@@ -59,7 +40,7 @@ async function GenerateToken(userData) {
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
-      function_name: 'GenerateTOken',
+      function_name: 'GenerateToken',
       path: '/modules/user/user.helper.js',
       parameter_input: JSON.stringify({ userData }),
     });
@@ -67,6 +48,11 @@ async function GenerateToken(userData) {
   }
 }
 
+/**
+ * Extract data from jwt token get from headers
+ * @param {Object} headers - Headers of request containing authorization field
+ * @returns {Object} - Extracted data from
+ */
 async function GetUserFromHeader(headers) {
   try {
     // *************** get token from header object
@@ -82,15 +68,28 @@ async function GetUserFromHeader(headers) {
     const decodedJwtToken = jwt.decode(jwt.verify(jwtToken));
     return decodedJwtToken;
   } catch (error) {
-    await ErrorLogModel.create({
-      error_stack: error.stack,
-      function_name: 'GetUserFromHeader',
-      path: '/modules/user/user.helper.js',
-      parameter_input: JSON.stringify({ headerObject }),
-    });
-    throw new ApolloError(error.message);
+    return null;
   }
 }
 
+/**
+ * Hash a password, add security to user's password.
+ * @param {String} passwordString - password that want to be hashed.
+ * @returns {String} - The hashed password.
+ */
+function HashPassword(passwordString) {
+  // *************** sanity check for passwordString
+  if (!passwordString) {
+    throw new ApolloError('string of password is required');
+  }
+
+  // *************** define how many round should bcrypt hashing do
+  const saltRound = 11;
+
+  // *************** hashed the passwordString
+  const hashedPassword = Bcrypt.hash(passwordString, saltRound);
+  return hashedPassword;
+}
+
 // *************** EXPORT MODULE ***************
-module.exports = { GenerateToken, GetUserFromHeader };
+module.exports = { GenerateToken, GetUserFromHeader, HashPassword };

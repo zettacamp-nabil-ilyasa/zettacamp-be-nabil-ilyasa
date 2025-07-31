@@ -17,10 +17,10 @@ function InitializeApolloServer() {
   return new ApolloServer({
     typeDefs: TypeDefs,
     resolvers: Resolvers,
-    context: async ({ req }) => {
+    context: ({ req }) => {
       try {
         // *************** extract token from header
-        const user = await GetUserFromHeader(req?.headers);
+        const user = GetUserFromHeader(req?.headers);
         const contextObject = { user, loaders: DataLoaders() };
         return contextObject;
       } catch (error) {
