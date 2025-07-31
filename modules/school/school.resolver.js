@@ -4,7 +4,7 @@ const { ApolloError } = require('apollo-server-express');
 // *************** IMPORT MODULE ***************
 const SchoolModel = require('./school.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
-const { allowedRolesForCreateSchool } = require('../../shared/strings.js');
+const { allowedRolesForCreateSchool, allowedRolesForUpdateSchool } = require('../../shared/strings.js');
 
 // *************** IMPORT VALIDATOR ***************
 const { ValidateSchoolInput, ValidateUniqueSchoolLongName } = require('./school.validators.js');
@@ -142,6 +142,9 @@ async function CreateSchool(parent, { input }, context) {
  */
 async function UpdateSchool(parent, { _id, input }) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRolesForUpdateSchool });
+
     // *************** validate school's id
     ValidateMongoObjectId(_id);
 
@@ -170,6 +173,7 @@ async function UpdateSchool(parent, { _id, input }) {
       country: input.country,
       city: input.city,
       zipcode: input.zipcode,
+      updated_by: context.user.updated_by,
     };
 
     // *************** update school with composed object
