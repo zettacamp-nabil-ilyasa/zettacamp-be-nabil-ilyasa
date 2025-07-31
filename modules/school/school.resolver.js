@@ -4,6 +4,7 @@ const { ApolloError } = require('apollo-server-express');
 // *************** IMPORT MODULE ***************
 const SchoolModel = require('./school.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
+const { allowedRolesForCreateSchool } = require('../../shared/strings.js');
 
 // *************** IMPORT VALIDATOR ***************
 const { ValidateSchoolInput, ValidateUniqueSchoolLongName } = require('./school.validators.js');
@@ -83,11 +84,16 @@ async function GetOneSchool(parent, { _id }, context) {
  * @param {string} [input.city] - City of the school (optional).
  * @param {string} [input.zipcode] - Zip code (optional).
  * @param {string} [input.created_by] - ID of the admin who creates the school.
+ * @param {object} context - Resolver context containing user data.
+ * @param {object} context.user - Authenticated user data.
  * @returns {Promise<Object>} - Created school document.
  * @throws {ApolloError} - Throws error if validation fails, user unauthorized, or name conflict occurs.
  */
-async function CreateSchool(parent, { input }) {
+async function CreateSchool(parent, { input }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRolesForCreateSchool });
+
     // *************** validation to ensure bad input is handled correctly
     ValidateSchoolInput(input);
 
@@ -102,11 +108,8 @@ async function CreateSchool(parent, { input }) {
       country: input.country,
       city: input.city,
       zipcode: input.zipcode,
+      created_by: context.user._id,
     };
-
-    // *************** set static User id for created_by field
-    const createdByUserId = '6862150331861f37e4e3d209';
-    newSchool.created_by = createdByUserId;
 
     // *************** create school with composed object
     const createdSchool = await SchoolModel.create(newSchool);

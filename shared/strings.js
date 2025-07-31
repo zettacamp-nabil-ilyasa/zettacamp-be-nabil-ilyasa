@@ -17,6 +17,7 @@ const userRole = ['admin', 'student'];
 const allowedRolesForGetAllUsers = ['admin'];
 const allowedRolesForCreateUser = ['admin'];
 const allowedRolesForDeleteUser = ['admin'];
+allowedRolesForCreateSchool = ['admin'];
 
 // *************** EXPORT MODULE ***************
 module.exports = {
