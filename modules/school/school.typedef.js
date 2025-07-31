@@ -32,9 +32,6 @@ const schoolTypeDefs = gql`
     country: String
     student_last_name: String
     student_first_name: String
-    limit: Int
-    offset: Int
-    page: Int
   }
 
   enum SortSchoolByEnum {
