@@ -91,3 +91,6 @@ async function GetUserFromHeader(headers) {
     throw new ApolloError(error.message);
   }
 }
+
+// *************** EXPORT MODULE ***************
+module.exports = { GenerateToken, GetUserFromHeader };
