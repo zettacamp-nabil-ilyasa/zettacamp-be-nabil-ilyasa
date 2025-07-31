@@ -91,5 +91,28 @@ function HashPassword(passwordString) {
   return hashedPassword;
 }
 
+/**
+ *
+ * @param {String} passwordInput - String of password.
+ * @param {String} hashedPassword - Encrypted/hashed password to be compared to.
+ * @throws {ApolloError} - If sanity check or comparation fail.
+ */
+function CompareHashedPassword({ passwordInput, hashedPassword }) {
+  // *************** sanity check for input passsword
+  if (!passwordInput) {
+    throw new ApolloError('passwordInput is required');
+  }
+
+  // *************** sanity check for the hashedPassword
+  if (!hashedPassword) {
+    throw new ApolloError('hashedPassword is required');
+  }
+
+  const passwordIsMatched = Bcrypt.compare(passwordInput, hashedPassword);
+  if (!passwordIsMatched) {
+    throw new ApolloError('invalid username or password');
+  }
+}
+
 // *************** EXPORT MODULE ***************
-module.exports = { GenerateToken, GetUserFromHeader, HashPassword };
+module.exports = { GenerateToken, GetUserFromHeader, HashPassword, CompareHashedPassword };
