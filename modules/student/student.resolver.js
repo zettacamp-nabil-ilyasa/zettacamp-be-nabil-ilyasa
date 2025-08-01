@@ -81,6 +81,8 @@ async function GetOneStudent(parent, { _id }, context) {
  * @param {string} input.school_id - ID of the school the student belongs to.
  * @param {string} input.date_of_birth - Student's date of birth as a string.
  * @param {string} input.created_by - User ID of the admin who creates the student.
+ * @param {object} context - Resolver context containing user data.
+ * @param {object} context.user - GraphQL context object, contains authenticated user data.
  * @returns {Promise<Object>} - The newly created student document.
  * @throws {ApolloError} - Throws error if validation fails or email/school is invalid.
  */
@@ -135,11 +137,16 @@ async function CreateStudent(parent, { input }, context) {
  * @param {string} input.first_name - Updated first name.
  * @param {string} input.last_name - Updated last name.
  * @param {string} [input.date_of_birth] - Updated date of birth in string format (optional).
+ * @param {object} context - Resolver context containing user data.
+ * @param {object} context.user - GraphQL context object, contains authenticated user data.
  * @returns {Promise<Object>} - Updated student document.
  * @throws {ApolloError} - Throws error if student does not exist, email already used, or school not found.
  */
-async function UpdateStudent(parent, { _id, input }) {
+async function UpdateStudent(parent, { _id, input }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user });
+
     // *************** validate student's id
     ValidateMongoObjectId(_id);
 
@@ -165,6 +172,7 @@ async function UpdateStudent(parent, { _id, input }) {
       first_name: input.first_name,
       last_name: input.last_name,
       date_of_birth: input.date_of_birth,
+      updated_by: context.user._id,
     };
 
     // *************** update student with composed object
