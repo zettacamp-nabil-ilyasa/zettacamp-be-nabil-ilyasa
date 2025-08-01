@@ -27,11 +27,10 @@ const studentTypeDefs = gql`
     sort_by: SortStudentByEnum
     sort_order: SortOrderEnum
     school_id: String
+    student_name: String
     school_long_name: String
     date_of_birth: String
-    limit: Int
-    offset: Int
-    page: Int
+    date_comparation_operator: MathOperatorEnum
   }
 
   enum SortStudentByEnum {
