@@ -9,9 +9,10 @@ const userTypeDefs = gql`
     email: String!
     role: String!
     status: Status!
-    createdAt: Date
+    created_at: Date
     created_by: User
-    updatedAt: Date
+    updated_by: User
+    updated_at: Date
   }
 
   type UserLoggedIn {

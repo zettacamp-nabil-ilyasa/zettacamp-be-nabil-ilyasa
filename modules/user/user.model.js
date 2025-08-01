@@ -26,6 +26,9 @@ const userSchema = new Schema(
     // Reference to User who created this User
     created_by: { type: Schema.Types.ObjectId, ref: 'user' },
 
+    // Reference to User who updated this school
+    updated_by: { type: Schema.Types.ObjectId, ref: 'user' },
+
     // Soft-delete timestamp
     deleted_at: { type: Date },
 

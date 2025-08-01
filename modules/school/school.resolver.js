@@ -4,32 +4,119 @@ const { ApolloError } = require('apollo-server-express');
 // *************** IMPORT MODULE ***************
 const SchoolModel = require('./school.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
-const { allowedRolesForCreateSchool, allowedRolesForUpdateSchool, allowedRolesForDeleteSchool } = require('../../shared/strings.js');
+const {
+  allowedRolesForGetAllSchools,
+  allowedRolesForCreateSchool,
+  allowedRolesForUpdateSchool,
+  allowedRolesForDeleteSchool,
+} = require('../../shared/strings.js');
+
+// *************** IMPORT UTILITIES ***************
+const { UserIsAuthorized } = require('../../middleware/authorization.js');
+
+// *************** IMPORT HELPER ***************
+const { SchoolAggregatePipelineQueryBuilder } = require('./school.helper.js');
 
 // *************** IMPORT VALIDATOR ***************
 const { ValidateSchoolInput, ValidateUniqueSchoolLongName } = require('./school.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 
-// *************** IMPORT UTILITIES ***************
-const { UserIsAuthorized } = require('../../middleware/authorization.js');
-
 // *************** QUERY ****************
 /**
- * Get all active schools from the database.
- * @async
- * @returns {Promise<Array<Object>>} - Array of school documents with status 'active'.
- * @throws {ApolloError} - Throws error if database query fails.
+ * Get paginated, sorted, and optionally filtered list of active schools.
+ * If `filterInput.student_name` is provided, performs aggregation with `$lookup` and `$facet`
+ * to support filtering by student name across referenced collections.
+ *
+ * @param {object} parent - Not used (GraphQL resolver convention).
+ * @param {Object} args - GraphQL arguments.
+ * @param {Object} paginationInput - Pagination input containing `page` and `limit`.
+ * @param {Object} filterInput - Optional filter input, e.g. `student_name`.
+ * @param {Object} sortInput - Sort input, containing `sort_by` and `sort_order`.
+ * @param {Object} context - GraphQL context object, contains authenticated user data.
+ * @returns {Promise<Object>} An object containing data (school documents) and pagination_info
+ * @throws {ApolloError} If user is not authorized or database query fails.
  */
-async function GetAllSchools() {
+async function GetAllSchools(parent, { paginationInput, filterInput, sortInput }) {
   try {
-    const schools = await SchoolModel.find({ status: 'active' }).lean();
-    return schools;
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRolesForGetAllSchools });
+
+    const sortOption = {};
+    // *************** object for sort field mapping
+    const sortFieldMap = {
+      long_name: 'long_name',
+      brand_name: 'brand_name',
+      created_at: 'created_at',
+    };
+
+    // *************** set default value for sortField
+    const sortField = sortFieldMap[sortInput?.sort_by] || 'created_at';
+
+    // *************** set default value for sortOrder
+    const sortOrder = sortInput?.sort_order === 'desc' ? -1 : 1;
+
+    sortOption[sortField] = sortOrder;
+
+    // *************** set default value for page
+    const page = paginationInput?.page ?? 1;
+
+    // *************** set default value for limit
+    const limit = paginationInput?.limit ?? 10;
+
+    // *************** set how much documents skipped relative to page
+    const skip = (page - 1) * limit;
+
+    // *************** check if student_name is provided
+    if (filterInput?.student_name) {
+      // *************** build query for aggregate pipeline
+      const pipelineQuery = SchoolAggregatePipelineQueryBuilder({ limit, skip, filterInput, sortInput });
+
+      // *************** add sort and pagination data for pipeline query
+      const schools = await SchoolModel.aggregate(pipelineQuery);
+
+      // *************** set total_items and total_pages from schools result
+      const { data, total_count } = schools[0] || {};
+      const total_items = total_count[0].count || 0;
+      const total_pages = Math.ceil(total_items / limit);
+
+      const pagedSchools = {
+        data: data || [],
+        pagination_info: {
+          page,
+          limit,
+          total_items,
+          total_pages,
+        },
+      };
+      return pagedSchools;
+    }
+
+    // *************** set base query
+    const query = { status: 'active' };
+
+    // *************** get total documents with status 'active' within UserModel
+    const total_items = await SchoolModel.countDocuments(query);
+
+    // *************** count total pages possible
+    const total_pages = Math.ceil(total_items / limit);
+
+    const schools = await SchoolModel.find(query).sort(sortOption).skip(skip).limit(limit).lean();
+    const pagedSchools = {
+      data: schools,
+      pagination_info: {
+        page,
+        limit,
+        total_items,
+        total_pages,
+      },
+    };
+    return pagedSchools;
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'GetAllSchools',
       path: '/modules/school/school.resolver.js',
-      parameter_input: JSON.stringify({}),
+      parameter_input: JSON.stringify({ paginationInput, filterInput, sortInput }),
     });
     throw new ApolloError(error.message);
   }
@@ -41,7 +128,7 @@ async function GetAllSchools() {
  * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {string} _id - ID of the school to retrieve.
  * @param {object} context - Resolver context containing user data.
- * @param {object} context.user - Authenticated user data.
+ * @param {object} context.user - GraphQL context object, contains authenticated user data.
  * @returns {Promise<Object|null>} - School document or null if not found.
  * @throws {ApolloError} - Throws error if validation fails or database query fails.
  */

@@ -80,12 +80,8 @@ function ValidateSchoolFilterInput(input) {
   // *************** validate country from input if provided
   if (input?.country && typeof input?.country !== 'string') throw new ApolloError('country must be a string');
 
-  // *************** validate student_last_name from input if provided
-  if (input?.student_last_name && typeof input?.student_last_name !== 'string') throw new ApolloError('student_last_name must be a string');
-
-  // *************** validate student_first_name from input if provided
-  if (input?.student_first_name && typeof input?.student_first_name !== 'string')
-    throw new ApolloError('student_first_name must be a string');
+  // *************** validate student_name from input if provided
+  if (input?.student_last_name && typeof input?.student_name !== 'string') throw new ApolloError('student_last_name must be a string');
 }
 
 // *************** EXPORT MODULE ***************

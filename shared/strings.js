@@ -17,9 +17,10 @@ const userRole = ['admin', 'student'];
 const allowedRolesForGetAllUsers = ['admin'];
 const allowedRolesForCreateUser = ['admin'];
 const allowedRolesForDeleteUser = ['admin'];
+const allowedRolesForGetAllSchools = ['admin'];
 const allowedRolesForCreateSchool = ['admin'];
 const allowedRolesForUpdateSchool = ['admin'];
-allowedRolesForDeleteSchool = ['admin'];
+const allowedRolesForDeleteSchool = ['admin'];
 
 // *************** EXPORT MODULE ***************
 module.exports = {
@@ -42,6 +43,7 @@ module.exports = {
   allowedRolesForGetAllUsers,
   allowedRolesForCreateUser,
   allowedRolesForDeleteUser,
+  allowedRolesForGetAllSchools,
   allowedRolesForCreateSchool,
   allowedRolesForUpdateSchool,
   allowedRolesForDeleteSchool,
