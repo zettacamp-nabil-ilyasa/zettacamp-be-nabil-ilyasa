@@ -5,6 +5,7 @@ const { ApolloError } = require('apollo-server-express');
 const StudentModel = require('./student.model.js');
 const SchoolModel = require('../school/school.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
+const { allowedRolesForCreateStudent } = require('../../shared/strings.js');
 
 // *************** IMPORT VALIDATOR ***************
 const { ValidateStudentInput, ValidateUniqueStudentEmail } = require('./student.validators.js');
@@ -83,8 +84,11 @@ async function GetOneStudent(parent, { _id }, context) {
  * @returns {Promise<Object>} - The newly created student document.
  * @throws {ApolloError} - Throws error if validation fails or email/school is invalid.
  */
-async function CreateStudent(parent, { input }) {
+async function CreateStudent(parent, { input }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRolesForCreateStudent });
+
     // *************** validation to ensure fail-fast and bad input is handled correctly
     ValidateStudentInput(input);
 
@@ -101,11 +105,8 @@ async function CreateStudent(parent, { input }) {
       last_name: input.last_name,
       school_id: input.school_id,
       date_of_birth: input.date_of_birth,
+      created_by: context.user._id,
     };
-
-    // *************** set static User id for created_by field
-    const createdByUserId = '6862150331861f37e4e3d209';
-    newStudent.created_by = createdByUserId;
 
     // *************** create student with composed object
     const createdStudent = await StudentModel.create(newStudent);
