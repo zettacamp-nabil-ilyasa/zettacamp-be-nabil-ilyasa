@@ -37,11 +37,16 @@ async function GetAllStudents() {
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {string} _id - ID of the student to retrieve.
+ * @param {object} context - Resolver context containing user data.
+ * @param {object} context.user - GraphQL context object, contains authenticated user data.
  * @returns {Promise<Object|null>} - The Student document or null if not found.
  * @throws {ApolloError} - Throws error if validation fails or student not found.
  */
-async function GetOneStudent(parent, { _id }) {
+async function GetOneStudent(parent, { _id }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user });
+
     // *************** validate student's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
 
