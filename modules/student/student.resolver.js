@@ -194,21 +194,23 @@ async function UpdateStudent(parent, { _id, input }, context) {
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {string} _id - ID of the student to delete.
+ * @param {object} context - Resolver context containing user data.
+ * @param {object} context.user - GraphQL context object, contains authenticated user data.
  * @returns {Promise<string>} - Success message upon deletion.
  * @throws {ApolloError} - Throws error if unauthorized or student not found.
  */
 async function DeleteStudent(parent, { _id }) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRolesForDeleteStudent });
+
     // *************** validate student's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
-
-    // *************** set static User id for deleted_by
-    const deletedByUserId = '6862150331861f37e4e3d209';
 
     // *************** soft delete student by updating it with composed object
     const softDeletedStudent = await StudentModel.updateOne(
       { _id, status: 'active' },
-      { $set: { status: 'deleted', deleted_by: deletedByUserId, deleted_at: new Date() } }
+      { $set: { status: 'deleted', deleted_by: context.user._id, deleted_at: new Date() } }
     );
 
     // *************** sanity check for the next db operation, check if the student is exist and not already deleted
