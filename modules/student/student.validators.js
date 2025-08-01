@@ -89,10 +89,13 @@ function ValidateStudentFilterInput(input) {
   // *************** validate school_id if provided
   if (input?.school_id) ValidateMongoObjectId(school_id);
 
-  // *************** validate date_of_birth if provided, ensure it complies with pattern
+  // *************** validate date_of_birth if provided, ensure it complies with pattern, ensure date_comparation_operator provided
   const dateOfBirthRegexPatern = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
-  if (input?.date_of_birth && !dateOfBirthRegexPatern.test(input?.date_of_birth)) {
-    throw new ApolloError('date_of_birth must be in YYYY-MM-DD format');
+  if (input?.date_of_birth) {
+    if (!dateOfBirthRegexPatern.test(input?.date_of_birth)) {
+      throw new ApolloError('date_of_birth must be in YYYY-MM-DD format');
+    }
+    if (!filterInput.date_comparation_operator) throw new ApolloError('date_comparation_operator is required');
   }
 
   // *************** validate school_long_name if provided

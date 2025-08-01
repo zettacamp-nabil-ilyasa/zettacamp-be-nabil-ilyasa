@@ -24,13 +24,16 @@ const studentTypeDefs = gql`
   }
 
   input StudentFilterInput {
-    sort_by: SortStudentByEnum
-    sort_order: SortOrderEnum
     school_id: String
     student_name: String
     school_long_name: String
     date_of_birth: String
     date_comparation_operator: MathOperatorEnum
+  }
+
+  input StudentSortInput {
+    sort_by: SortStudentByEnum
+    sort_order: SortOrderEnum
   }
 
   enum SortStudentByEnum {
@@ -42,7 +45,7 @@ const studentTypeDefs = gql`
   }
 
   extend type Query {
-    GetAllStudents: [Student]
+    GetAllStudents(paginationInput: PaginationInput, filterInput: StudentFilterInput, sortInput: StudentSortInput): [Student]
     GetOneStudent(_id: ID!): Student
   }
 

@@ -5,29 +5,79 @@ const { ApolloError } = require('apollo-server-express');
 const StudentModel = require('./student.model.js');
 const SchoolModel = require('../school/school.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
-const { allowedRolesForCreateStudent } = require('../../shared/strings.js');
+const { allowedRolesForGetAllStudents, allowedRolesForCreateStudent, allowedRolesForDeleteStudent } = require('../../shared/strings.js');
+
+// *************** IMPORT UTILITIES ***************
+const { UserIsAuthorized } = require('../../middleware/authorization.js');
+
+// *************** IMPORT HELPER ***************
+const { StudentAggregatePipelineQueryBuilder } = require('./student.helper.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateStudentInput, ValidateUniqueStudentEmail } = require('./student.validators.js');
+const { ValidateStudentInput, ValidateUniqueStudentEmail, ValidateStudentFilterInput } = require('./student.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
+const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
 // *************** QUERY ***************
 /**
- * Get all active students from the database.
+ * GraphQL resolver for fetching active students with pagination, filtering, and sorting.
  * @async
- * @returns {Promise<Array<Object>>} - Array of student documents with status 'active'.
- * @throws {ApolloError} - Throws error if query fails or database operation encounters issues.
+ * @param {Object} parent - Unused parent argument from GraphQL resolver.
+ * @param {Object} args - Arguments passed from GraphQL query.
+ * @param {Object} args.paginationInput - Input for pagination.
+ * @param {Object} args.filterInput - Filter conditions.
+ * @param {Object} args.sortInput - Sorting condition.
+ * @param {object} context - Resolver context containing user data.
+ * @param {object} context.user - GraphQL context object, contains authenticated user data.
+ * @returns {Promise<Object>} - Paginated student list with metadata.
+ * @throws {ApolloError} - Throws error if something fails during query.
  */
-async function GetAllStudents() {
+async function GetAllStudents(parent, { paginationInput, filterInput, sortInput }, context) {
   try {
-    const students = await StudentModel.find({ status: 'active' }).lean();
-    return students;
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRolesForGetAllStudents });
+
+    // *************** validate pagination input
+    ValidatePaginationInput(paginationInput);
+
+    // *************** validate filter input
+    ValidateStudentFilterInput(filterInput);
+
+    // *************** set default value for page
+    const page = paginationInput?.page ?? 1;
+
+    // *************** set default value for limit
+    const limit = paginationInput?.limit ?? 10;
+
+    // *************** set how much documents skipped relative to page
+    const skip = (page - 1) * limit;
+
+    // *************** build the query
+    const query = StudentAggregatePipelineQueryBuilder({ skip, limit, filterInput, sortInput });
+    const students = await StudentModel.aggregate(query);
+
+    // *************** deconstruct students
+    const { data, total_count } = students[0] || {};
+
+    // *************** set total_items and total_pages for pagination
+    const total_items = total_count[0]?.count || 0;
+    const total_pages = Math.ceil(total_items / limit);
+    const pagedStudents = {
+      data: data || [],
+      pagination_info: {
+        page,
+        limit,
+        total_items,
+        total_pages,
+      },
+    };
+    return pagedStudents;
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'GetAllStudents',
       path: '/modules/student/student.resolver.js',
-      parameter_input: JSON.stringify({}),
+      parameter_input: JSON.stringify({ paginationInput, filterInput, sortInput }),
     });
     throw new ApolloError(error.message);
   }

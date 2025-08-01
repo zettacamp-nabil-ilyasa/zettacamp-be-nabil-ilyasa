@@ -91,8 +91,9 @@ async function GetAllSchools(parent, { paginationInput, filterInput, sortInput }
       return pagedSchools;
     }
 
-    // *************** set base query
+    // *************** set query for 'find' operation
     const query = { status: 'active' };
+    if (filterInput?.country) query.country = filterInput.country;
 
     // *************** get total documents with status 'active' within UserModel
     const total_items = await SchoolModel.countDocuments(query);

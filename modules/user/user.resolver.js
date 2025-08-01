@@ -56,7 +56,7 @@ async function GetAllUsers(paginationInput, filterInput) {
     const total_pages = Math.ceil(total_items / limit);
 
     // *************** create empty object for sort
-    const sort = {};
+    const sortOption = {};
 
     // *************** extract sort_by from input
     const sortFieldMap = {
@@ -71,10 +71,10 @@ async function GetAllUsers(paginationInput, filterInput) {
     const sortOrder = filterInput?.sort_order === 'desc' ? -1 : 1;
 
     // *************** set sort object using sort_ by and sort_order
-    sort[sortField] = sortOrder;
+    sortOption[sortField] = sortOrder;
 
     // *************** get users documents, apply filter, sorting, and pagination
-    const users = await UserModel.find(query).sort(sort).skip(skip).limit(limit).lean();
+    const users = await UserModel.find(query).sort(sortOption).skip(skip).limit(limit).lean();
     const pagedUsersData = {
       data: users,
       pagination_info: {

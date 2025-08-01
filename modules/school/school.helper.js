@@ -15,6 +15,12 @@ const { ApolloError } = require('apollo-server-express');
  * @returns {Array<Object>} Aggregation pipeline stages for querying School collection.
  */
 function SchoolAggregatePipelineQueryBuilder({ skip, limit, filterInput, sortOption }) {
+  // *************** sanity check for all of input object parameter
+  if (!skip || typeof skip !== 'number') throw new ApolloError('skip is required and must be a number');
+  if (!limit || typeof limit !== 'number') throw new ApolloError('limit is required and must be a number');
+  if (typeof filterInput !== 'object') throw new ApolloError('filterInput is required and must be an object');
+  if (typeof sortOption !== 'object') throw new ApolloError('sortOption is required and must be an object');
+
   // *************** empty array for pipeline query
   const pipeline = [];
 
