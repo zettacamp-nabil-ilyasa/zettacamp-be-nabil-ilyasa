@@ -18,8 +18,6 @@ function StudentAggregatePipelineQueryBuilder({ skip, limit, filterInput, sortIn
   if (!skip || typeof skip !== 'number') throw new ApolloError('skip is required and must be a number');
   if (!limit || typeof limit !== 'number') throw new ApolloError('limit is required and must be a number');
   if (typeof filterInput !== 'object') throw new ApolloError('filterInput is required and must be an object');
-  if (!sortInput?.sort_by) throw new ApolloError('sort_by is required ');
-  if (!sortInput?.sort_order) throw new ApolloError('sort_order is required ');
 
   // *************** map the sort option
   const sortOption = {};
@@ -91,7 +89,7 @@ function StudentAggregatePipelineQueryBuilder({ skip, limit, filterInput, sortIn
       total_count: [{ $count: 'count' }],
     },
   });
-  // *************** END: Pagination pushed to pipeline***************
+  // *************** END: Pagination pushed to pipeline ***************
   return pipeline;
 }
 

@@ -49,7 +49,7 @@ const schoolTypeDefs = gql`
   }
 
   extend type Query {
-    GetAllSchools(pagination: PaginationInput, filter: SchoolFilterInput, sort: SchoolSortInput): PagedSchools
+    GetAllSchools(paginationInput: PaginationInput, filterInput: SchoolFilterInput, sortInput: SchoolSortInput): PagedSchools
     GetOneSchool(_id: ID!): School
   }
 

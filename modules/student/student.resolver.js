@@ -53,8 +53,8 @@ async function GetAllStudents(parent, { paginationInput, filterInput, sortInput 
     const skip = (page - 1) * limit;
 
     // *************** build the query
-    const query = StudentAggregatePipelineQueryBuilder({ skip, limit, filterInput, sortInput });
-    const students = await StudentModel.aggregate(query);
+    const pipelineQuery = StudentAggregatePipelineQueryBuilder({ skip, limit, filterInput, sortInput });
+    const students = await StudentModel.aggregate(pipelineQuery);
 
     // *************** deconstruct students
     const { data, total_count } = students[0] || {};

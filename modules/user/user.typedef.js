@@ -50,6 +50,9 @@ const userTypeDefs = gql`
 
   input UserFilterInput {
     role: UserRoleEnum
+  }
+
+  input UserSortInput {
     sort_by: SortUserByEnum
     sort_order: SortOrderEnum
   }
@@ -65,7 +68,7 @@ const userTypeDefs = gql`
   }
 
   extend type Query {
-    GetAllUsers(pagination: PaginationInput, filter: UserFilterInput): PagedUsers
+    GetAllUsers(paginationInput: PaginationInput, filterInput: UserFilterInput, sortInput: UserSortInput): PagedUsers
     GetOneUser(_id: ID!): User
   }
 

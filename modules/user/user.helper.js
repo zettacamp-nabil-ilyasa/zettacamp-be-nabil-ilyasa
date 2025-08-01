@@ -114,5 +114,45 @@ function CompareHashedPassword({ passwordInput, hashedPassword }) {
   }
 }
 
+function UserAggregatePipelineQueryBuilder({ skip, limit, filterInput, sortInput }) {
+  // *************** sanity check for all of input object parameter
+  if (!skip || typeof skip !== 'number') throw new ApolloError('skip is required and must be a number');
+  if (!limit || typeof limit !== 'number') throw new ApolloError('limit is required and must be a number');
+  if (typeof filterInput !== 'object') throw new ApolloError('filterInput is required and must be an object');
+
+  // *************** map sort options
+  const sortOption = {};
+  const sortFieldMap = {
+    name: 'name',
+    created_at: 'created_at',
+  };
+
+  // *************** set default value for sortField
+  const sortField = sortFieldMap[filterInput?.sort_by] || 'created_at';
+
+  // *************** ensure that sort_order default value is 1 (ascending)
+  const sortOrder = filterInput?.sort_order === 'desc' ? -1 : 1;
+
+  // *************** set sort object using sort_ by and sort_order
+  sortOption[sortField] = sortOrder;
+
+  const pipeline = [];
+
+  // *************** match stage query
+  const schoolMatchStage = { status: 'active' };
+  if (filterInput?.role) {
+    schoolMatchStage.role = filterInput.role;
+  }
+
+  // *************** apply facet for pagination
+  pipeline.push({
+    $facet: {
+      data: [{ $sort: sortOption }, { $skip: skip }, { $limit: limit }],
+      total_count: [{ $count: 'count' }],
+    },
+  });
+  return pipeline;
+}
+
 // *************** EXPORT MODULE ***************
-module.exports = { GenerateToken, GetUserFromHeader, HashPassword, CompareHashedPassword };
+module.exports = { GenerateToken, GetUserFromHeader, HashPassword, CompareHashedPassword, UserAggregatePipelineQueryBuilder };

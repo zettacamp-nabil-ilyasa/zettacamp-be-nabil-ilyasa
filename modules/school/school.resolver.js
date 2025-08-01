@@ -18,8 +18,9 @@ const { UserIsAuthorized } = require('../../middleware/authorization.js');
 const { SchoolAggregatePipelineQueryBuilder } = require('./school.helper.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateSchoolInput, ValidateUniqueSchoolLongName } = require('./school.validators.js');
+const { ValidateSchoolInput, ValidateUniqueSchoolLongName, ValidateSchoolFilterInput } = require('./school.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
+const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
 // *************** QUERY ****************
 /**
@@ -36,26 +37,16 @@ const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-vali
  * @returns {Promise<Object>} An object containing data (school documents) and pagination_info
  * @throws {ApolloError} If user is not authorized or database query fails.
  */
-async function GetAllSchools(parent, { paginationInput, filterInput, sortInput }) {
+async function GetAllSchools(parent, { paginationInput, filterInput, sortInput }, context) {
   try {
     // *************** apply authorization
     UserIsAuthorized({ userData: context.user, allowedRoles: allowedRolesForGetAllSchools });
 
-    const sortOption = {};
-    // *************** object for sort field mapping
-    const sortFieldMap = {
-      long_name: 'long_name',
-      brand_name: 'brand_name',
-      created_at: 'created_at',
-    };
+    // *************** validate pagination input
+    ValidatePaginationInput(paginationInput);
 
-    // *************** set default value for sortField
-    const sortField = sortFieldMap[sortInput?.sort_by] || 'created_at';
-
-    // *************** set default value for sortOrder
-    const sortOrder = sortInput?.sort_order === 'desc' ? -1 : 1;
-
-    sortOption[sortField] = sortOrder;
+    // *************** validate filter input
+    ValidateSchoolFilterInput(filterInput);
 
     // *************** set default value for page
     const page = paginationInput?.page ?? 1;
@@ -66,44 +57,21 @@ async function GetAllSchools(parent, { paginationInput, filterInput, sortInput }
     // *************** set how much documents skipped relative to page
     const skip = (page - 1) * limit;
 
-    // *************** check if student_name is provided
-    if (filterInput?.student_name) {
-      // *************** build query for aggregate pipeline
-      const pipelineQuery = SchoolAggregatePipelineQueryBuilder({ limit, skip, filterInput, sortInput });
+    // *************** build query for aggregate pipeline
+    const pipelineQuery = SchoolAggregatePipelineQueryBuilder({ limit, skip, filterInput, sortInput });
 
-      // *************** add sort and pagination data for pipeline query
-      const schools = await SchoolModel.aggregate(pipelineQuery);
+    // *************** execute aggregate query
+    const schools = await SchoolModel.aggregate(pipelineQuery);
 
-      // *************** set total_items and total_pages from schools result
-      const { data, total_count } = schools[0] || {};
-      const total_items = total_count[0].count || 0;
-      const total_pages = Math.ceil(total_items / limit);
+    // *************** deconstrucat schools
+    const { data, total_count } = schools[0] || {};
 
-      const pagedSchools = {
-        data: data || [],
-        pagination_info: {
-          page,
-          limit,
-          total_items,
-          total_pages,
-        },
-      };
-      return pagedSchools;
-    }
-
-    // *************** set query for 'find' operation
-    const query = { status: 'active' };
-    if (filterInput?.country) query.country = filterInput.country;
-
-    // *************** get total documents with status 'active' within UserModel
-    const total_items = await SchoolModel.countDocuments(query);
-
-    // *************** count total pages possible
+    // *************** set total_items and total_pages for pagination
+    const total_items = total_count[0]?.count || 0;
     const total_pages = Math.ceil(total_items / limit);
 
-    const schools = await SchoolModel.find(query).sort(sortOption).skip(skip).limit(limit).lean();
     const pagedSchools = {
-      data: schools,
+      data: data || [],
       pagination_info: {
         page,
         limit,
