@@ -4,21 +4,18 @@ const { ApolloError } = require('apollo-server-express');
 /**
  * Build a MongoDB aggregation pipeline for querying School documents
  * @param {Object} params - Parameters for building the aggregation pipeline.
- * @param {Object} [skip] - Pagination options for skip.
- * @param {Object} [limit] - Pagination options for limit.
- * @param {Object} [filterInput] - Filter options for the query.
- * @param {string} [filterInput.country] - Filter by country field of School.
- * @param {string} [filterInput.student_name] - Search student first or last name with case-insensitive partial match.
+ * @param {Object} skip - Pagination options for skip.
+ * @param {Object} limit - Pagination options for limit.
+ * @param {Object} [filterInput] - Filtering criteria (country, student_name).
  * @param {Object} [sortInput] - Sort options for the query.
- * @param {'long_name'|'brand_name'|'created_at'} [sortInput.sort_by] - Field to sort by.
- * @param {'asc'|'desc'} [sortInput.sort_order] - Sort direction, ascending or descending.
+ * @throws {ApolloError} If required parameters are missing or invalid.
  * @returns {Array<Object>} Aggregation pipeline stages for querying School collection.
  */
 function SchoolAggregatePipelineQueryBuilder({ skip, limit, filterInput, sortInput }) {
   // *************** sanity check for all of input object parameter
-  if (!skip || typeof skip !== 'number') throw new ApolloError('skip is required and must be a number');
+  if (skip !== 0 && typeof skip !== 'number') throw new ApolloError('skip is required and must be a number');
   if (!limit || typeof limit !== 'number') throw new ApolloError('limit is required and must be a number');
-  if (typeof filterInput !== 'object') throw new ApolloError('filterInput is required and must be an object');
+  if (filterInput && typeof filterInput !== 'object') throw new ApolloError('filterInput is required and must be an object');
 
   // *************** object for sort field mapping
   const sortOption = {};

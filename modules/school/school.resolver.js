@@ -4,12 +4,7 @@ const { ApolloError } = require('apollo-server-express');
 // *************** IMPORT MODULE ***************
 const SchoolModel = require('./school.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
-const {
-  allowedRolesForGetAllSchools,
-  allowedRolesForCreateSchool,
-  allowedRolesForUpdateSchool,
-  allowedRolesForDeleteSchool,
-} = require('../../shared/strings.js');
+const { allowedRoles } = require('../../shared/strings.js');
 
 // *************** IMPORT UTILITIES ***************
 const { UserIsAuthorized } = require('../../middleware/authorization.js');
@@ -40,7 +35,7 @@ const { ValidatePaginationInput } = require('../../utilities/validators/paginati
 async function GetAllSchools(parent, { paginationInput, filterInput, sortInput }, context) {
   try {
     // *************** apply authorization
-    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRolesForGetAllSchools });
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.School.GetAllSchools });
 
     // *************** validate pagination input
     ValidatePaginationInput(paginationInput);
@@ -148,7 +143,7 @@ async function GetOneSchool(parent, { _id }, context) {
 async function CreateSchool(parent, { input }, context) {
   try {
     // *************** apply authorization
-    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRolesForCreateSchool });
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.School.CreateSchool });
 
     // *************** validation to ensure bad input is handled correctly
     ValidateSchoolInput(input);
@@ -201,7 +196,7 @@ async function CreateSchool(parent, { input }, context) {
 async function UpdateSchool(parent, { _id, input }, context) {
   try {
     // *************** apply authorization
-    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRolesForUpdateSchool });
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.School.UpdateSchool });
 
     // *************** validate school's id
     ValidateMongoObjectId(_id);
@@ -261,7 +256,7 @@ async function UpdateSchool(parent, { _id, input }, context) {
 async function DeleteSchool(parent, { _id }, context) {
   try {
     // *************** apply authorization
-    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRolesForDeleteSchool });
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.School.DeleteSchool });
 
     // *************** validate school's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
@@ -326,24 +321,53 @@ async function students(parent, args, context) {
 }
 
 /**
- * Resolve the created_by field in a School document using DataLoader.
+ * Resolve the created_by field in a user object using DataLoader to prevent N+1 queries.
  * @async
- * @param {object} parent - The school object containing created_by field.
+ * @param {object} parent - Parent user object.
  * @param {object} args - Not used (GraphQL resolver convention).
- * @param {object} context - Resolver context containing DataLoaders.
- * @param {object} context.loaders.user - DataLoader instance for users.
- * @returns {Promise<Object|null>} - The School document or null if not available.
- * @throws {ApolloError} - Throws error if loading fails.
+ * @param {object} context - Resolver context that contains DataLoaders.
+ * @returns {Promise<Object|null>} - The User document or null if not available.
+ * @throws {ApolloError} - Throws error if DataLoader fails.
  */
 async function created_by(parent, args, context) {
   try {
-    // *************** check if school has any created_by
+    // *************** check if user has any created_by
     if (!parent?.created_by) {
       return null;
     }
 
     // *************** load user
     const loadedUser = await context.loaders.user.load(parent.created_by);
+    return loadedUser;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'created_by',
+      path: '/modules/school/school.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
+ * Resolve the updated_by field in a user object using DataLoader to prevent N+1 queries.
+ * @async
+ * @param {object} parent - Parent user object.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context that contains DataLoaders.
+ * @returns {Promise<Object|null>} - The User document or null if not available.
+ * @throws {ApolloError} - Throws error if DataLoader fails.
+ */
+async function updated_by(parent, args, context) {
+  try {
+    // *************** check if user has any created_by
+    if (!parent?.updated_by) {
+      return null;
+    }
+
+    // *************** load user
+    const loadedUser = await context.loaders.user.load(parent.updated_by);
     return loadedUser;
   } catch (error) {
     await ErrorLogModel.create({
@@ -363,5 +387,6 @@ module.exports = {
   School: {
     students,
     created_by,
+    updated_by,
   },
 };
