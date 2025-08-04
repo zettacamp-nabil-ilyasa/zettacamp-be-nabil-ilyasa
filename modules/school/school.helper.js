@@ -13,7 +13,7 @@ const { ApolloError } = require('apollo-server-express');
  */
 function SchoolAggregatePipelineQueryBuilder({ skip, limit, filterInput, sortInput }) {
   // *************** sanity check for all of input object parameter
-  if (skip !== 0 && typeof skip !== 'number') throw new ApolloError('skip is required and must be a number');
+  if (typeof skip !== 'number') throw new ApolloError('skip is required and must be a number');
   if (!limit || typeof limit !== 'number') throw new ApolloError('limit is required and must be a number');
   if (filterInput && typeof filterInput !== 'object') throw new ApolloError('filterInput is required and must be an object');
 
