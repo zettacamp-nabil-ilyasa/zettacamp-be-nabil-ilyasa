@@ -12,17 +12,17 @@ function GetUserFromHeader(headers) {
     // *************** get token from header object
     const authHeader = headers?.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new ApolloError('auth header is missing or invalid');
+      console.warn('auth header is missing or invalid');
     }
 
     // *************** split authHeader, get token only
-    const jwtToken = authHeader.split(' ')[1];
+    const jwtToken = authHeader?.split(' ')[1];
 
     // *************** extract user data from verified jwtToken
     const decodedJwtToken = jwt.verify(jwtToken, process.env.JWT_SECRET_KEY);
     return decodedJwtToken;
   } catch (error) {
-    console.error(error.message);
+    console.warn('jwt not provided');
     return null;
   }
 }
