@@ -73,7 +73,6 @@ function StudentAggregatePipelineQueryBuilder({ skip, limit, filterInput, sortIn
         as: 'school_documents',
       },
     });
-    pipeline.push({ $unwind: '$school_documents' });
 
     if (filterInput?.school_long_name) {
       const schoolLongNameRegex = new RegExp(filterInput.school_long_name, 'i');
