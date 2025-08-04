@@ -5,7 +5,7 @@ const { ApolloError } = require('apollo-server-express');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator');
 
 /**
- *
+ * Validate input for block mutation
  * @param {Object} input - The input containing block data
  * @param {String} input.name - The name of block data
  * @param {String} input.description - The description of block data

@@ -23,10 +23,10 @@ async function CalculateResultWorker() {
     await Mongoose.connect(mongoDbUri);
 
     // *************** deconstruct parameter
-    const { studentId } = workerData;
+    const { studentId, userId } = workerData;
 
     // *************** call the helper function
-    await CalculateResult(studentId);
+    await CalculateResult({ studentId, userId });
     parentPort.postMessage({ success: true });
   } catch (error) {
     parentPort.postMessage({ success: false, error: error.message });

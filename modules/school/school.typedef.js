@@ -12,9 +12,15 @@ const schoolTypeDefs = gql`
     zipcode: String
     students: [Student]
     status: Status!
-    createdAt: Date
-    updatedAt: Date
+    created_at: Date
+    updated_at: Date
     created_by: User
+    updated_by: User
+  }
+
+  type PagedSchools {
+    data: [School]
+    pagination_info: PaginationInfo
   }
 
   input SchoolInput {
@@ -26,8 +32,24 @@ const schoolTypeDefs = gql`
     zipcode: String
   }
 
+  input SchoolFilterInput {
+    country: String
+    student_name: String
+  }
+
+  input SchoolSortInput {
+    sort_by: SortSchoolByEnum
+    sort_order: SortOrderEnum
+  }
+
+  enum SortSchoolByEnum {
+    long_name
+    brand_name
+    created_at
+  }
+
   extend type Query {
-    GetAllSchools: [School]
+    GetAllSchools(paginationInput: PaginationInput, filterInput: SchoolFilterInput, sortInput: SchoolSortInput): PagedSchools
     GetOneSchool(_id: ID!): School
   }
 

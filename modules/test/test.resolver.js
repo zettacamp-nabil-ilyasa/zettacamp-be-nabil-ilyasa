@@ -5,26 +5,30 @@ const { ApolloError } = require('apollo-server-express');
 const TestModel = require('./test.model.js');
 const SubjectModel = require('../subject/subject.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
-const { taskOwnerUserId } = require('../../shared/strings.js');
+const { allowedRoles } = require('../../shared/strings.js');
+
+// *************** IMPORT UTILITIES ***************
+const { UserIsAuthorized } = require('../../middleware/authorization.js');
+
+// *************** IMPORT HELPER ***************
+const {
+  CreateTestPayloadComposer,
+  UpdateTestPayloadComposer,
+  GetTotalWeightOfTests,
+  CreateAssignCorrectorTask,
+  TestPassConditionPayloadComposer,
+} = require('./test.helper.js');
 
 // *************** IMPORT VALIDATOR ***************
 const { ValidateTestInput, ValidateTestFilterInput, ValidateTestPassConditionInput } = require('./test.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
-// *************** IMPORT HELPER ***************
-const {
-  TestPayloadComposer,
-  GetTotalWeightOfTests,
-  CreateAssignCorrectorTask,
-  TestPassConditionPayloadComposer,
-} = require('./test.helper.js');
-
 // *************** QUERY ****************
 /**
  * Get all tests with optional filtering by subject_id, status and pagination.
  * @async
- * @function GetAllSubjects
+ * @function GetAllTests
  * @param {Object} params - The parameter object
  * @param {Object} [filterInput] - Optional filter input
  * @param {String} [filterInput.subject_id] - Optional subject ID to filter tests
@@ -35,13 +39,16 @@ const {
  * @returns {Promise<Array<Object>>} Array of test documents matching the query
  * @throws {ApolloError} If any error occurs during validation or database operation
  */
-async function GetAllTests(parent, { filter, pagination }) {
+async function GetAllTests(parent, { filterInput, paginationInput }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Test.GetAllTests });
+
     // *************** validate filterInput
-    ValidateTestFilterInput(filter);
+    ValidateTestFilterInput(filterInput);
 
     // *************** validate pagination's input
-    ValidatePaginationInput(pagination);
+    ValidatePaginationInput(paginationInput);
 
     // *************** construct base query
     const query = { status: { $ne: 'deleted' } };
@@ -57,11 +64,12 @@ async function GetAllTests(parent, { filter, pagination }) {
     }
 
     // *************** set default limit and offset
-    const offset = pagination?.offset ?? 0;
-    const limit = pagination?.limit ?? 20;
+    const limit = paginationInput?.limit ?? 10;
+    const page = paginationInput?.page ?? 1;
+    const skip = (page - 1) * limit;
 
     // *************** get tests based on query
-    const tests = await TestModel.find(query).skip(offset).limit(limit).sort({ created_at: -1 }).lean();
+    const tests = await TestModel.find(query).skip(skip).limit(limit).sort({ created_at: -1 }).lean();
     return tests;
   } catch (error) {
     await ErrorLogModel.create({
@@ -82,8 +90,11 @@ async function GetAllTests(parent, { filter, pagination }) {
  * @returns {Promise<Object|null>} - Task document or null if not found.
  * @throws {ApolloError} - Throws error if validation fails or database query fails.
  */
-async function GetOneTest(parent, { _id }) {
+async function GetOneTest(parent, { _id }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user });
+
     // *************** validate test's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
 
@@ -119,8 +130,11 @@ async function GetOneTest(parent, { _id }) {
  * @returns {Promise<Object>} - Created test document.
  * @throws {ApolloError} - Throws error if validation or db operation fails.
  */
-async function CreateTest(parent, { input }) {
+async function CreateTest(parent, { input }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Test.CreateTest });
+
     // *************** validation to ensure bad input is handled correctly
     ValidateTestInput(input);
 
@@ -137,7 +151,7 @@ async function CreateTest(parent, { input }) {
     }
 
     // *************** compose test payload
-    const newTest = TestPayloadComposer(input);
+    const newTest = CreateTestPayloadComposer({ inputObject: input, userId: context.user._id });
     const createdTest = await TestModel.create(newTest);
 
     // *************** add test's id to subject's test_ids field
@@ -167,8 +181,11 @@ async function CreateTest(parent, { input }) {
  * @returns {Promise<Object>} - Updated test document.
  * @throws {ApolloError} - Throws error if validation or db operation fails.
  */
-async function UpdateTest(parent, { _id, input }) {
+async function UpdateTest(parent, { _id, input }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Test.UpdateTest });
+
     // *************** validate test's id
     ValidateMongoObjectId(_id);
 
@@ -193,7 +210,7 @@ async function UpdateTest(parent, { _id, input }) {
     }
 
     // *************** compose test payload
-    const editedTest = TestPayloadComposer(input);
+    const editedTest = UpdateTestPayloadComposer({ inputObject: input, userId: context.user._id });
     const updatedTest = await TestModel.findOneAndUpdate({ _id }, editedTest, { new: true }).lean();
     return updatedTest;
   } catch (error) {
@@ -215,8 +232,11 @@ async function UpdateTest(parent, { _id, input }) {
  * @param {Number} input.parameter_value - pass condition's parameter_value to be used as comparator
  *@param  {String} input.math_operator - string representation of math_operator
  */
-async function AddTestPassCondition(parent, { _id, input }) {
+async function AddTestPassCondition(parent, { _id, input }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Test.AddTestPassCondition });
+
     // *************** validate test's id
     ValidateMongoObjectId(_id);
 
@@ -225,7 +245,11 @@ async function AddTestPassCondition(parent, { _id, input }) {
 
     // *************** compose payload
     const testPassConditionsPayload = TestPassConditionPayloadComposer(input);
-    const addedPassConditions = await TestModel.findOneAndUpdate({ _id }, { pass_condition: testPassConditionsPayload }, { new: true });
+    const addedPassConditions = await TestModel.findOneAndUpdate(
+      { _id },
+      { pass_condition: testPassConditionsPayload, updated_by: context.user._id },
+      { new: true }
+    );
     return addedPassConditions;
   } catch (error) {
     await ErrorLogModel.create({
@@ -244,39 +268,50 @@ async function AddTestPassCondition(parent, { _id, input }) {
  * @param {Object} parent - Unused GraphQL resolver parent argument.
  * @param {Object} args - Resolver arguments.
  * @param {string} args._id - The ID of the test to be published.
- *
  * @returns {Promise<Object>} The updated test document after being published.
- *
  * @throws {ApolloError} If the test is not found or already published, or if the update fails.
  */
-async function PublishTest(parent, { _id }) {
-  // *************** validate test's id
-  ValidateMongoObjectId(_id);
+async function PublishTest(parent, { _id }, context) {
+  try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Test.PublishTest });
 
-  // *************** get test document
-  const testDocument = await TestModel.findOne({ _id, status: 'not_published' }).lean();
+    // *************** validate test's id
+    ValidateMongoObjectId(_id);
 
-  // *************** check if test's status is not published
-  if (!testDocument) {
-    throw new ApolloError('only not published test can be published');
+    // *************** get test document
+    const testDocument = await TestModel.findOne({ _id, status: 'not_published' }).lean();
+
+    // *************** check if test's status is not published
+    if (!testDocument) {
+      throw new ApolloError('only not published test can be published');
+    }
+
+    // *************** update test's status to published and published date
+    const publishedTest = await TestModel.findOneAndUpdate(
+      { _id },
+      { status: 'published', published_date: new Date(), published_by: context.user._id },
+      { new: true }
+    ).lean();
+
+    // *************** check if update is successful
+    if (!publishedTest) {
+      throw new ApolloError('failed to publish test');
+    }
+
+    // *************** create assign corrector task
+    await CreateAssignCorrectorTask({ userId: context.user._id, testId: _id });
+
+    return publishedTest;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'PublishTest',
+      path: '/modules/test/test.resolver.js',
+      parameter_input: JSON.stringify({ _id }),
+    });
+    throw new ApolloError(error.message);
   }
-
-  // *************** update test's status to published and published date
-  const publishedTest = await TestModel.findOneAndUpdate(
-    { _id },
-    { status: 'published', published_date: new Date() },
-    { new: true }
-  ).lean();
-
-  // *************** check if update is successful
-  if (!publishedTest) {
-    throw new ApolloError('failed to publish test');
-  }
-
-  // *************** create assign corrector task
-  await CreateAssignCorrectorTask({ userId: taskOwnerUserId, testId: _id });
-
-  return publishedTest;
 }
 
 /**
@@ -288,8 +323,11 @@ async function PublishTest(parent, { _id }) {
  * @returns {Promise<string>} - Deletion success message.
  * @throws {ApolloError} - Throws error if unauthorized, subject not found, or subject is referenced.
  */
-async function DeleteTest(parent, { _id }) {
+async function DeleteTest(parent, { _id }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Test.DeleteTest });
+
     // *************** validate test's id
     ValidateMongoObjectId(_id);
 
@@ -303,7 +341,7 @@ async function DeleteTest(parent, { _id }) {
       throw new ApolloError('test that have been published cannot be deleted');
     }
     // *************** update status to deleted and set deleted_at
-    await TestModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_at: new Date() } });
+    await TestModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: context.user._id, deleted_at: new Date() } });
 
     // *************** remove test's id from subject's test_ids field
     await SubjectModel.updateOne({ _id: toBeDeletedTestDocument.subject_id }, { $pull: { test_ids: _id } });
@@ -350,11 +388,73 @@ async function subject_id(parent, args, context) {
   }
 }
 
+/**
+ * Resolve the created_by field in a user object using DataLoader to prevent N+1 queries.
+ * @async
+ * @param {object} parent - Parent user object.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context that contains DataLoaders.
+ * @returns {Promise<Object|null>} - The User document or null if not available.
+ * @throws {ApolloError} - Throws error if DataLoader fails.
+ */
+async function created_by(parent, args, context) {
+  try {
+    // *************** check if user has any created_by
+    if (!parent?.created_by) {
+      return null;
+    }
+
+    // *************** load user
+    const loadedUser = await context.loaders.user.load(parent.created_by);
+    return loadedUser;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'created_by',
+      path: '/modules/test/test.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
+ * Resolve the updated_by field in a user object using DataLoader to prevent N+1 queries.
+ * @async
+ * @param {object} parent - Parent user object.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context that contains DataLoaders.
+ * @returns {Promise<Object|null>} - The User document or null if not available.
+ * @throws {ApolloError} - Throws error if DataLoader fails.
+ */
+async function updated_by(parent, args, context) {
+  try {
+    // *************** check if user has any created_by
+    if (!parent?.updated_by) {
+      return null;
+    }
+
+    // *************** load user
+    const loadedUser = await context.loaders.user.load(parent.updated_by);
+    return loadedUser;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'created_by',
+      path: '/modules/test/test.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllTests, GetOneTest },
   Mutation: { CreateTest, UpdateTest, PublishTest, AddTestPassCondition, DeleteTest },
   Test: {
     subject_id,
+    created_by,
+    updated_by,
   },
 };

@@ -5,14 +5,18 @@ const { ApolloError } = require('apollo-server-express');
 const SubjectModel = require('./subject.model.js');
 const BlockModel = require('../block/block.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
+const { allowedRoles } = require('../../shared/strings.js');
+
+// *************** IMPORT UTILITIES ***************
+const { UserIsAuthorized } = require('../../middleware/authorization.js');
+
+// *************** IMPORT HELPER ***************
+const { SubjectPayloadComposer, SubjectPassConditionsPayloadComposer } = require('./subject.helper.js');
 
 // *************** IMPORT VALIDATOR ***************
 const { ValidateSubjectInput, ValidateSubjectFilterInput, ValidateSubjectPassConditionsInput } = require('./subject.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
-
-// *************** IMPORT HELPER ***************
-const { SubjectPayloadComposer, SubjectPassConditionsPayloadComposer } = require('./subject.helper.js');
 
 // *************** QUERY ****************
 /**
@@ -28,13 +32,16 @@ const { SubjectPayloadComposer, SubjectPassConditionsPayloadComposer } = require
  * @returns {Promise<Array<Object>>} Array of subject documents matching the query
  * @throws {ApolloError} If any error occurs during validation or database operation
  */
-async function GetAllSubjects(parent, { filter, pagination }) {
+async function GetAllSubjects(parent, { filterInput, paginationInput }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Subject.GetAllSubjects });
+
     // *************** validate filter's input
-    ValidateSubjectFilterInput(filter);
+    ValidateSubjectFilterInput(filterInput);
 
     // *************** validate pagination's input
-    ValidatePaginationInput(pagination);
+    ValidatePaginationInput(paginationInput);
 
     // *************** construct base query
     const query = { status: 'active' };
@@ -45,12 +52,13 @@ async function GetAllSubjects(parent, { filter, pagination }) {
       query.block_id = filter.block_id;
     }
 
-    // *************** set default limit and offset
-    const offset = pagination?.offset ?? 0;
-    const limit = pagination?.limit ?? 20;
+    // *************** set default limit and page
+    const page = paginationInput?.page ?? 1;
+    const limit = paginationInput?.limit ?? 20;
+    const skip = (page - 1) * limit;
 
     // *************** get subjects based on query
-    const subjects = await SubjectModel.find(query).skip(offset).limit(limit).sort({ created_at: -1 }).lean();
+    const subjects = await SubjectModel.find(query).skip(skip).limit(limit).sort({ created_at: -1 }).lean();
     return subjects;
   } catch (error) {
     await ErrorLogModel.create({
@@ -71,8 +79,11 @@ async function GetAllSubjects(parent, { filter, pagination }) {
  * @returns {Promise<Object|null>} - Subject document or null if not found.
  * @throws {ApolloError} - Throws error if validation fails or database query fails.
  */
-async function GetOneSubject(parent, { _id }) {
+async function GetOneSubject(parent, { _id }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user });
+
     // *************** validate subject's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
 
@@ -107,8 +118,11 @@ async function GetOneSubject(parent, { _id }) {
  * @returns {Promise<Object>} - Created subject document.
  * @throws {ApolloError} - Throws error if validation or db operation fails.
  */
-async function CreateSubject(parent, { input }) {
+async function CreateSubject(parent, { input }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Subject.CreateSubject });
+
     // *************** validation to ensure bad input is handled correctly
     ValidateSubjectInput(input);
 
@@ -149,8 +163,11 @@ async function CreateSubject(parent, { input }) {
  * @returns {Promise<Object>} - Updated subject document.
  * @throws {ApolloError} - Throws error if validation or db operation fails.
  */
-async function UpdateSubject(parent, { _id, input }) {
+async function UpdateSubject(parent, { _id, input }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Subject.UpdateSubject });
+
     // *************** validate subject's id
     ValidateMongoObjectId(_id);
 
@@ -169,7 +186,7 @@ async function UpdateSubject(parent, { _id, input }) {
     }
 
     // *************** compose payload
-    const editedSubject = SubjectPayloadComposer(input);
+    const editedSubject = SubjectPayloadComposerForCreate(input);
 
     // *************** update subject with composed payload
     const updatedSubject = await SubjectModel.findOneAndUpdate({ _id }, { $set: editedSubject }, { new: true }).lean();
@@ -198,8 +215,11 @@ async function UpdateSubject(parent, { _id, input }) {
  *@param  {String} input.math_operator - string representation of math_operator
  * @param {String} input.logical_operator - string representation of logical operator
  */
-async function AddSubjectPassConditions(parent, { _id, input }) {
+async function AddSubjectPassConditions(parent, { _id, input }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Subject.AddSubjectPassConditions });
+
     // *************** validate block's id
     ValidateMongoObjectId(_id);
 
@@ -234,8 +254,11 @@ async function AddSubjectPassConditions(parent, { _id, input }) {
  * @returns {Promise<string>} - Deletion success message.
  * @throws {ApolloError} - Throws error if unauthorized, subject not found, or subject is referenced.
  */
-async function DeleteSubject(parent, { _id }) {
+async function DeleteSubject(parent, { _id }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Subject.DeleteSubject });
+
     // *************** validate subject's id
     ValidateMongoObjectId(_id);
 
@@ -252,7 +275,7 @@ async function DeleteSubject(parent, { _id }) {
     }
 
     // *************** soft delete the subject by updating status and deleted_at
-    await SubjectModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_at: new Date() } });
+    await SubjectModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: context.user._id, deleted_at: new Date() } });
 
     // *************** remove subject's id from subject_ids field in subject
     await BlockModel.updateOne({ _id: toBeDeletedSubjectDocument.block_id }, { $pull: { subject_ids: _id } });
@@ -342,7 +365,7 @@ async function test_ids(parent, args, context) {
  * @returns {Promise<Object|null>} - The test document or null if not available.
  * @throws {ApolloError} - Throws error if loading fails.
  */
-async function test_id(parent, _, context) {
+async function test_id(parent, args, context) {
   try {
     if (!parent?.test_id) return null;
     return await context.loaders.test.load(parent.test_id);
@@ -357,6 +380,66 @@ async function test_id(parent, _, context) {
   }
 }
 
+/**
+ * Resolve the created_by field in a user object using DataLoader to prevent N+1 queries.
+ * @async
+ * @param {object} parent - Parent user object.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context that contains DataLoaders.
+ * @returns {Promise<Object|null>} - The User document or null if not available.
+ * @throws {ApolloError} - Throws error if DataLoader fails.
+ */
+async function created_by(parent, args, context) {
+  try {
+    // *************** check if user has any created_by
+    if (!parent?.created_by) {
+      return null;
+    }
+
+    // *************** load user
+    const loadedUser = await context.loaders.user.load(parent.created_by);
+    return loadedUser;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'created_by',
+      path: '/modules/subject/subject.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
+ * Resolve the updated_by field in a user object using DataLoader to prevent N+1 queries.
+ * @async
+ * @param {object} parent - Parent user object.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context that contains DataLoaders.
+ * @returns {Promise<Object|null>} - The User document or null if not available.
+ * @throws {ApolloError} - Throws error if DataLoader fails.
+ */
+async function updated_by(parent, args, context) {
+  try {
+    // *************** check if user has any created_by
+    if (!parent?.updated_by) {
+      return null;
+    }
+
+    // *************** load user
+    const loadedUser = await context.loaders.user.load(parent.updated_by);
+    return loadedUser;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'created_by',
+      path: '/modules/subject/subject.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllSubjects, GetOneSubject },
@@ -364,6 +447,8 @@ module.exports = {
   Subject: {
     block_id,
     test_ids,
+    created_by,
+    updated_by,
   },
   SubjectPassCondition: {
     test_id,

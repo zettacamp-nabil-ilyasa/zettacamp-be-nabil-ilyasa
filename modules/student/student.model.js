@@ -30,6 +30,9 @@ const studentSchema = new Schema(
 
     // Reference to User who deleted this student
     deleted_by: { type: Schema.Types.ObjectId, ref: 'user' },
+
+    // Reference to User who updated this student
+    updated_by: { type: Schema.Types.ObjectId, ref: 'user' },
   },
   {
     // Timestamp set-up for createdAt and updatedAt

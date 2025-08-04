@@ -2,18 +2,44 @@
 const { ApolloError } = require('apollo-server-express');
 
 /**
- * Compose payload for block mutation
+ * Compose payload for create block mutation
  * @param {String} blockName - The name of Block
  * @param {String} blockDescription - The description of Block
+ * @param {String} createdBy - User that created the block
  * @returns {Object} - The composed payload for Block mutation
  */
-function BlockPayloadComposer({ blockName, blockDescription }) {
+function BlockPayloadComposerForCreate({ blockName, blockDescription, createdBy }) {
   // *************** sanity check
   if (!blockName) {
     throw new ApolloError('name is required for payload');
   }
+
+  if (!createdBy) {
+    throw new ApolloError('user id is required for payload');
+  }
   // *************** return composed payload
-  const blockPayload = { name: blockName, description: blockDescription };
+  const blockPayload = { name: blockName, description: blockDescription, created_by: createdBy };
+  return blockPayload;
+}
+
+/**
+ * Compose payload for update block mutation
+ * @param {String} blockName - The name of Block
+ * @param {String} blockDescription - The description of Block
+ *  @param {String} updatedBy - User that updated the block
+ * @returns {Object} - The composed payload for Block mutation
+ */
+function BlockPayloadComposerForUpdate({ blockName, blockDescription, updatedBy }) {
+  // *************** sanity check
+  if (!blockName) {
+    throw new ApolloError('name is required for payload');
+  }
+
+  if (!updatedBy) {
+    throw new ApolloError('user id is required for payload');
+  }
+  // *************** return composed payload
+  const blockPayload = { name: blockName, description: blockDescription, updated_by: updatedBy };
   return blockPayload;
 }
 
@@ -77,4 +103,4 @@ function BlockPassConditionsPayloadComposer(passConditionsInput) {
 }
 
 // *************** EXPORT MODULE ***************
-module.exports = { BlockPayloadComposer, BlockPassConditionsPayloadComposer };
+module.exports = { BlockPayloadComposerForCreate, BlockPayloadComposerForUpdate, BlockPassConditionsPayloadComposer };

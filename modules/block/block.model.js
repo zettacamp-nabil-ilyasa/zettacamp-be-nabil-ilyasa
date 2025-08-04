@@ -3,7 +3,7 @@ const Mongoose = require('mongoose');
 const Schema = Mongoose.Schema;
 
 // *************** IMPORT MODULE ***************
-const { syllabusStatus, parameterEnum, blockSyllabusType, mathOperatorEnum, logicalOperatorEnum } = require('../../shared/strings');
+const { existenceStatus, parameterEnum, blockSyllabusType, mathOperatorEnum, logicalOperatorEnum } = require('../../shared/strings');
 
 const blockSchema = new Schema(
   {
@@ -43,7 +43,7 @@ const blockSchema = new Schema(
     ],
 
     // status of the block
-    status: { type: String, enum: syllabusStatus, default: 'active', trim: true },
+    status: { type: String, enum: existenceStatus, default: 'active', trim: true },
 
     // user who created the block
     created_by: { type: Schema.Types.ObjectId, ref: 'user' },

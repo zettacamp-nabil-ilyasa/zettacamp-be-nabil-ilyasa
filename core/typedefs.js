@@ -17,6 +17,13 @@ const CalculationResultTypeDefs = require('../modules/calculationResult/calculat
 const baseTypeDefs = gql`
   scalar Date
 
+  type PaginationInfo {
+    page: Int
+    limit: Int
+    total_items: Int
+    total_pages: Int
+  }
+
   enum Status {
     active
     deleted
@@ -47,9 +54,14 @@ const baseTypeDefs = gql`
     or
   }
 
+  enum SortOrderEnum {
+    asc
+    desc
+  }
+
   input PaginationInput {
+    page: Int
     limit: Int
-    offset: Int
   }
 
   type Query

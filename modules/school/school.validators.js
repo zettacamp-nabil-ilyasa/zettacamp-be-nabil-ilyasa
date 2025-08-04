@@ -68,5 +68,20 @@ async function ValidateUniqueSchoolLongName(longName) {
   }
 }
 
+/**
+ * Validates the school input object for required and optional fields.
+ * @param {Object} input - The input object containing filter data for schools query.
+ * @param {string} input.country - School's country for filter.
+ * @param {string} input.student_name - Student's name which connected to school for filter
+ * @throws {ApolloError} - If any field is missing or has the wrong type.
+ */
+function ValidateSchoolFilterInput(input) {
+  // *************** validate country from input if provided
+  if (input?.country && typeof input?.country !== 'string') throw new ApolloError('country must be a string');
+
+  // *************** validate student_name from input if provided
+  if (input?.student_name && typeof input?.student_name !== 'string') throw new ApolloError('student_last_name must be a string');
+}
+
 // *************** EXPORT MODULE ***************
-module.exports = { ValidateSchoolInput, ValidateUniqueSchoolLongName };
+module.exports = { ValidateSchoolInput, ValidateUniqueSchoolLongName, ValidateSchoolFilterInput };

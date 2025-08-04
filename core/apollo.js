@@ -7,6 +7,7 @@ const { ApolloServer } = require('apollo-server-express');
 // *************** IMPORT MODULE ***************
 const TypeDefs = require('./typedefs.js');
 const Resolvers = require('./resolvers.js');
+const { GetUserFromHeader } = require('../middleware/authorization.js');
 
 /**
  * Initializes and returns a configured Apollo Server instance.
@@ -16,7 +17,17 @@ function InitializeApolloServer() {
   return new ApolloServer({
     typeDefs: TypeDefs,
     resolvers: Resolvers,
-    context: () => ({ loaders: DataLoaders() }),
+    context: ({ req }) => {
+      try {
+        // *************** extract token from header
+        const user = GetUserFromHeader(req?.headers);
+        const contextObject = { user, loaders: DataLoaders() };
+        return contextObject;
+      } catch (error) {
+        const contextObject = { user: null, loaders: DataLoaders };
+        return contextObject;
+      }
+    },
   });
 }
 

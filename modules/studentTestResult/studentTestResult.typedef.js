@@ -12,7 +12,9 @@ const studentTestResultTypeDefs = gql`
     status: StudentTestResultStatus!
     mark_entry_date: Date
     created_at: Date!
+    created_by: User
     updated_at: Date!
+    updated_by: User
   }
 
   type Mark {

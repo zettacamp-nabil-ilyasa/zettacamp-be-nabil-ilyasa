@@ -5,28 +5,79 @@ const { ApolloError } = require('apollo-server-express');
 const StudentModel = require('./student.model.js');
 const SchoolModel = require('../school/school.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
+const { allowedRoles } = require('../../shared/strings.js');
+
+// *************** IMPORT UTILITIES ***************
+const { UserIsAuthorized } = require('../../middleware/authorization.js');
+
+// *************** IMPORT HELPER ***************
+const { StudentAggregatePipelineQueryBuilder } = require('./student.helper.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateStudentInput, ValidateUniqueStudentEmail } = require('./student.validators.js');
+const { ValidateStudentInput, ValidateUniqueStudentEmail, ValidateStudentFilterInput } = require('./student.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
+const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
 // *************** QUERY ***************
 /**
- * Get all active students from the database.
+ * GraphQL resolver for fetching active students with pagination, filtering, and sorting.
  * @async
- * @returns {Promise<Array<Object>>} - Array of student documents with status 'active'.
- * @throws {ApolloError} - Throws error if query fails or database operation encounters issues.
+ * @param {Object} parent - Unused parent argument from GraphQL resolver.
+ * @param {Object} args - Arguments passed from GraphQL query.
+ * @param {Object} args.paginationInput - Input for pagination.
+ * @param {Object} args.filterInput - Filter conditions.
+ * @param {Object} args.sortInput - Sorting condition.
+ * @param {object} context - Resolver context containing user data.
+ * @param {object} context.user - GraphQL context object, contains authenticated user data.
+ * @returns {Promise<Object>} - Paginated student list with metadata.
+ * @throws {ApolloError} - Throws error if something fails during query.
  */
-async function GetAllStudents() {
+async function GetAllStudents(parent, { paginationInput, filterInput, sortInput }, context) {
   try {
-    const students = await StudentModel.find({ status: 'active' }).lean();
-    return students;
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Student.GetAllStudents });
+
+    // *************** validate pagination input
+    ValidatePaginationInput(paginationInput);
+
+    // *************** validate filter input
+    ValidateStudentFilterInput(filterInput);
+
+    // *************** set default value for page
+    const page = paginationInput?.page ?? 1;
+
+    // *************** set default value for limit
+    const limit = paginationInput?.limit ?? 10;
+
+    // *************** set how much documents skipped relative to page
+    const skip = (page - 1) * limit;
+
+    // *************** build the query
+    const pipelineQuery = StudentAggregatePipelineQueryBuilder({ skip, limit, filterInput, sortInput });
+    const students = await StudentModel.aggregate(pipelineQuery);
+
+    // *************** deconstruct students
+    const { data, total_count } = students[0] || {};
+
+    // *************** set total_items and total_pages for pagination
+    const total_items = total_count[0]?.count || 0;
+    const total_pages = Math.ceil(total_items / limit);
+    const pagedStudents = {
+      data: data || [],
+      pagination_info: {
+        page,
+        limit,
+        total_items,
+        total_pages,
+      },
+    };
+    return pagedStudents;
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'GetAllStudents',
       path: '/modules/student/student.resolver.js',
-      parameter_input: JSON.stringify({}),
+      parameter_input: JSON.stringify({ paginationInput, filterInput, sortInput }),
     });
     throw new ApolloError(error.message);
   }
@@ -37,11 +88,16 @@ async function GetAllStudents() {
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {string} _id - ID of the student to retrieve.
+ * @param {object} context - Resolver context containing user data.
+ * @param {object} context.user - GraphQL context object, contains authenticated user data.
  * @returns {Promise<Object|null>} - The Student document or null if not found.
  * @throws {ApolloError} - Throws error if validation fails or student not found.
  */
-async function GetOneStudent(parent, { _id }) {
+async function GetOneStudent(parent, { _id }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user });
+
     // *************** validate student's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
 
@@ -75,11 +131,16 @@ async function GetOneStudent(parent, { _id }) {
  * @param {string} input.school_id - ID of the school the student belongs to.
  * @param {string} input.date_of_birth - Student's date of birth as a string.
  * @param {string} input.created_by - User ID of the admin who creates the student.
+ * @param {object} context - Resolver context containing user data.
+ * @param {object} context.user - GraphQL context object, contains authenticated user data.
  * @returns {Promise<Object>} - The newly created student document.
  * @throws {ApolloError} - Throws error if validation fails or email/school is invalid.
  */
-async function CreateStudent(parent, { input }) {
+async function CreateStudent(parent, { input }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Student.CreateStudent });
+
     // *************** validation to ensure fail-fast and bad input is handled correctly
     ValidateStudentInput(input);
 
@@ -96,11 +157,8 @@ async function CreateStudent(parent, { input }) {
       last_name: input.last_name,
       school_id: input.school_id,
       date_of_birth: input.date_of_birth,
+      created_by: context.user._id,
     };
-
-    // *************** set static User id for created_by field
-    const createdByUserId = '6862150331861f37e4e3d209';
-    newStudent.created_by = createdByUserId;
 
     // *************** create student with composed object
     const createdStudent = await StudentModel.create(newStudent);
@@ -129,11 +187,16 @@ async function CreateStudent(parent, { input }) {
  * @param {string} input.first_name - Updated first name.
  * @param {string} input.last_name - Updated last name.
  * @param {string} [input.date_of_birth] - Updated date of birth in string format (optional).
+ * @param {object} context - Resolver context containing user data.
+ * @param {object} context.user - GraphQL context object, contains authenticated user data.
  * @returns {Promise<Object>} - Updated student document.
  * @throws {ApolloError} - Throws error if student does not exist, email already used, or school not found.
  */
-async function UpdateStudent(parent, { _id, input }) {
+async function UpdateStudent(parent, { _id, input }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Student.UpdateStudent });
+
     // *************** validate student's id
     ValidateMongoObjectId(_id);
 
@@ -159,6 +222,7 @@ async function UpdateStudent(parent, { _id, input }) {
       first_name: input.first_name,
       last_name: input.last_name,
       date_of_birth: input.date_of_birth,
+      updated_by: context.user._id,
     };
 
     // *************** update student with composed object
@@ -180,21 +244,23 @@ async function UpdateStudent(parent, { _id, input }) {
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {string} _id - ID of the student to delete.
+ * @param {object} context - Resolver context containing user data.
+ * @param {object} context.user - GraphQL context object, contains authenticated user data.
  * @returns {Promise<string>} - Success message upon deletion.
  * @throws {ApolloError} - Throws error if unauthorized or student not found.
  */
-async function DeleteStudent(parent, { _id }) {
+async function DeleteStudent(parent, { _id }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Student.DeleteStudent });
+
     // *************** validate student's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
-
-    // *************** set static User id for deleted_by
-    const deletedByUserId = '6862150331861f37e4e3d209';
 
     // *************** soft delete student by updating it with composed object
     const softDeletedStudent = await StudentModel.updateOne(
       { _id, status: 'active' },
-      { $set: { status: 'deleted', deleted_by: deletedByUserId, deleted_at: new Date() } }
+      { $set: { status: 'deleted', deleted_by: context.user._id, deleted_at: new Date() } }
     );
 
     // *************** sanity check for the next db operation, check if the student is exist and not already deleted
@@ -248,17 +314,17 @@ async function school_id(parent, args, context) {
 }
 
 /**
- * Resolve the created_by field in a Student by using DataLoader to prevent N+1 queries.
+ * Resolve the created_by field in a user object using DataLoader to prevent N+1 queries.
  * @async
- * @param {object} parent - The parent student document.
+ * @param {object} parent - Parent user object.
  * @param {object} args - Not used (GraphQL resolver convention).
- * @param {object} context - GraphQL context containing DataLoaders.
- * @returns {Promise<Object|null>} - The related user document or null if not found.
+ * @param {object} context - Resolver context that contains DataLoaders.
+ * @returns {Promise<Object|null>} - The User document or null if not available.
  * @throws {ApolloError} - Throws error if DataLoader fails.
  */
 async function created_by(parent, args, context) {
   try {
-    // *************** check if student has any created_by
+    // *************** check if user has any created_by
     if (!parent?.created_by) {
       return null;
     }
@@ -277,12 +343,43 @@ async function created_by(parent, args, context) {
   }
 }
 
+/**
+ * Resolve the updated_by field in a user object using DataLoader to prevent N+1 queries.
+ * @async
+ * @param {object} parent - Parent user object.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context that contains DataLoaders.
+ * @returns {Promise<Object|null>} - The User document or null if not available.
+ * @throws {ApolloError} - Throws error if DataLoader fails.
+ */
+async function updated_by(parent, args, context) {
+  try {
+    // *************** check if user has any created_by
+    if (!parent?.updated_by) {
+      return null;
+    }
+
+    // *************** load user
+    const loadedUser = await context.loaders.user.load(parent.updated_by);
+    return loadedUser;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'created_by',
+      path: '/modules/student/student.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllStudents, GetOneStudent },
   Mutation: { CreateStudent, UpdateStudent, DeleteStudent },
   Student: {
     created_by,
+    updated_by,
     school_id,
   },
 };

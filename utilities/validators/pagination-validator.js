@@ -20,12 +20,12 @@ function ValidatePaginationInput(paginationObjectInput = {}) {
   }
 
   // *************** validate offset for pagination
-  if (paginationObjectInput?.offset) {
-    if (typeof paginationObjectInput.offset !== 'number' || isNaN(paginationObjectInput.offset)) {
-      throw new ApolloError('offset must be a number');
+  if (paginationObjectInput?.page) {
+    if (typeof paginationObjectInput.page !== 'number' || isNaN(paginationObjectInput.page)) {
+      throw new ApolloError('page must be a number');
     }
-    if (paginationObjectInput.offset < 0) {
-      throw new ApolloError('offset cannot be a negative number');
+    if (paginationObjectInput.page < 0) {
+      throw new ApolloError('page cannot be a negative number');
     }
   }
 }

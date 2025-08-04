@@ -4,10 +4,18 @@ const { ApolloError } = require('apollo-server-express');
 // *************** IMPORT MODULE ***************
 const UserModel = require('./user.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
+const { allowedRoles } = require('../../shared/strings.js');
 
 // *************** IMPORT VALIDATOR ***************
-const { ValidateUserInput, ValidateUniqueUserEmail } = require('./user.validators.js');
+const { ValidateCreateUserInput, ValidateUpdateUserInput, ValidateLoginInput, ValidateUniqueUserEmail } = require('./user.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
+const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
+
+// *************** IMPORT HELPER ***************
+const { GenerateToken, CompareHashedPassword, HashPassword, UserAggregatePipelineQueryBuilder } = require('./user.helper.js');
+
+// *************** IMPORT UTILITIES ***************
+const { UserIsAuthorized } = require('../../middleware/authorization.js');
 
 // *************** QUERY ***************
 /**
@@ -16,16 +24,50 @@ const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-vali
  * @returns {Promise<Array<Object>>} - Array of user documents with status 'active'.
  * @throws {ApolloError} - Throws error if database query fails.
  */
-async function GetAllUsers() {
+async function GetAllUsers(parent, { paginationInput, filterInput, sortInput }, context) {
   try {
-    const users = await UserModel.find({ status: 'active' }).lean();
-    return users;
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.User.GetAllUsers });
+
+    // *************** validate pagination input
+    ValidatePaginationInput(paginationInput);
+
+    // *************** set default value for page
+    const page = paginationInput?.page ?? 1;
+
+    // *************** set default value for limit
+    const limit = paginationInput?.limit ?? 10;
+
+    // *************** set how much documents skipped relative to page
+    const skip = (page - 1) * limit;
+
+    // *************** build pipeline query
+    const pipelineQuery = UserAggregatePipelineQueryBuilder({ skip, limit, filterInput, sortInput });
+
+    const users = await UserModel.aggregate(pipelineQuery);
+
+    // *************** deconstruct students
+    const { data, total_count } = users[0] || {};
+
+    // *************** set total_items and total_pages for pagination
+    const total_items = total_count[0]?.count || 0;
+    const total_pages = Math.ceil(total_items / limit);
+    const pagedUsers = {
+      data: data || [],
+      pagination_info: {
+        page,
+        limit,
+        total_items,
+        total_pages,
+      },
+    };
+    return pagedUsers;
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'GetAllUsers',
       path: '/modules/user/user.resolver.js',
-      parameter_input: JSON.stringify({}),
+      parameter_input: JSON.stringify({ paginationInput, filterInput, sortInput }),
     });
     throw new ApolloError(error.message);
   }
@@ -39,8 +81,11 @@ async function GetAllUsers() {
  * @returns {Promise<Object>} - The User document which match with _id.
  * @throws {ApolloError} - Throws error if validation fails or query error occurs.
  */
-async function GetOneUser(parent, { _id }) {
+async function GetOneUser(parent, { _id }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user });
+
     // *************** validate user's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
 
@@ -75,13 +120,19 @@ async function GetOneUser(parent, { _id }) {
  * @returns {Promise<Object>} - Created user document.
  * @throws {ApolloError} - Throws error if validation fails or email already exist.
  */
-async function CreateUser(parent, { input }) {
+async function CreateUser(parent, { input }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.User.CreateUser });
+
     // *************** validation to ensure fail-fast and bad input is handled correctly
-    ValidateUserInput(input);
+    ValidateCreateUserInput(input);
 
     // *************** check if email already used by another user
     await ValidateUniqueUserEmail(input.email);
+
+    // *************** hash the password
+    const hashedPassword = HashPassword(input.password);
 
     // *************** compose new object from input
     const newUser = {
@@ -89,11 +140,9 @@ async function CreateUser(parent, { input }) {
       first_name: input.first_name,
       last_name: input.last_name,
       role: input.role,
+      password_hash: hashedPassword,
+      created_by: context.user._id,
     };
-
-    // *************** set static User id for created_by field
-    const createdByUserId = '6862150331861f37e4e3d209';
-    newUser.created_by = createdByUserId;
 
     // *************** create user with composed object
     const createdUser = await UserModel.create(newUser);
@@ -102,6 +151,46 @@ async function CreateUser(parent, { input }) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'CreateUser',
+      path: '/modules/user/user.resolver.js',
+      parameter_input: JSON.stringify({ input }),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
+ * Generate an access token for user, marked them as logged in.
+ * @async
+ * @param {object} parent - Not used (GraphQL resolver convention).
+ * @param {object} input - Login input fields.
+ * @param {string} input.email - User's email.
+ * @param {string} input.password - User's password.
+ * @returns {Promise<Object>} - User's data.
+ * @throws {ApolloError} - Throws error if validation or jwt operation fails
+ */
+async function UserLogin(parent, { input }) {
+  try {
+    // *************** validation to ensure fail-fast and bad input is handled correctly
+    ValidateLoginInput(input);
+
+    // *************** get user document
+    const userDocument = await UserModel.findOne({ email: input.email, status: 'active' });
+
+    // *************** sanity check for userDocument
+    if (!userDocument) {
+      throw new ApolloError('invalid email or password');
+    }
+
+    // *************** compare inputed password with hashed password within user's document
+    CompareHashedPassword({ passwordInput: input.password, hashedPassword: userDocument.password_hash });
+
+    // *************** generate an access_token for the user
+    const loggedInUserData = GenerateToken(userDocument);
+    return loggedInUserData;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'UserLogin',
       path: '/modules/user/user.resolver.js',
       parameter_input: JSON.stringify({ input }),
     });
@@ -122,13 +211,16 @@ async function CreateUser(parent, { input }) {
  * @returns {Promise<Object>} - Updated user document.
  * @throws {ApolloError} - Throws error if validation fails, user not found, or email already exist.
  */
-async function UpdateUser(parent, { _id, input }) {
+async function UpdateUser(parent, { _id, input }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.User.UpdateUser });
+
     // *************** validate user's id
     ValidateMongoObjectId(_id);
 
     // *************** validation to ensure fail-fast and bad input is handled correctly
-    ValidateUserInput(input);
+    ValidateUpdateUserInput(input);
 
     // *************** get the user document
     const toBeUpdatedUserDocument = await UserModel.findOne({ _id, status: 'active' });
@@ -144,12 +236,20 @@ async function UpdateUser(parent, { _id, input }) {
       await ValidateUniqueUserEmail(input.email);
     }
 
+    //  *************** hash input password if provided
+    let hashedPassword;
+    if (input.password) {
+      hashedPassword = HashPassword(input.password);
+    }
+
     // *************** compose new object from input
     const editedUser = {
       email: input.email,
       first_name: input.first_name,
       last_name: input.last_name,
       role: input.role,
+      password_hash: hashedPassword,
+      updated_by: context.user._id,
     };
 
     // *************** update user with composed object
@@ -174,23 +274,23 @@ async function UpdateUser(parent, { _id, input }) {
  * @returns {Promise<string>} - Deletion success message.
  * @throws {ApolloError} - Throws error if unauthorized, user not found, or attempt to self-delete.
  */
-async function DeleteUser(parent, { _id }) {
+async function DeleteUser(parent, { _id }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.User.DeleteUser });
+
     // *************** validate user's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
 
-    // *************** set static User id for deleted_by
-    const deletedByUserId = '6862150331861f37e4e3d209';
-
     // *************** check if user is trying to delete themselves
-    if (_id === deletedByUserId) {
+    if (_id === context.user._id) {
       throw new ApolloError('You cannot delete yourself');
     }
 
     // *************** soft-delete user by updating it's status
     const deletedUser = await UserModel.updateOne(
       { _id, status: 'active' },
-      { $set: { status: 'deleted', deleted_by: deletedByUserId, deleted_at: new Date() } }
+      { $set: { status: 'deleted', deleted_by: context.user._id, deleted_at: new Date() } }
     );
 
     // *************** check if the user is exist and not already deleted
@@ -216,7 +316,7 @@ async function DeleteUser(parent, { _id }) {
  * @param {object} parent - Parent user object.
  * @param {object} args - Not used (GraphQL resolver convention).
  * @param {object} context - Resolver context that contains DataLoaders.
- * @returns {Promise<Object|null>} - The User document of the creator, or null if not available.
+ * @returns {Promise<Object|null>} - The User document or null if not available.
  * @throws {ApolloError} - Throws error if DataLoader fails.
  */
 async function created_by(parent, args, context) {
@@ -240,11 +340,42 @@ async function created_by(parent, args, context) {
   }
 }
 
+/**
+ * Resolve the updated_by field in a user object using DataLoader to prevent N+1 queries.
+ * @async
+ * @param {object} parent - Parent user object.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context that contains DataLoaders.
+ * @returns {Promise<Object|null>} - The User document or null if not available.
+ * @throws {ApolloError} - Throws error if DataLoader fails.
+ */
+async function updated_by(parent, args, context) {
+  try {
+    // *************** check if user has any created_by
+    if (!parent?.updated_by) {
+      return null;
+    }
+
+    // *************** load user
+    const loadedUser = await context.loaders.user.load(parent.updated_by);
+    return loadedUser;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'created_by',
+      path: '/modules/user/user.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllUsers, GetOneUser },
-  Mutation: { CreateUser, UpdateUser, DeleteUser },
+  Mutation: { CreateUser, UserLogin, UpdateUser, DeleteUser },
   User: {
     created_by,
+    updated_by,
   },
 };

@@ -1,5 +1,6 @@
 // *************** IMPORT LIBRARY ***************
 const Mongoose = require('mongoose');
+const { existenceStatus } = require('../../shared/strings');
 const Schema = Mongoose.Schema;
 
 const schoolSchema = new Schema(
@@ -26,7 +27,7 @@ const schoolSchema = new Schema(
     students: [{ type: Schema.Types.ObjectId, ref: 'student' }],
 
     // Status of School
-    status: { type: String, enum: ['active', 'deleted'], default: 'active' },
+    status: { type: String, enum: existenceStatus, default: 'active' },
 
     // Soft-delete timestamp
     deleted_at: { type: Date },
@@ -34,12 +35,18 @@ const schoolSchema = new Schema(
     // User who created this school
     created_by: { type: Schema.Types.ObjectId, ref: 'user' },
 
+    // User who updated this school
+    updated_by: { type: Schema.Types.ObjectId, ref: 'user' },
+
     // User who deleted this school
     deleted_by: { type: Schema.Types.ObjectId, ref: 'user' },
   },
   {
     // Timestamp set-up for createdAt and updatedAt
-    timestamps: true,
+    timestamps: {
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
+    },
   }
 );
 

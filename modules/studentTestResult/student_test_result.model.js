@@ -42,7 +42,7 @@ const studentTestResultSchema = new Schema(
     // user who created the studenttestresult
     created_by: { type: Schema.Types.ObjectId, ref: 'user' },
 
-    // user who updated the studenttestresult
+    // user who updated the student test result
     updated_by: { type: Schema.Types.ObjectId, ref: 'user' },
 
     // date when the studenttestresult is deleted

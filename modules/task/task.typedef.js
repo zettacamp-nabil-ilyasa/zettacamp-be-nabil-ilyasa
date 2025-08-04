@@ -37,7 +37,7 @@ const taskTypeDefs = gql`
   }
 
   extend type Query {
-    GetAllTasks(filter: TaskFilter): [Task]
+    GetAllTasks(filterInput: TaskFilter, paginationInput: PaginationInput): [Task]
     GetOneTask(_id: ID!): Task
   }
 

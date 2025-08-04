@@ -44,21 +44,23 @@ async function GetTotalWeightOfTests(subjectId) {
 }
 
 /**
- *
+ * Compose payload for create test mutation
  * @param {Object} inputObject - Input for block mutation
  * @param {String} inputObject.name - Name of test
  * @param {Number} inputObject.weight - weight of test
  * @param {String} inputObject.description - description of test
  * @param {Array<Object>} inputObject.notations - notations object, containing notation_text and max_point
  * @param {String} inputObject.subject_id - Id of subject that referenced by test
- * @returns
+ * @param {String} userId - Id of user that created the test
+ * @returns {Object} - composed payload containing test data
  */
-function TestPayloadComposer(inputObject) {
+function CreateTestPayloadComposer({ inputObject, userId }) {
   // *************** sanity check for mandatory fields
   if (!inputObject.name) throw new ApolloError('name is required for payload');
   if (!inputObject.weight) throw new ApolloError('weight is required for payload');
   if (!inputObject.notations.length) throw new ApolloError('notations is required for payload');
   if (!inputObject.subject_id) throw new ApolloError('subject_id is required for payload');
+  if (!userId) throw new ApolloError('userId is required for payload');
 
   // *************** composed payload
   const testPayload = {
@@ -67,6 +69,38 @@ function TestPayloadComposer(inputObject) {
     weight: inputObject.weight,
     description: inputObject.description,
     notations: inputObject.notations,
+    created_by: userId,
+  };
+  return testPayload;
+}
+
+/**
+ * Compose payload for update test mutation
+ * @param {Object} inputObject - Input for block mutation
+ * @param {String} inputObject.name - Name of test
+ * @param {Number} inputObject.weight - weight of test
+ * @param {String} inputObject.description - description of test
+ * @param {Array<Object>} inputObject.notations - notations object, containing notation_text and max_point
+ * @param {String} inputObject.subject_id - Id of subject that referenced by test
+ * @param {String} userId - Id of user that updated the test
+ * @returns {Object} - composed payload containing test data
+ */
+function UpdateTestPayloadComposer({ inputObject, userId }) {
+  // *************** sanity check for mandatory fields
+  if (!inputObject.name) throw new ApolloError('name is required for payload');
+  if (!inputObject.weight) throw new ApolloError('weight is required for payload');
+  if (!inputObject.notations.length) throw new ApolloError('notations is required for payload');
+  if (!inputObject.subject_id) throw new ApolloError('subject_id is required for payload');
+  if (!userId) throw new ApolloError('userId is required for payload');
+
+  // *************** composed payload
+  const testPayload = {
+    subject_id: inputObject.subject_id,
+    name: inputObject.name,
+    weight: inputObject.weight,
+    description: inputObject.description,
+    notations: inputObject.notations,
+    updated_by: userId,
   };
   return testPayload;
 }
@@ -76,7 +110,7 @@ function TestPayloadComposer(inputObject) {
  * @param {Object} passCondition - object containing test pass conditions data
  * @param {Object} passCondition.parameter_value - value to be compared to in pass criteria checking
  * @param {Object} passCondition.math_operator - string representation of math operator
- * @returns
+ * @returns {Object} - composed payload containing test's pass condition data
  */
 function TestPassConditionPayloadComposer(passCondition) {
   // *************** sanity check parameter_value
@@ -108,7 +142,13 @@ async function CreateAssignCorrectorTask({ userId, testId }) {
     ValidateMongoObjectId(testId);
 
     // *************** create task for assign corrector
-    const newAssignCorrectorTask = { user_id: userId, test_id: testId, type: 'assign_corrector', status: 'in_progress' };
+    const newAssignCorrectorTask = {
+      user_id: userId,
+      test_id: testId,
+      type: 'assign_corrector',
+      status: 'in_progress',
+      created_by: userId,
+    };
     await TaskModel.create(newAssignCorrectorTask);
   } catch (error) {
     await ErrorLogModel.create({
@@ -122,4 +162,10 @@ async function CreateAssignCorrectorTask({ userId, testId }) {
 }
 
 // *************** EXPORT MODULE ***************
-module.exports = { GetTotalWeightOfTests, TestPayloadComposer, CreateAssignCorrectorTask, TestPassConditionPayloadComposer };
+module.exports = {
+  GetTotalWeightOfTests,
+  CreateTestPayloadComposer,
+  UpdateTestPayloadComposer,
+  CreateAssignCorrectorTask,
+  TestPassConditionPayloadComposer,
+};

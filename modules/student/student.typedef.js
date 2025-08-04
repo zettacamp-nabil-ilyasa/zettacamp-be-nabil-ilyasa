@@ -11,8 +11,14 @@ const studentTypeDefs = gql`
     school_id: School!
     status: Status!
     created_by: User
-    createdAt: Date
-    updatedAt: Date
+    updated_by: User
+    created_at: Date
+    updated_at: Date
+  }
+
+  type PagedStudents {
+    data: [Student]
+    pagination_info: PaginationInfo
   }
 
   input StudentInput {
@@ -23,8 +29,29 @@ const studentTypeDefs = gql`
     school_id: String
   }
 
+  input StudentFilterInput {
+    school_id: String
+    student_name: String
+    school_long_name: String
+    date_of_birth: String
+    date_comparation_operator: MathOperatorEnum
+  }
+
+  input StudentSortInput {
+    sort_by: SortStudentByEnum
+    sort_order: SortOrderEnum
+  }
+
+  enum SortStudentByEnum {
+    first_name
+    last_name
+    school_long_name
+    date_of_birth
+    created_at
+  }
+
   extend type Query {
-    GetAllStudents: [Student]
+    GetAllStudents(paginationInput: PaginationInput, filterInput: StudentFilterInput, sortInput: StudentSortInput): PagedStudents
     GetOneStudent(_id: ID!): Student
   }
 

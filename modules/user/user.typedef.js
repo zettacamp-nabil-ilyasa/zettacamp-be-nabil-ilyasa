@@ -9,26 +9,76 @@ const userTypeDefs = gql`
     email: String!
     role: String!
     status: Status!
-    createdAt: Date
+    created_at: Date
     created_by: User
-    updatedAt: Date
+    updated_by: User
+    updated_at: Date
   }
 
-  input UserInput {
+  type UserLoggedIn {
+    _id: ID!
     first_name: String!
     last_name: String!
     email: String!
-    role: String!
+    role: UserRoleEnum!
+    access_token: String!
+  }
+
+  type PagedUsers {
+    data: [User]
+    pagination_info: PaginationInfo
+  }
+
+  input CreateUserInput {
+    first_name: String!
+    last_name: String!
+    email: String!
+    role: UserRoleEnum!
+    password: String!
+  }
+
+  input UpdateUserInput {
+    first_name: String!
+    last_name: String!
+    email: String!
+    password: String
+    role: UserRoleEnum
+  }
+
+  input LoginInput {
+    email: String!
+    password: String!
+  }
+
+  input UserFilterInput {
+    role: UserRoleEnum
+  }
+
+  input UserSortInput {
+    sort_by: SortUserByEnum
+    sort_order: SortOrderEnum
+  }
+
+  enum SortUserByEnum {
+    first_name
+    last_name
+    created_at
+  }
+
+  enum UserRoleEnum {
+    admin
+    student
   }
 
   extend type Query {
-    GetAllUsers: [User]
+    GetAllUsers(paginationInput: PaginationInput, filterInput: UserFilterInput, sortInput: UserSortInput): PagedUsers
     GetOneUser(_id: ID!): User
   }
 
   extend type Mutation {
-    CreateUser(input: UserInput): User
-    UpdateUser(_id: ID!, input: UserInput!): User
+    CreateUser(input: CreateUserInput): User
+    UserLogin(input: LoginInput): UserLoggedIn
+    UpdateUser(_id: ID!, input: UpdateUserInput!): User
     DeleteUser(_id: ID!): String
   }
 `;

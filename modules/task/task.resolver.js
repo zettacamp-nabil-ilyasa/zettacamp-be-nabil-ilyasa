@@ -6,11 +6,10 @@ const path = require('path');
 // *************** IMPORT MODULE ***************
 const TaskModel = require('./task.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
+const { allowedRoles } = require('../../shared/strings.js');
 
-// *************** IMPORT VALIDATOR ***************
-const { ValidateTaskFilterInput, ValidateDueDate } = require('./task.validators.js');
-const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
-const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
+// *************** IMPORT UTILITIES ***************
+const { UserIsAuthorized } = require('../../middleware/authorization.js');
 
 // *************** IMPORT HELPER ***************
 const {
@@ -19,6 +18,11 @@ const {
   MarkStudentTestResultAsValidated,
   AssignCorrectorPayloadComposer,
 } = require('./task.helper.js');
+
+// *************** IMPORT VALIDATOR ***************
+const { ValidateTaskFilterInput, ValidateDueDate } = require('./task.validators.js');
+const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
+const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
 
 // *************** QUERY ****************
 /**
@@ -35,37 +39,37 @@ const {
  * @returns {Promise<Array<Object>>} Array of task documents matching the query
  * @throws {ApolloError} If any error occurs during validation or database operation
  */
-async function GetAllTasks(parent, { filter, pagination }) {
+async function GetAllTasks(parent, { filterInput, paginationInput }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Task.GetAllTasks });
+
     // *************** validate status and type within filterInput
-    ValidateTaskFilterInput(filter);
+    ValidateTaskFilterInput(filterInput);
 
     // *************** validate limit and offset within paginationInput
-    ValidatePaginationInput(pagination);
+    ValidatePaginationInput(paginationInput);
 
     // *************** build base query
     const query = { status: { $ne: 'deleted' } };
 
     // *************** build query for subject_id if it exist
-    if (filter?.type) {
+    if (filterInput?.type) {
       query.type = filter.type;
     }
 
     // *************** build query for status if it exist
-    if (filter?.status) {
+    if (filterInput?.status) {
       query.status = filter.status;
     }
 
-    // *************** set default limit and offset
-    const offset = pagination?.offset ?? 0;
-    const limit = pagination?.limit ?? 20;
+    // *************** set default limit and page
+    const limit = paginationInput?.limit ?? 10;
+    const page = paginationInput?.page ?? 1;
+    const skip = (page - 1) * limit;
 
     // *************** execute query
-    const tasks = await TaskModel.find(query)
-      .skip(offset || 0)
-      .limit(limit || 20)
-      .sort({ created_at: -1 })
-      .lean();
+    const tasks = await TaskModel.find(query).skip(skip).limit(limit).sort({ created_at: -1 }).lean();
     return tasks;
   } catch (error) {
     await ErrorLogModel.create({
@@ -86,8 +90,11 @@ async function GetAllTasks(parent, { filter, pagination }) {
  * @returns {Promise<Object|null>} - Task document or null if not found.
  * @throws {ApolloError} - Throws error if validation fails or database query fails.
  */
-async function GetOneTask(parent, { _id }) {
+async function GetOneTask(parent, { _id }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user });
+
     // *************** validate _id
     ValidateMongoObjectId(_id);
 
@@ -123,8 +130,11 @@ async function GetOneTask(parent, { _id }) {
  * @returns {Promise<string>} A success message indicating the corrector was assigned.
  * @throws {ApolloError} If any validation fails or if the task is invalid or already completed.
  */
-async function AssignCorrector(parent, { _id, userId, dueDate }) {
+async function AssignCorrector(parent, { _id, userId, dueDate }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Task.AssignCorrector });
+
     // *************** validate task's id
     ValidateMongoObjectId(_id);
 
@@ -148,7 +158,7 @@ async function AssignCorrector(parent, { _id, userId, dueDate }) {
     }
 
     // *************** compose task payload, set status to completed and assign userId as corrector
-    const updatedAssignCorrectorTask = AssignCorrectorPayloadComposer(userId);
+    const updatedAssignCorrectorTask = AssignCorrectorPayloadComposer({ userIdOfCorrector: userId, userIdForUpdatedBy: context.user._id });
 
     // *************** add due_date if provided
     if (dueDate) {
@@ -186,8 +196,11 @@ async function AssignCorrector(parent, { _id, userId, dueDate }) {
  * @returns {Promise<string>} A success message if validation completes successfully.
  * @throws {ApolloError} If the task is not found, validation fails, or any other error occurs.
  */
-async function ValidateMarks(parent, { _id }) {
+async function ValidateMarks(parent, { _id }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Task.ValidateMarks });
+
     // *************** validate task's id
     ValidateMongoObjectId(_id);
 
@@ -200,7 +213,10 @@ async function ValidateMarks(parent, { _id }) {
     }
 
     // *************** call helper to mark student test result as validated
-    await MarkStudentTestResultAsValidated(taskDocument.student_test_result_id);
+    await MarkStudentTestResultAsValidated({
+      studentTestResultId: taskDocument.student_test_result_id,
+      userIdForUpdatedBy: context.user._id,
+    });
 
     // *************** update task document
     await TaskModel.updateOne({ _id }, { $set: { status: 'completed', completed_at: new Date() } });
@@ -208,6 +224,7 @@ async function ValidateMarks(parent, { _id }) {
     new Worker(path.resolve(__dirname, '../../modules/calculationResult/calculation_result.worker.js'), {
       workerData: {
         studentId: String(taskDocument.student_id),
+        userId: context.user._id,
       },
     });
 
@@ -232,8 +249,11 @@ async function ValidateMarks(parent, { _id }) {
  * @returns {Promise<string>} - Deletion success message.
  * @throws {ApolloError} - Throws error if task not found or status is not completed.
  */
-async function DeleteTask(parent, { _id }) {
+async function DeleteTask(parent, { _id }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Task.DeleteTask });
+
     // *************** validate _id
     ValidateMongoObjectId(_id);
 
@@ -249,7 +269,7 @@ async function DeleteTask(parent, { _id }) {
     }
 
     // *************** update status to deleted and set deleted_at
-    await TaskModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_at: new Date() } });
+    await TaskModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: context.user._id, deleted_at: new Date() } });
     return 'task deleted successfully';
   } catch (error) {
     await ErrorLogModel.create({
