@@ -5,6 +5,10 @@ const { ApolloError } = require('apollo-server-express');
 const CalculationResultModel = require('./calculation_result.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
+const { allowedRoles } = require('../../shared/strings.js');
+
+// *************** IMPORT UTILITIES ***************
+const { UserIsAuthorized } = require('../../middleware/authorization.js');
 
 // *************** QUERY ****************
 /**
@@ -13,8 +17,10 @@ const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-vali
  * @returns {Promise<Array<Object>>} - Array of calculation results documents with active status.
  * @throws {ApolloError} - Throws error if database query fails.
  */
-async function GetAllCalculationResults() {
+async function GetAllCalculationResults(parent, args, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.CalculationResult.GetCalculationResults });
     const calculationResults = await CalculationResultModel.find({ status: 'active' }).lean();
     return calculationResults;
   } catch (error) {
@@ -36,8 +42,11 @@ async function GetAllCalculationResults() {
  * @returns {Promise<Object|null>} - Calculation result document or null if not found.
  * @throws {ApolloError} - Throws error if validation fails or database query fails.
  */
-async function GetOneCalculationResult(parent, { _id }) {
+async function GetOneCalculationResult(parent, { _id }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user });
+
     // *************** validate _id input
     ValidateMongoObjectId(_id);
 

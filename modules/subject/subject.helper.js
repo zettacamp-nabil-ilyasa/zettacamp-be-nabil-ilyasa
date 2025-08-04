@@ -2,14 +2,15 @@
 const { ApolloError } = require('apollo-server-express');
 
 /**
- *
+ * Compose payload for create subject mutation
  * @param {Object} inputObject - The input object of subject
  * @param {String} inputObject.name - The name of subject
  * @param {String} inputObject.description - The description of subject
  * @param {Number} inputObject.coefficient - The coefficient of subject
+ * @param {String} createdBy- The _id of user that create the subject
  * @returns {Object} - The composed payload for subject mutation
  */
-function SubjectPayloadComposer(inputObject) {
+function SubjectPayloadComposer({ inputObject, createdBy }) {
   // *************** sanity check
   if (!inputObject.name) {
     throw new ApolloError('name is required for payload');
@@ -20,6 +21,9 @@ function SubjectPayloadComposer(inputObject) {
   if (!inputObject.block_id) {
     throw new ApolloError('block_id is required for payload');
   }
+  if (!createdBy) {
+    throw new ApolloError('a user _id is required for payload');
+  }
 
   // *************** return composed payload
   const subjectPayload = {
@@ -27,6 +31,43 @@ function SubjectPayloadComposer(inputObject) {
     description: inputObject.description,
     block_id: inputObject.block_id,
     coefficient: inputObject.coefficient,
+    created_by: createdBy,
+  };
+
+  return subjectPayload;
+}
+
+/**
+ * Compose payload for create subject mutation
+ * @param {Object} inputObject - The input object of subject
+ * @param {String} inputObject.name - The name of subject
+ * @param {String} inputObject.description - The description of subject
+ * @param {Number} inputObject.coefficient - The coefficient of subject
+ * @param {String} updatedBy- The _id of user that update the subject
+ * @returns {Object} - The composed payload for subject mutation
+ */
+function SubjectPayloadComposer({ inputObject, updatedBy }) {
+  // *************** sanity check
+  if (!inputObject.name) {
+    throw new ApolloError('name is required for payload');
+  }
+  if (!inputObject.coefficient) {
+    throw new ApolloError('coefficient is required for payload');
+  }
+  if (!inputObject.block_id) {
+    throw new ApolloError('block_id is required for payload');
+  }
+  if (!updatedBy) {
+    throw new ApolloError('a user _id is required for payload');
+  }
+
+  // *************** return composed payload
+  const subjectPayload = {
+    name: inputObject.name,
+    description: inputObject.description,
+    block_id: inputObject.block_id,
+    coefficient: inputObject.coefficient,
+    updated_by: updatedBy,
   };
 
   return subjectPayload;
@@ -41,6 +82,7 @@ function SubjectPayloadComposer(inputObject) {
  * @param {String} test_id - id of Test used within pass_conditions
  *@param  {String} math_operator - string representation of math_operator
  * @param {String} logical_operator - string representation of logical operator
+ * @param {String} updatedBy- The _id of user that added the pass condition
  * @throws {ApolloError} - if sanity check fails
  */
 function SubjectPassConditionsPayloadComposer(passConditionsInput) {

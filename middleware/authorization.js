@@ -1,5 +1,31 @@
 // *************** IMPORT LIBRARY ***************
 const { AuthenticationError, ForbiddenError, ApolloError } = require('apollo-server-express');
+const jwt = require('jsonwebtoken');
+
+/**
+ * Extract data from jwt token get from headers
+ * @param {Object} headers - Headers of request containing authorization field
+ * @returns {Object} - Extracted data from
+ */
+function GetUserFromHeader(headers) {
+  try {
+    // *************** get token from header object
+    const authHeader = headers?.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new ApolloError('auth header is missing or invalid');
+    }
+
+    // *************** split authHeader, get token only
+    const jwtToken = authHeader.split(' ')[1];
+
+    // *************** extract user data from verified jwtToken
+    const decodedJwtToken = jwt.verify(jwtToken, process.env.JWT_SECRET_KEY);
+    return decodedJwtToken;
+  } catch (error) {
+    console.error(error.message);
+    return null;
+  }
+}
 
 /**
  * Middleware function to prevent access from unauthorized user
@@ -27,4 +53,4 @@ function UserIsAuthorized({ userData, allowedRoles }) {
 }
 
 // *************** EXPORT MODULE ***************
-module.exports = { UserIsAuthorized };
+module.exports = { UserIsAuthorized, GetUserFromHeader };

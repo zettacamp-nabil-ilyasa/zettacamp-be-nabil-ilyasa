@@ -5,12 +5,10 @@ const { ApolloError } = require('apollo-server-express');
 const StudentTestResultModel = require('./student_test_result.model.js');
 const TaskModel = require('../task/task.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
-const { taskOwnerUserId } = require('../../shared/strings.js');
+const { allowedRoles } = require('../../shared/strings.js');
 
-// *************** IMPORT VALIDATOR ***************
-const { ValidateStudentTestResultFilterInput, ValidateEnterMarksInput } = require('./studentTestResult.validators.js');
-const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
-const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
+// *************** IMPORT UTILITIES ***************
+const { UserIsAuthorized } = require('../../middleware/authorization.js');
 
 // *************** IMPORT HELPER ***************
 const {
@@ -19,6 +17,11 @@ const {
   SetEnterMarksTaskToCompleted,
   CompareTestNotationsAndMarks,
 } = require('./student_test_result.helper.js');
+
+// *************** IMPORT VALIDATOR ***************
+const { ValidateStudentTestResultFilterInput, ValidateEnterMarksInput } = require('./studentTestResult.validators.js');
+const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
+const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 
 // *************** QUERY ****************
 /**
@@ -35,13 +38,16 @@ const {
  * @returns {Promise<Array<Object>>} Array of test documents matching the query
  * @throws {ApolloError} If any error occurs during validation or database operation
  */
-async function GetAllStudentTestResults(parent, { filter, pagination }) {
+async function GetAllStudentTestResults(parent, { filterInput, paginationInput }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.StudentTestResult.GetAllStudentTestResults });
+
     // *************** validate filterInput if provided
-    ValidateStudentTestResultFilterInput(filter);
+    ValidateStudentTestResultFilterInput(filterInput);
 
     // *************** validate paginationInput if provided
-    ValidatePaginationInput(pagination);
+    ValidatePaginationInput(paginationInput);
 
     // *************** build base query
     const query = { status: { $ne: 'deleted' } };
@@ -56,12 +62,13 @@ async function GetAllStudentTestResults(parent, { filter, pagination }) {
       query.status = filter.status;
     }
 
-    // *************** set default limit and offset
-    const offset = pagination?.offset ?? 0;
-    const limit = pagination?.limit ?? 20;
+    // *************** set default limit and page
+    const limit = paginationInput?.limit ?? 10;
+    const page = paginationInput.page ?? 1;
+    const skip = (page - 1) * limit;
 
     // *************** execute query
-    const studentTestResults = await StudentTestResultModel.find(query).skip(offset).limit(limit).sort({ created_at: -1 }).lean();
+    const studentTestResults = await StudentTestResultModel.find(query).skip(skip).limit(limit).sort({ created_at: -1 }).lean();
     return studentTestResults;
   } catch (error) {
     await ErrorLogModel.create({
@@ -82,8 +89,11 @@ async function GetAllStudentTestResults(parent, { filter, pagination }) {
  * @returns {Promise<Object>} - Student test result document or error if not found.
  * @throws {ApolloError} - Throws error if validation fails or database query fails.
  */
-async function GetOneStudentTestResult(parent, { _id }) {
+async function GetOneStudentTestResult(parent, { _id }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user });
+
     // *************** validate studentTestResult's id
     ValidateMongoObjectId(_id);
 
@@ -120,8 +130,11 @@ async function GetOneStudentTestResult(parent, { _id }) {
  * @returns {Promise<Object>} The newly created StudentTestResult document.
  * @throws {ApolloError} If validation fails, student test result already exists, or any DB operation fails.
  */
-async function EnterMarks(parent, { task_id, marks }) {
+async function EnterMarks(parent, { task_id, marks }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.StudentTestResult.EnterMarks });
+
     // *************** validate input
     ValidateEnterMarksInput({ taskId: task_id, studentMarks: marks });
 
@@ -147,7 +160,7 @@ async function EnterMarks(parent, { task_id, marks }) {
     }
 
     // *************** compose enter marks payload
-    const enteredMarks = EnterMarksPayloadComposer({ taskDocument, studentMarks: marks });
+    const enteredMarks = EnterMarksPayloadComposer({ taskDocument, studentMarks: marks, userId: context.user._id });
 
     // *************** create student test result using the payload
     const createdStudentTestResult = await StudentTestResultModel.create(enteredMarks);
@@ -159,7 +172,7 @@ async function EnterMarks(parent, { task_id, marks }) {
     await SetEnterMarksTaskToCompleted(task_id);
 
     // *************** create validate marks task
-    await CreateValidateMarksTask({ studentTestResultId: createdStudentTestResult._id, userId: taskOwnerUserId, taskDocument });
+    await CreateValidateMarksTask({ studentTestResultId: createdStudentTestResult._id, userId: context.user._id, taskDocument });
 
     return createdStudentTestResult;
   } catch (error) {
@@ -187,8 +200,11 @@ async function EnterMarks(parent, { task_id, marks }) {
  * @returns {Promise<Object>} The newly created StudentTestResult document.
  * @throws {ApolloError} If validation fails, student test result already exists, or any DB operation fails.
  */
-async function UpdateEnteredMarks(parent, { _id, task_id, marks }) {
+async function UpdateEnteredMarks(parent, { _id, task_id, marks }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.StudentTestResult.UpdateEnteredMarks });
+
     // *************** validate student test result's id
     ValidateMongoObjectId(_id);
 
@@ -220,7 +236,7 @@ async function UpdateEnteredMarks(parent, { _id, task_id, marks }) {
     await CompareTestNotationsAndMarks({ marks, testId: taskDocument.test_id });
 
     // *************** compose enter marks payload
-    const enteredMarks = EnterMarksPayloadComposer({ taskDocument, studentMarks: marks });
+    const enteredMarks = EnterMarksPayloadComposer({ taskDocument, studentMarks: marks, userId: context.user._id });
 
     // *************** update student test result using the payload
     const updatedStudentTestResult = await StudentTestResultModel.findOneAndUpdate({ _id }, enteredMarks, { new: true });
@@ -246,8 +262,11 @@ async function UpdateEnteredMarks(parent, { _id, task_id, marks }) {
  * @returns {Promise<string>} - Deletion success message.
  * @throws {ApolloError} - Throws error if student test result not found or the status is is not 'validated'.
  */
-async function DeleteStudentTestResult(parent, { _id }) {
+async function DeleteStudentTestResult(parent, { _id }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.StudentTestResult.DeleteStudentTestResult });
+
     // *************** validate student test result's id
     ValidateMongoObjectId(_id);
 
@@ -265,7 +284,7 @@ async function DeleteStudentTestResult(parent, { _id }) {
     }
 
     // *************** soft-delete the student test result document by set status and deleted_at
-    await StudentTestResultModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_at: new Date() } });
+    await StudentTestResultModel.updateOne({ _id }, { $set: { status: 'deleted', deleted_by: context.user._id, deleted_at: new Date() } });
 
     // *************** also soft-delete validate_marks task that stores the student test result's id
     await TaskModel.updateOne(
@@ -376,6 +395,66 @@ async function student_id(parent, args, context) {
   }
 }
 
+/**
+ * Resolve the created_by field in a user object using DataLoader to prevent N+1 queries.
+ * @async
+ * @param {object} parent - Parent user object.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context that contains DataLoaders.
+ * @returns {Promise<Object|null>} - The User document or null if not available.
+ * @throws {ApolloError} - Throws error if DataLoader fails.
+ */
+async function created_by(parent, args, context) {
+  try {
+    // *************** check if user has any created_by
+    if (!parent?.created_by) {
+      return null;
+    }
+
+    // *************** load user
+    const loadedUser = await context.loaders.user.load(parent.created_by);
+    return loadedUser;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'created_by',
+      path: '/modules/student_test_result/student_test_result.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
+ * Resolve the updated_by field in a user object using DataLoader to prevent N+1 queries.
+ * @async
+ * @param {object} parent - Parent user object.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context that contains DataLoaders.
+ * @returns {Promise<Object|null>} - The User document or null if not available.
+ * @throws {ApolloError} - Throws error if DataLoader fails.
+ */
+async function updated_by(parent, args, context) {
+  try {
+    // *************** check if user has any created_by
+    if (!parent?.updated_by) {
+      return null;
+    }
+
+    // *************** load user
+    const loadedUser = await context.loaders.user.load(parent.updated_by);
+    return loadedUser;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'created_by',
+      path: '/modules/student_test_result/student_test_result.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllStudentTestResults, GetOneStudentTestResult },
@@ -384,5 +463,7 @@ module.exports = {
     task_id,
     test_id,
     student_id,
+    created_by,
+    updated_by,
   },
 };

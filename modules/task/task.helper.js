@@ -144,10 +144,11 @@ Zettacamp-M2 System
  * Mark a student test result as validated by updating its status.
  * @async
  * @param {string} studentTestResultId - ID of the student test result to update.
+ * @param {string} studentTestResultId - ID of the user performing update.
  * @returns {Promise<void>} - Resolves when the status is updated.
  * @throws {ApolloError} - If validation fails or student test result is not found.
  */
-async function MarkStudentTestResultAsValidated(studentTestResultId) {
+async function MarkStudentTestResultAsValidated({ studentTestResultId, userIdForUpdatedBy }) {
   try {
     // *************** validate student test result id
     ValidateMongoObjectId(studentTestResultId);
@@ -155,7 +156,7 @@ async function MarkStudentTestResultAsValidated(studentTestResultId) {
     // *************** update student test result document
     const validatedStudentTestResult = await StudentTestResultModel.updateOne(
       { _id: studentTestResultId },
-      { $set: { status: 'validated' } }
+      { $set: { status: 'validated', updated_by: userIdForUpdatedBy } }
     );
     if (validatedStudentTestResult.modifiedCount === 0) {
       throw new ApolloError('student test result not found or already validated');
@@ -171,14 +172,23 @@ async function MarkStudentTestResultAsValidated(studentTestResultId) {
   }
 }
 
-function AssignCorrectorPayloadComposer(userId) {
+/**
+ * Compose the payload object for assigning a corrector to a task.
+ * @param {Object} params - Parameters for payload composition.
+ * @param {string} params.userIdOfCorrector - ID of the user to be assigned as the corrector.
+ * @param {string} params.userIdForUpdatedBy - ID of the user performing the update.
+ * @throws {ApolloError} - If `userIdOfCorrector` is missing.
+ * @returns {Object} Payload object for assigning corrector.
+ */
+function AssignCorrectorPayloadComposer({ userIdOfCorrector, userIdForUpdatedBy }) {
   if (!userId) {
     throw new ApolloError('user_id for corrector is required');
   }
   const assignCorrectorPayload = {
-    corrector_id: userId,
+    corrector_id: userIdOfCorrector,
     status: 'completed',
     completed_at: new Date(),
+    updated_by: userIdForUpdatedBy,
   };
   return assignCorrectorPayload;
 }

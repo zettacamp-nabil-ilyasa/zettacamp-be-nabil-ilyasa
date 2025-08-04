@@ -6,7 +6,6 @@ const taskTypes = ['assign_corrector', 'validate_marks', 'enter_marks'];
 const allowedTaskStatus = ['pending', 'in_progress', 'completed'];
 const allowedTaskTypes = ['assign_corrector', 'validate_marks', 'enter_marks'];
 const allowedStudentTestResultStatus = ['completed', 'need_revision', 'validated'];
-const taskOwnerUserId = '6862150331861f37e4e3d209';
 const parameterEnum = ['average_of', 'mark'];
 const mathOperatorEnum = ['greater_than', 'greater_or_equal_than', 'less_than', 'less_or_equal_than', 'equal'];
 const logicalOperatorEnum = ['and', 'or'];
@@ -14,14 +13,63 @@ const blockSyllabusType = ['block', 'subject', 'test'];
 const subjectSyllabusType = ['subject', 'test'];
 const gradingResult = ['pass', 'fail'];
 const userRole = ['admin', 'student'];
-const allowedRolesForGetAllUsers = ['admin'];
-const allowedRolesForCreateUser = ['admin'];
-const allowedRolesForDeleteUser = ['admin'];
-const allowedRolesForGetAllSchools = ['admin'];
-const allowedRolesForCreateSchool = ['admin'];
-const allowedRolesForUpdateSchool = ['admin'];
-const allowedRolesForDeleteSchool = ['admin'];
-const allowedRolesForCreateStudent = ['admin'];
+const allowedRoles = {
+  User: {
+    GetAllUsers: ['admin'],
+    CreateUser: ['admin'],
+    UpdateUser: ['admin'],
+    DeleteUser: ['admin'],
+  },
+  School: {
+    GetAllSchools: ['admin'],
+    CreateSchool: ['admin'],
+    UpdateSchool: ['admin'],
+    DeleteSchool: ['admin'],
+  },
+  Student: {
+    GetAllStudents: ['admin'],
+    CreateStudent: ['admin'],
+    UpdateStudent: ['admin'],
+    DeleteStudent: ['admin'],
+  },
+  Block: {
+    GetAllBlocks: ['admin'],
+    CreateBlock: ['admin'],
+    UpdateBlock: ['admin'],
+    AddBlockPassConditions: ['admin'],
+    DeleteBlock: ['admin'],
+  },
+  Subject: {
+    GetAllSubjects: ['admin'],
+    CreateSubject: ['admin'],
+    UpdateSubject: ['admin'],
+    AddSubjectPassConditions: ['admin'],
+    DeleteSubject: ['admin'],
+  },
+  Test: {
+    GetAllTests: ['admin'],
+    CreateTest: ['admin'],
+    UpdateTest: ['admin'],
+    AddTestPassCondition: ['admin'],
+    PublishTest: ['admin'],
+    DeleteTest: ['admin'],
+  },
+  StudentTestResult: {
+    GetAllStudentTestResults: ['admin'],
+    EnterMarks: ['admin'],
+    UpdateEnteredMarks: ['admin'],
+    DeleteStudentTestResult: ['admin'],
+  },
+  Task: {
+    GetAllTasks: ['admin'],
+    AssignCorrector: ['admin'],
+    ValidateMarks: ['admin'],
+    DeleteTask: ['admin'],
+  },
+  CalculationResult: {
+    GetAllCalculationResults: ['admin'],
+  },
+};
 
 // *************** EXPORT MODULE ***************
 module.exports = {
@@ -32,7 +80,6 @@ module.exports = {
   taskTypes,
   allowedTaskStatus,
   allowedTaskTypes,
-  taskOwnerUserId,
   userRole,
   allowedStudentTestResultStatus,
   parameterEnum,
@@ -41,12 +88,5 @@ module.exports = {
   blockSyllabusType,
   subjectSyllabusType,
   gradingResult,
-  allowedRolesForGetAllUsers,
-  allowedRolesForCreateUser,
-  allowedRolesForDeleteUser,
-  allowedRolesForGetAllSchools,
-  allowedRolesForCreateSchool,
-  allowedRolesForUpdateSchool,
-  allowedRolesForDeleteSchool,
-  allowedRolesForCreateStudent,
+  allowedRoles,
 };

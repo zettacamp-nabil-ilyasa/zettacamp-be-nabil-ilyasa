@@ -10,7 +10,9 @@ const blockTypeDefs = gql`
     subject_ids: [Subject]
     status: SyllabusStatus!
     created_at: Date!
+    created_by: User
     updated_at: Date!
+    updated_by: User
   }
 
   type BlockPassCondition {
@@ -45,7 +47,7 @@ const blockTypeDefs = gql`
   }
 
   extend type Query {
-    GetAllBlocks(pagination: PaginationInput): [Block]
+    GetAllBlocks(paginationInput: PaginationInput): [Block]
     GetOneBlock(_id: ID!): Block
   }
 

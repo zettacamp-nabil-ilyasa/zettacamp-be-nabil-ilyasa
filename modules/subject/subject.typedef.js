@@ -12,7 +12,8 @@ const subjectTypeDefs = gql`
     test_ids: [Test!]
     status: SyllabusStatus!
     created_at: Date!
-    created_by: User!
+    created_by: User
+    updated_by: User
     updated_at: Date!
     deleted_at: Date
     deleted_by: User
@@ -53,7 +54,7 @@ const subjectTypeDefs = gql`
   }
 
   extend type Query {
-    GetAllSubjects(filter: SubjectFilterInput, pagination: PaginationInput): [Subject]
+    GetAllSubjects(filterInput: SubjectFilterInput, paginationInput: PaginationInput): [Subject]
     GetOneSubject(_id: ID!): Subject
   }
 

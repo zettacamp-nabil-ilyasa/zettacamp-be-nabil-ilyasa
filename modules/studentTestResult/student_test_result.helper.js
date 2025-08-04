@@ -55,10 +55,11 @@ async function CompareTestNotationsAndMarks({ marks, testId }) {
  * @param {Object} params - Parameters.
  * @param {Object} params.taskDocument - The task document related to enter_marks.
  * @param {Array} params.studentMarks - Array of mark objects.
+ * @param {String} params.userId - Id of user that entered the marks.
  * @returns {Object} - Formatted payload for creating StudentTestResult.
  * @throws {ApolloError} - If task or marks are missing.
  */
-function EnterMarksPayloadComposer({ taskDocument, studentMarks }) {
+function EnterMarksPayloadComposer({ taskDocument, studentMarks, userId }) {
   // *************** sanity check
   if (!taskDocument || !Array.isArray(studentMarks) || !studentMarks.length) {
     throw new ApolloError('task or marks not found');
@@ -76,6 +77,7 @@ function EnterMarksPayloadComposer({ taskDocument, studentMarks }) {
     average_mark: averageMark,
     status: 'completed',
     mark_entry_date: new Date(),
+    created_by: userId,
   };
 
   return studentTestResultPayload;
@@ -131,6 +133,7 @@ async function CreateValidateMarksTask({ studentTestResultId, userId, taskDocume
       student_id: taskDocument.student_id,
       student_test_result_id: studentTestResultId,
       status: 'in_progress',
+      created_by: userId,
     });
     if (!createdTask) {
       throw new ApolloError('failed to create validate marks task');

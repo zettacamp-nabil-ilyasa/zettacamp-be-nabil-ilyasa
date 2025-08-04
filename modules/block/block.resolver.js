@@ -4,14 +4,18 @@ const { ApolloError } = require('apollo-server-express');
 // *************** IMPORT MODULE ***************
 const BlockModel = require('./block.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
+const { allowedRoles } = require('../../shared/strings.js');
+
+// *************** IMPORT UTILITIES ***************
+const { UserIsAuthorized } = require('../../middleware/authorization.js');
+
+// *************** IMPORT HELPER ***************
+const { BlockPayloadComposerForCreate, BlockPayloadComposerForUpdate, BlockPassConditionsPayloadComposer } = require('./block.helper.js');
 
 // *************** IMPORT VALIDATOR ***************
 const { ValidateBlockInput, ValidateBlockPassConditionsInput } = require('./block.validators.js');
 const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-validator.js');
 const { ValidatePaginationInput } = require('../../utilities/validators/pagination-validator.js');
-
-// *************** IMPORT HELPER ***************
-const { BlockPayloadComposer, BlockPassConditionsPayloadComposer } = require('./block.helper.js');
 
 // *************** QUERY ****************
 /**
@@ -20,24 +24,28 @@ const { BlockPayloadComposer, BlockPassConditionsPayloadComposer } = require('./
  * @returns {Promise<Array<Object>>} - Array of block documents with status 'active'.
  * @throws {ApolloError} - Throws error if database query fails.
  */
-async function GetAllBlocks(parent, { pagination }) {
+async function GetAllBlocks(parent, { paginationInput }, context) {
   try {
-    // *************** validate limit and offset within paginationInput
-    ValidatePaginationInput(pagination);
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Block.GetAllBlocks });
 
-    // *************** set default limit and offset
-    const offset = pagination?.offset ?? 0;
-    const limit = pagination?.limit ?? 20;
+    // *************** validate limit and offset within paginationInput
+    ValidatePaginationInput(paginationInput);
+
+    // *************** set default limit and page
+    const page = paginationInput?.page ?? 1;
+    const limit = paginationInput?.limit ?? 10;
+    const skip = (page - 1) * limit;
 
     // *************** apply pagination
-    const blocks = await BlockModel.find({ status: 'active' }).skip(offset).limit(limit).sort({ createdAt: -1 }).lean();
+    const blocks = await BlockModel.find({ status: 'active' }).skip(skip).limit(limit).sort({ createdAt: -1 }).lean();
     return blocks;
   } catch (error) {
     await ErrorLogModel.create({
       error_stack: error.stack,
       function_name: 'GetAllBlocks',
       path: '/modules/block/block.resolver.js',
-      parameter_input: JSON.stringify({ pagination }),
+      parameter_input: JSON.stringify({ paginationInput }),
     });
     throw new ApolloError(error.message);
   }
@@ -51,8 +59,11 @@ async function GetAllBlocks(parent, { pagination }) {
  * @returns {Promise<Object|null>} - Block document or null if not found.
  * @throws {ApolloError} - Throws error if validation fails or database query fails.
  */
-async function GetOneBlock(parent, { _id }) {
+async function GetOneBlock(parent, { _id }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user });
+
     // *************** validate block's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
 
@@ -84,13 +95,16 @@ async function GetOneBlock(parent, { _id }) {
  * @returns {Promise<Object>} - Created block document.
  * @throws {ApolloError} - Throws error if validation or db operation fails.
  */
-async function CreateBlock(parent, { name, description }) {
+async function CreateBlock(parent, { name, description }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Block.CreateBlock });
+
     // *************** validation to ensure bad input is handled correctly
     ValidateBlockInput({ blockName: name, blockDescription: description });
 
     // *************** compose payload
-    const newBlock = BlockPayloadComposer({ blockName: name, blockDescription: description });
+    const newBlock = BlockPayloadComposerForCreate({ blockName: name, blockDescription: description, createdBy: context.user._id });
 
     // *************** create block with composed payload
     const createdBlock = await BlockModel.create(newBlock);
@@ -116,8 +130,11 @@ async function CreateBlock(parent, { name, description }) {
  * @returns {Promise<Object>} - Updated block document.
  * @throws {ApolloError} - Throws error if validation or db operation fails.
  */
-async function UpdateBlock(parent, { _id, name, description }) {
+async function UpdateBlock(parent, { _id, name, description }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Block.UpdateBlock });
+
     // *************** validate the block's id
     ValidateMongoObjectId(_id);
 
@@ -125,7 +142,7 @@ async function UpdateBlock(parent, { _id, name, description }) {
     ValidateBlockInput({ blockName: name, blockDescription: description });
 
     // *************** compose payload
-    const editedBlock = BlockPayloadComposer({ blockName: name, blockDescription: description });
+    const editedBlock = BlockPayloadComposerForUpdate({ blockName: name, blockDescription: description, updatedBy: context.user._id });
 
     // *************** update block with composed payload
     const updatedBlock = await BlockModel.findOneAndUpdate({ _id }, { $set: editedBlock }, { new: true }).lean();
@@ -154,8 +171,11 @@ async function UpdateBlock(parent, { _id, name, description }) {
  *@param  {String}math_operator - string representation of math_operator
  * @param {String}logical_operator - string representation of logical operator
  */
-async function AddBlockPassConditions(parent, { _id, input }) {
+async function AddBlockPassConditions(parent, { _id, input }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Block.AddBlockPassConditions });
+
     // *************** validate block's id
     ValidateMongoObjectId(_id);
 
@@ -164,7 +184,11 @@ async function AddBlockPassConditions(parent, { _id, input }) {
 
     // *************** compose payload
     const blockPassConditionsPayload = BlockPassConditionsPayloadComposer(input);
-    const addedPassConditions = await BlockModel.findOneAndUpdate({ _id }, { pass_conditions: blockPassConditionsPayload }, { new: true });
+    const addedPassConditions = await BlockModel.findOneAndUpdate(
+      { _id },
+      { pass_conditions: blockPassConditionsPayload, updated_by: context.user._id },
+      { new: true }
+    );
     return addedPassConditions;
   } catch (error) {
     await ErrorLogModel.create({
@@ -185,8 +209,11 @@ async function AddBlockPassConditions(parent, { _id, input }) {
  * @returns {Promise<string>} - Deletion success message.
  * @throws {ApolloError} - Throws error if unauthorized, block not found, or block is referenced.
  */
-async function DeleteBlock(parent, { _id }) {
+async function DeleteBlock(parent, { _id }, context) {
   try {
+    // *************** apply authorization
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.Block.DeleteBlock });
+
     // *************** validate the block's id
     ValidateMongoObjectId(_id);
 
@@ -260,7 +287,7 @@ async function subject_ids(parent, args, context) {
  * @returns {Promise<Object|null>} - The subject document or null if not available.
  * @throws {ApolloError} - Throws error if loading fails.
  */
-async function subject_id(parent, _, context) {
+async function subject_id(parent, args, context) {
   try {
     if (!parent?.subject_id) return null;
     return await context.loaders.subject.load(parent.subject_id);
@@ -285,7 +312,7 @@ async function subject_id(parent, _, context) {
  * @returns {Promise<Object|null>} - The test document or null if not available.
  * @throws {ApolloError} - Throws error if loading fails.
  */
-async function test_id(parent, _, context) {
+async function test_id(parent, args, context) {
   try {
     if (!parent?.test_id) return null;
     return await context.loaders.test.load(parent.test_id);
@@ -300,12 +327,74 @@ async function test_id(parent, _, context) {
   }
 }
 
+/**
+ * Resolve the created_by field in a user object using DataLoader to prevent N+1 queries.
+ * @async
+ * @param {object} parent - Parent user object.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context that contains DataLoaders.
+ * @returns {Promise<Object|null>} - The User document or null if not available.
+ * @throws {ApolloError} - Throws error if DataLoader fails.
+ */
+async function created_by(parent, args, context) {
+  try {
+    // *************** check if user has any created_by
+    if (!parent?.created_by) {
+      return null;
+    }
+
+    // *************** load user
+    const loadedUser = await context.loaders.user.load(parent.created_by);
+    return loadedUser;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'created_by',
+      path: '/modules/block/block.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
+/**
+ * Resolve the updated_by field in a user object using DataLoader to prevent N+1 queries.
+ * @async
+ * @param {object} parent - Parent user object.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context that contains DataLoaders.
+ * @returns {Promise<Object|null>} - The User document or null if not available.
+ * @throws {ApolloError} - Throws error if DataLoader fails.
+ */
+async function updated_by(parent, args, context) {
+  try {
+    // *************** check if user has any created_by
+    if (!parent?.updated_by) {
+      return null;
+    }
+
+    // *************** load user
+    const loadedUser = await context.loaders.user.load(parent.updated_by);
+    return loadedUser;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'created_by',
+      path: '/modules/block/block.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllBlocks, GetOneBlock },
   Mutation: { CreateBlock, UpdateBlock, AddBlockPassConditions, DeleteBlock },
   Block: {
     subject_ids,
+    created_by,
+    updated_by,
   },
   BlockPassCondition: {
     subject_id,

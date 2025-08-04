@@ -3,7 +3,7 @@ const Mongoose = require('mongoose');
 const Schema = Mongoose.Schema;
 
 // *************** IMPORT MODULE ***************
-const { gradingResult, calculationResultStatus } = require('../../shared/strings');
+const { gradingResult, existenceStatus } = require('../../shared/strings');
 
 const calculationResultSchema = new Schema(
   {
@@ -59,7 +59,7 @@ const calculationResultSchema = new Schema(
     ],
 
     // status of the calculation result
-    status: { type: String, enum: calculationResultStatus, default: 'active', trim: true },
+    status: { type: String, enum: existenceStatus, default: 'active', trim: true },
 
     // user who triggers the calculation result
     created_by: { type: Schema.Types.ObjectId, ref: 'user' },

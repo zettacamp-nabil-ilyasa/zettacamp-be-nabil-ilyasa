@@ -13,8 +13,9 @@ const testTypeDefs = gql`
     status: TestStatus!
     published_date: Date
     created_at: Date!
-    created_by: User!
+    created_by: User
     updated_at: Date!
+    updated_by: User
   }
 
   type Notation {

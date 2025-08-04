@@ -20,10 +20,11 @@ const { ValidateMongoObjectId } = require('../../utilities/validators/mongo-vali
  * Calculate result for all blocks, subjects, and tests that related with student_test_result documents that contain studentId
  * This function groups student test results by block and computes all needed fields for calculation result
  * @param {String} studentId - Student's id to filter the populated documents
+ * @param {String} userId - Id of user who triggerred the worker
  * @returns {Promise<void>} - Returns nothing
  * @throws {Error} - if any error occured within try block
  */
-async function CalculateResult(studentId) {
+async function CalculateResult({ studentId, userId }) {
   try {
     // *************** validate student's id
     ValidateMongoObjectId(studentId);
@@ -179,6 +180,7 @@ async function CalculateResult(studentId) {
       student_id: studentId,
       overall_result: overallResult ? 'pass' : 'fail',
       results: calculationResultObjects,
+      created_by: userId,
     };
 
     // *************** update calculation result document if it exists, create a new one otherwise

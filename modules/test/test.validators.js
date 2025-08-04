@@ -53,7 +53,7 @@ function ValidateTestInput(inputObject) {
 }
 
 /**
- *
+ * Validate filter input for test query
  * @param {Object} filterInput - Input containing filter data for test
  * @param {String} filterInput._id - Id of test
  * @param {String} filterInput.status - Status of test
