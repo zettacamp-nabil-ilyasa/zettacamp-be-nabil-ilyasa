@@ -78,31 +78,32 @@ async function ValidateUniqueStudentEmail(studentEmail) {
 
 /**
  * Validates the student input object for required and optional fields.
- * @param {Object} input - The input object containing filter data for students query.
- * @param {string} input.school_id - School's id related to Student.
- * @param {string} input.student_name - Student's name for filter.
- * @param {string} input.date_of_birth - Student's date_of_birth for filter
- * @param {string} input.school_long_name - School's long name connected to student for filter
+ * @param {Object} filterInput - The input object containing filter data for students query.
+ * @param {string} filterInput.school_id - School's id related to Student.
+ * @param {string} filterInput.student_name - Student's name for filter.
+ * @param {string} filterInput.date_of_birth - Student's date_of_birth for filter
+ * @param {string} filterInput.school_long_name - School's long name connected to student for filter
  * @throws {ApolloError} - If any field is missing or has the wrong type.
  */
-function ValidateStudentFilterInput(input) {
+function ValidateStudentFilterInput(filterInput) {
   // *************** validate school_id if provided
-  if (input?.school_id) ValidateMongoObjectId(school_id);
+  if (filterInput?.school_id) ValidateMongoObjectId(filterInput.school_id);
 
   // *************** validate date_of_birth if provided, ensure it complies with pattern, ensure date_comparation_operator provided
   const dateOfBirthRegexPatern = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
-  if (input?.date_of_birth) {
-    if (!dateOfBirthRegexPatern.test(input?.date_of_birth)) {
+  if (filterInput?.date_of_birth) {
+    if (!dateOfBirthRegexPatern.test(filterInput?.date_of_birth)) {
       throw new ApolloError('date_of_birth must be in YYYY-MM-DD format');
     }
     if (!filterInput.date_comparation_operator) throw new ApolloError('date_comparation_operator is required');
   }
 
   // *************** validate school_long_name if provided
-  if (input?.school_long_name && typeof input?.school_long_name !== 'string') throw new ApolloError('school_long_name must be a string');
+  if (filterInput?.school_long_name && typeof filterInput?.school_long_name !== 'string')
+    throw new ApolloError('school_long_name must be a string');
 
   // *************** validate student_name if provided
-  if (input?.student_name && typeof input?.student_name !== 'string') throw new ApolloError('student_name must be a string');
+  if (filterInput?.student_name && typeof filterInput?.student_name !== 'string') throw new ApolloError('student_name must be a string');
 }
 
 // *************** EXPORT MODULE ***************

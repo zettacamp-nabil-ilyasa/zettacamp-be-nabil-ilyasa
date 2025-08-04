@@ -11,8 +11,14 @@ const studentTypeDefs = gql`
     school_id: School!
     status: Status!
     created_by: User
-    createdAt: Date
-    updatedAt: Date
+    updated_by: User
+    created_at: Date
+    updated_at: Date
+  }
+
+  type PagedStudents {
+    data: [Student]
+    pagination_info: PaginationInfo
   }
 
   input StudentInput {
@@ -45,7 +51,7 @@ const studentTypeDefs = gql`
   }
 
   extend type Query {
-    GetAllStudents(paginationInput: PaginationInput, filterInput: StudentFilterInput, sortInput: StudentSortInput): [Student]
+    GetAllStudents(paginationInput: PaginationInput, filterInput: StudentFilterInput, sortInput: StudentSortInput): PagedStudents
     GetOneStudent(_id: ID!): Student
   }
 
