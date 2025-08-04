@@ -16,7 +16,7 @@ const ErrorLogModel = require('../errorLog/error_log.model.js');
  */
 function ValidateCreateUserInput(input) {
   // *************** destructured input object
-  let { first_name, last_name, email } = input;
+  let { first_name, last_name, email, password } = input;
 
   // *************** validate user's email
   const userEmailRegexPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -28,6 +28,12 @@ function ValidateCreateUserInput(input) {
 
   // *************** validate user's last_name
   if (!last_name || typeof last_name !== 'string') throw new ApolloError('last_name is required');
+
+  // *************** validate user's password
+  const passwordRegexPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,}$/;
+  if (!password || typeof password !== 'string') throw new ApolloError('password is required and must be a string');
+  if (!passwordRegexPattern.test(password))
+    throw new ApolloError('password must have min of 8 characters, contain min of 1 number, 1 uppercase letter, and 1 lowercase letter');
 }
 
 /**
@@ -56,9 +62,11 @@ function ValidateUpdateUserInput(input) {
 
   // *************** validate user's password
   const passwordRegexPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,}$/;
-  if (!password || typeof password !== 'string') throw new ApolloError('password is required and must be a string');
-  if (!passwordRegexPattern.test(password))
-    throw new ApolloError('password must have min of 8 characters, contain min of 1 number, 1 uppercase letter, and 1 lowercase letter');
+  if (password) {
+    if (typeof password !== 'string') throw new ApolloError('password is required and must be a string');
+    if (!passwordRegexPattern.test(password))
+      throw new ApolloError('password must have min of 8 characters, contain min of 1 number, 1 uppercase letter, and 1 lowercase letter');
+  }
 }
 
 /**
@@ -70,10 +78,10 @@ function ValidateUpdateUserInput(input) {
  */
 function ValidateLoginInput(input) {
   // *************** validate email provided in input
-  if (!input.email || !typeof input.email !== 'string') throw new ApolloError('email is required and must be a string');
+  if (!input.email || typeof input.email !== 'string') throw new ApolloError('email is required and must be a string');
 
   // *************** validate password provided in input
-  if (!input.password || !typeof input.password !== 'string') throw new ApolloError('password is required and must be a string');
+  if (typeof input.password !== 'string') throw new ApolloError('password is required and must be a string');
 }
 
 /**

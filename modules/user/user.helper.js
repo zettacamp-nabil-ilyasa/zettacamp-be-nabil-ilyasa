@@ -49,30 +49,6 @@ async function GenerateToken(userData) {
 }
 
 /**
- * Extract data from jwt token get from headers
- * @param {Object} headers - Headers of request containing authorization field
- * @returns {Object} - Extracted data from
- */
-async function GetUserFromHeader(headers) {
-  try {
-    // *************** get token from header object
-    const authHeader = headers?.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new ApolloError('auth header is missing or invalid');
-    }
-
-    // *************** split authHeader, get token only
-    const jwtToken = authHeader.split(' ')[1];
-
-    // *************** extract user data from verified jwtToken
-    const decodedJwtToken = jwt.decode(jwt.verify(jwtToken));
-    return decodedJwtToken;
-  } catch (error) {
-    return null;
-  }
-}
-
-/**
  * Hash a password, add security to user's password.
  * @param {String} passwordString - password that want to be hashed.
  * @returns {String} - The hashed password.
@@ -92,7 +68,7 @@ function HashPassword(passwordString) {
 }
 
 /**
- *
+ * Compare input password with hashed password
  * @param {String} passwordInput - String of password.
  * @param {String} hashedPassword - Encrypted/hashed password to be compared to.
  * @throws {ApolloError} - If sanity check or comparation fail.
@@ -114,24 +90,34 @@ function CompareHashedPassword({ passwordInput, hashedPassword }) {
   }
 }
 
+/**
+ * Build MongoDB aggregation pipeline for User queries with pagination, sorting, and filtering.
+ * @param {Object} params - Parameters for building the aggregation pipeline.
+ * @param {number} params.skip - Number of documents to skip (for pagination).
+ * @param {number} params.limit - Maximum number of documents to return (for pagination).
+ * @param {Object} [params.filterInput] - Filtering options for the query.
+ * @param {Object} [params.sortInput] - Sorting options for the query.
+ *@throws {ApolloError} If required parameters are missing or invalid.
+ * @returns {Array<Object>} MongoDB aggregation pipeline stages.
+ */
 function UserAggregatePipelineQueryBuilder({ skip, limit, filterInput, sortInput }) {
   // *************** sanity check for all of input object parameter
-  if (!skip || typeof skip !== 'number') throw new ApolloError('skip is required and must be a number');
+  if (skip !== 0 && typeof skip !== 'number') throw new ApolloError('skip is required and must be a number');
   if (!limit || typeof limit !== 'number') throw new ApolloError('limit is required and must be a number');
-  if (typeof filterInput !== 'object') throw new ApolloError('filterInput is required and must be an object');
+  if (filterInput && typeof filterInput !== 'object') throw new ApolloError('filterInput is required and must be an object');
 
   // *************** map sort options
   const sortOption = {};
   const sortFieldMap = {
-    name: 'name',
+    first_name: 'first_name',
+    last_name: 'last_name',
     created_at: 'created_at',
   };
-
   // *************** set default value for sortField
-  const sortField = sortFieldMap[filterInput?.sort_by] || 'created_at';
+  const sortField = sortFieldMap[sortInput?.sort_by] || 'created_at';
 
   // *************** ensure that sort_order default value is 1 (ascending)
-  const sortOrder = filterInput?.sort_order === 'desc' ? -1 : 1;
+  const sortOrder = sortInput?.sort_order === 'desc' ? -1 : 1;
 
   // *************** set sort object using sort_ by and sort_order
   sortOption[sortField] = sortOrder;
@@ -142,6 +128,7 @@ function UserAggregatePipelineQueryBuilder({ skip, limit, filterInput, sortInput
   const schoolMatchStage = { status: 'active' };
   if (filterInput?.role) {
     schoolMatchStage.role = filterInput.role;
+    pipeline.push({ $match: schoolMatchStage });
   }
 
   // *************** apply facet for pagination
@@ -155,4 +142,4 @@ function UserAggregatePipelineQueryBuilder({ skip, limit, filterInput, sortInput
 }
 
 // *************** EXPORT MODULE ***************
-module.exports = { GenerateToken, GetUserFromHeader, HashPassword, CompareHashedPassword, UserAggregatePipelineQueryBuilder };
+module.exports = { GenerateToken, HashPassword, CompareHashedPassword, UserAggregatePipelineQueryBuilder };

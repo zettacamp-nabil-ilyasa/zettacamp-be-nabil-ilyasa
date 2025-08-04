@@ -20,7 +20,7 @@ const userTypeDefs = gql`
     first_name: String!
     last_name: String!
     email: String!
-    role: String!
+    role: UserRoleEnum!
     access_token: String!
   }
 
@@ -34,13 +34,15 @@ const userTypeDefs = gql`
     last_name: String!
     email: String!
     role: UserRoleEnum!
+    password: String!
   }
 
   input UpdateUserInput {
     first_name: String!
     last_name: String!
     email: String!
-    password: String!
+    password: String
+    role: UserRoleEnum
   }
 
   input LoginInput {
@@ -58,13 +60,14 @@ const userTypeDefs = gql`
   }
 
   enum SortUserByEnum {
-    name
+    first_name
+    last_name
     created_at
   }
 
   enum UserRoleEnum {
     admin
-    role
+    student
   }
 
   extend type Query {

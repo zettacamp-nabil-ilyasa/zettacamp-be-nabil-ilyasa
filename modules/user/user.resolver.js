@@ -4,7 +4,7 @@ const { ApolloError } = require('apollo-server-express');
 // *************** IMPORT MODULE ***************
 const UserModel = require('./user.model.js');
 const ErrorLogModel = require('../errorLog/error_log.model.js');
-const { allowedRolesForGetAllUsers, allowedRolesForCreateUser, allowedRolesForDeleteUser } = require('../../shared/strings.js');
+const { allowedRoles } = require('../../shared/strings.js');
 
 // *************** IMPORT VALIDATOR ***************
 const { ValidateCreateUserInput, ValidateUpdateUserInput, ValidateLoginInput, ValidateUniqueUserEmail } = require('./user.validators.js');
@@ -24,10 +24,10 @@ const { UserIsAuthorized } = require('../../middleware/authorization.js');
  * @returns {Promise<Array<Object>>} - Array of user documents with status 'active'.
  * @throws {ApolloError} - Throws error if database query fails.
  */
-async function GetAllUsers(paginationInput, filterInput, sortInput) {
+async function GetAllUsers(parent, { paginationInput, filterInput, sortInput }, context) {
   try {
     // *************** apply authorization
-    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRolesForGetAllUsers });
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.User.GetAllUsers });
 
     // *************** validate pagination input
     ValidatePaginationInput(paginationInput);
@@ -81,7 +81,7 @@ async function GetAllUsers(paginationInput, filterInput, sortInput) {
  * @returns {Promise<Object>} - The User document which match with _id.
  * @throws {ApolloError} - Throws error if validation fails or query error occurs.
  */
-async function GetOneUser(parent, { _id }) {
+async function GetOneUser(parent, { _id }, context) {
   try {
     // *************** apply authorization
     UserIsAuthorized({ userData: context.user });
@@ -123,7 +123,7 @@ async function GetOneUser(parent, { _id }) {
 async function CreateUser(parent, { input }, context) {
   try {
     // *************** apply authorization
-    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRolesForCreateUser });
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.User.CreateUser });
 
     // *************** validation to ensure fail-fast and bad input is handled correctly
     ValidateCreateUserInput(input);
@@ -131,12 +131,16 @@ async function CreateUser(parent, { input }, context) {
     // *************** check if email already used by another user
     await ValidateUniqueUserEmail(input.email);
 
+    // *************** hash the password
+    const hashedPassword = HashPassword(input.password);
+
     // *************** compose new object from input
     const newUser = {
       email: input.email,
       first_name: input.first_name,
       last_name: input.last_name,
       role: input.role,
+      password_hash: hashedPassword,
       created_by: context.user._id,
     };
 
@@ -155,7 +159,7 @@ async function CreateUser(parent, { input }, context) {
 }
 
 /**
- * Generata an access token for user, marked them as logged in.
+ * Generate an access token for user, marked them as logged in.
  * @async
  * @param {object} parent - Not used (GraphQL resolver convention).
  * @param {object} input - Login input fields.
@@ -170,7 +174,7 @@ async function UserLogin(parent, { input }) {
     ValidateLoginInput(input);
 
     // *************** get user document
-    const userDocument = UserModel.findOne({ email: input.email, status: 'active' });
+    const userDocument = await UserModel.findOne({ email: input.email, status: 'active' });
 
     // *************** sanity check for userDocument
     if (!userDocument) {
@@ -178,7 +182,7 @@ async function UserLogin(parent, { input }) {
     }
 
     // *************** compare inputed password with hashed password within user's document
-    CompareHashedPassword({ passwordInput: input.password, hashedPassword: userDocument.password });
+    CompareHashedPassword({ passwordInput: input.password, hashedPassword: userDocument.password_hash });
 
     // *************** generate an access_token for the user
     const loggedInUserData = GenerateToken(userDocument);
@@ -210,7 +214,7 @@ async function UserLogin(parent, { input }) {
 async function UpdateUser(parent, { _id, input }, context) {
   try {
     // *************** apply authorization
-    UserIsAuthorized({ userData: context.user });
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.User.UpdateUser });
 
     // *************** validate user's id
     ValidateMongoObjectId(_id);
@@ -232,13 +236,19 @@ async function UpdateUser(parent, { _id, input }, context) {
       await ValidateUniqueUserEmail(input.email);
     }
 
+    //  *************** hash input password if provided
+    let hashedPassword;
+    if (input.password) {
+      hashedPassword = HashPassword(input.password);
+    }
+
     // *************** compose new object from input
     const editedUser = {
       email: input.email,
       first_name: input.first_name,
       last_name: input.last_name,
       role: input.role,
-      password: HashPassword(input.password),
+      password_hash: hashedPassword,
       updated_by: context.user._id,
     };
 
@@ -267,7 +277,7 @@ async function UpdateUser(parent, { _id, input }, context) {
 async function DeleteUser(parent, { _id }, context) {
   try {
     // *************** apply authorization
-    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRolesForDeleteUser });
+    UserIsAuthorized({ userData: context.user, allowedRoles: allowedRoles.User.DeleteUser });
 
     // *************** validate user's _id, ensure that it can be casted into valid ObjectId
     ValidateMongoObjectId(_id);
@@ -306,7 +316,7 @@ async function DeleteUser(parent, { _id }, context) {
  * @param {object} parent - Parent user object.
  * @param {object} args - Not used (GraphQL resolver convention).
  * @param {object} context - Resolver context that contains DataLoaders.
- * @returns {Promise<Object|null>} - The User document of the creator, or null if not available.
+ * @returns {Promise<Object|null>} - The User document or null if not available.
  * @throws {ApolloError} - Throws error if DataLoader fails.
  */
 async function created_by(parent, args, context) {
@@ -330,11 +340,42 @@ async function created_by(parent, args, context) {
   }
 }
 
+/**
+ * Resolve the updated_by field in a user object using DataLoader to prevent N+1 queries.
+ * @async
+ * @param {object} parent - Parent user object.
+ * @param {object} args - Not used (GraphQL resolver convention).
+ * @param {object} context - Resolver context that contains DataLoaders.
+ * @returns {Promise<Object|null>} - The User document or null if not available.
+ * @throws {ApolloError} - Throws error if DataLoader fails.
+ */
+async function updated_by(parent, args, context) {
+  try {
+    // *************** check if user has any created_by
+    if (!parent?.updated_by) {
+      return null;
+    }
+
+    // *************** load user
+    const loadedUser = await context.loaders.user.load(parent.updated_by);
+    return loadedUser;
+  } catch (error) {
+    await ErrorLogModel.create({
+      error_stack: error.stack,
+      function_name: 'created_by',
+      path: '/modules/user/user.resolver.js',
+      parameter_input: JSON.stringify({}),
+    });
+    throw new ApolloError(error.message);
+  }
+}
+
 // *************** EXPORT MODULE ***************
 module.exports = {
   Query: { GetAllUsers, GetOneUser },
   Mutation: { CreateUser, UserLogin, UpdateUser, DeleteUser },
   User: {
     created_by,
+    updated_by,
   },
 };
